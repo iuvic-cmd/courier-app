@@ -7,15 +7,40 @@
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/components.css">
   <style>
-    .container { max-width: 480px; margin: 0 auto; padding: 16px; }
+    .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-top: calc(16px + env(safe-area-inset-top, 0px)); padding-bottom: 90px; }
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .header h1 { font-size: 24px; }
-    
-    .scroller { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 16px; scrollbar-width: none; }
-    .scroller::-webkit-scrollbar { display: none; }
-    .month-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border); background: var(--panel); color: var(--text); font-weight: 600; white-space: nowrap; cursor: pointer; }
-    .month-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
-    
+
+    /* Календарь (как в учёте) */
+    .calendar-section { background: var(--panel); border-radius: 16px; padding: 16px 12px 12px; margin-bottom: 16px; border: 1px solid var(--border); }
+    .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px; }
+    .calendar-header h2 { font-size: 17px; font-weight: 600; margin: 0; }
+    .nav-btn { background: none; border: none; font-size: 20px; color: var(--accent); cursor: pointer; padding: 4px 10px; border-radius: 8px; width: auto; }
+    .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+    .day-name { padding: 6px 0; text-align: center; font-size: 11px; font-weight: 600; color: var(--text-dim); margin: 0; }
+    .day { background: var(--subtle-bg); padding: 4px 2px; text-align: center; border-radius: 10px; cursor: pointer; min-height: 56px; display: flex; flex-direction: column; justify-content: space-between; font-size: 12px; border: 2px solid transparent; min-width: 0; color: var(--text); transition: 0.1s; }
+    .day:active { transform: scale(0.95); }
+    .day.selected { border-color: var(--accent) !important; box-shadow: 0 0 0 2px #007aff; }
+    .day-number { font-weight: 600; font-size: 14px; line-height: 1.3; }
+    .day-label { font-size: 8px; font-weight: 600; opacity: .85; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .orders-info { font-size: 9px; opacity: .8; line-height: 1.2; }
+    .total-info { font-size: 10px; font-weight: 600; color: var(--accent); }
+    .day.empty { background: transparent; border: none; cursor: default; min-height: 30px; }
+    .day.today { border-color: var(--accent) !important; box-shadow: 0 0 0 2px #007aff; }
+    .day.work { background: #e8f5e9; border-color: #43a047; color: #2e7d32; }
+    .day.short { background: #fff3e0; border-color: #fb8c00; color: #e65100; }
+    .day.replace { background: #f3e5f5; border-color: #8e24aa; color: #7b1fa2; }
+    .day.short_replace { background: #fff8e1; border-color: #f9a825; color: #f57f17; border-style: dashed; }
+    .day.help { background: #e3f2fd; border-color: #1e88e5; color: #1565c0; }
+    .day.weekend { background: #f5f5f5; border-color: #bdbdbd; color: #616161; }
+    :root[data-theme="dark"] .day.work { background: #1a2a1a; border-color: #2e7d32; color: #66bb6a; }
+    :root[data-theme="dark"] .day.short { background: #2a1a0a; border-color: #e65100; color: #ffa726; }
+    :root[data-theme="dark"] .day.replace { background: #2a1a2a; border-color: #7b1fa2; color: #ab47bc; }
+    :root[data-theme="dark"] .day.short_replace { background: #2a2a0a; border-color: #f9a825; color: #ffca28; }
+    :root[data-theme="dark"] .day.help { background: #1a2a3a; border-color: #1565c0; color: #42a5f5; }
+    :root[data-theme="dark"] .day.weekend { background: #1c1c1e; border-color: #3a3a3c; color: #8e8e93; }
+
+    /* Карточки статистики */
     .card { background: var(--panel); border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--border); }
     .card h3 { font-size: 14px; margin-bottom: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
     
@@ -27,7 +52,6 @@
     .stat-item.green { background: #e8f5e9; color: #2e7d32; }
     .stat-item.red { background: #ffebee; color: #c62828; }
     .stat-item.blue { background: #e3f2fd; color: #1565c0; }
-    
     :root[data-theme="dark"] .stat-item.green { background: #1a2a1a; color: #66bb6a; }
     :root[data-theme="dark"] .stat-item.red { background: #2a1414; color: #ef9a9a; }
     :root[data-theme="dark"] .stat-item.blue { background: #1a2a3a; color: #90caf9; }
@@ -35,14 +59,8 @@
     .list-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
     .list-row:last-child { border-bottom: none; }
     
-    .chart-container { position: relative; height: 160px; display: flex; align-items: flex-end; gap: 4px; padding-top: 20px; overflow-x: auto; }
-    .chart-bar-wrap { flex: 1; min-width: 20px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
-    .chart-bar { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; transition: height 0.3s; min-height: 2px; position: relative; }
-    .chart-label { font-size: 10px; color: var(--text-dim); margin-top: 4px; text-align: center; }
-    
-    .top-day-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; border-bottom: 1px solid var(--border); }
-    .top-day-row:last-child { border-bottom: none; }
-    .top-day-rank { font-weight: 700; color: var(--accent); margin-right: 8px; }
+    /* Скрытый блок для статистики дня */
+    #dayStatsContainer { display: none; }
   </style>
 </head>
 <body>
@@ -51,10 +69,52 @@
     <h1>📈 Отчёты</h1>
   </div>
 
-  <div class="scroller" id="monthScroller"></div>
+  <!-- КАЛЕНДАРЬ -->
+  <div class="calendar-section">
+    <div class="calendar-header">
+      <button class="nav-btn" onclick="changeMonth(-1)">◀</button>
+      <h2 id="currentMonth">—</h2>
+      <button class="nav-btn" onclick="changeMonth(1)">▶</button>
+    </div>
+    <div id="calendar" class="calendar"></div>
+  </div>
 
+  <!-- СТАТИСТИКА ЗА ВЫБРАННЫЙ ДЕНЬ (скрыта по умолчанию) -->
+  <div id="dayStatsContainer">
+    <div class="card" style="border: 2px solid var(--accent);">
+      <h3 id="dayStatsTitle" style="color: var(--accent);">Статистика за день</h3>
+      <div class="stat-grid" style="margin-bottom: 12px;">
+        <div class="stat-item green">
+          <span class="stat-label">💼 Заработано</span>
+          <span class="stat-val" id="daySalary">0</span>
+        </div>
+        <div class="stat-item red">
+          <span class="stat-label">💸 Потрачено</span>
+          <span class="stat-val" id="dayExpenses">0</span>
+        </div>
+        <div class="stat-item blue" style="grid-column: 1 / -1;">
+          <span class="stat-label">Чистый доход</span>
+          <span class="stat-val" id="dayNet" style="font-size: 22px;">0</span>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-item">
+          <span class="stat-label">🌙 Ночной</span>
+          <span class="stat-val" id="dayNight">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">📦 Единый</span>
+          <span class="stat-val" id="dayAp">0</span>
+        </div>
+      </div>
+      <div style="margin-top: 12px;" id="dayOpsList"></div>
+      <button class="btn btn-gray" style="margin-top: 10px;" onclick="closeDayStats()">Закрыть</button>
+    </div>
+  </div>
+
+  <!-- ИТОГИ МЕСЯЦА -->
   <div class="card">
-    <h3>💰 Финансовый итог</h3>
+    <h3>💰 Итоги за месяц</h3>
     <div class="stat-grid">
       <div class="stat-item green">
         <span class="stat-label">💼 Заработано</span>
@@ -65,44 +125,13 @@
         <span class="stat-val" id="statExpenses">0</span>
       </div>
       <div class="stat-item blue" style="grid-column: 1 / -1;">
-        <span class="stat-label">Чистый доход (зарплата - расходы)</span>
+        <span class="stat-label">Чистый доход</span>
         <span class="stat-val" id="statNet" style="font-size: 22px;">0</span>
       </div>
     </div>
   </div>
 
-  <div class="card">
-    <h3>📦 Заказы и эффективность</h3>
-    <div class="stat-grid">
-      <div class="stat-item">
-        <span class="stat-label">Всего заказов</span>
-        <span class="stat-val" id="statOrders">0</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Рабочих дней</span>
-        <span class="stat-val" id="statWorkDays">0</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Ср. доход в день</span>
-        <span class="stat-val" id="statAvgDay">0</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Доход за заказ</span>
-        <span class="stat-val" id="statAvgOrder">0</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h3>📊 Заработок по дням</h3>
-    <div class="chart-container" id="chartContainer"></div>
-  </div>
-
-  <div class="card">
-    <h3>🏆 Лучшие дни месяца</h3>
-    <div id="topDaysList"></div>
-  </div>
-
+  <!-- СКУТЕР -->
   <div class="card">
     <h3>🛵 Скутер за месяц</h3>
     <div class="stat-grid">
@@ -117,6 +146,7 @@
     </div>
   </div>
 
+  <!-- РАСХОДЫ -->
   <div class="card">
     <h3>🗂 Расходы по категориям</h3>
     <div id="categoryList"></div>
@@ -137,88 +167,139 @@
 <script src="js/lib/ui.js"></script>
 <script src="js/lib/theme.js"></script>
 <script src="js/domain/state.js"></script>
+<script src="js/domain/schedule.js"></script>
 <script src="js/domain/ledger.js"></script>
 <script>
   Theme.init();
-  let activeMonth = UI.date.month(); 
+  let currentDate = new Date();
+  let selectedDate = null;
 
-  function renderMonths() {
-    const months = new Set([UI.date.month()]);
-    const days = State.getDays();
-    for (let k in days) months.add(k.slice(0, 7));
-    State.getOps().forEach(o => months.add(o.date.slice(0, 7)));
-    
-    const sorted = Array.from(months).sort().reverse();
-    const names = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
-    
-    document.getElementById("monthScroller").innerHTML = sorted.map(m => {
-      const [y, mm] = m.split("-");
-      const label = `${names[+mm - 1]} ${y}`;
-      return `<button class="month-btn ${m === activeMonth ? 'active' : ''}" onclick="setMonth('${m}')">${label}</button>`;
-    }).join("");
+  const MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+  const DAY_TYPES = { work: "🏢 Рабочий", help: "🤝 Подмога", short: "⚡ Короткий", replace: "🔄 Замена", short_replace: "⚡🔄 Кор.замена", weekend: "🏖 Выходной" };
+
+  function getDayLabel(t) {
+    if (t === "work") return "Рабочий";
+    if (t === "help") return "Подмога";
+    if (t === "short") return "Короткий";
+    if (t === "replace") return "Замена";
+    if (t === "short_replace") return "Кор.замена";
+    if (t === "weekend") return "Выходной";
+    return "";
   }
 
-  function setMonth(m) {
-    activeMonth = m;
+  function changeMonth(dir) {
+    currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + dir, 1);
     render();
   }
 
-  function render() {
-    renderMonths();
+  function closeDayStats() {
+    document.getElementById("dayStatsContainer").style.display = "none";
+    selectedDate = null;
+    render(); // перерисовываем, чтобы снять выделение
+  }
 
+  function selectDay(ds) {
+    selectedDate = ds;
     const days = State.getDays();
-    let salary = 0, totalOrders = 0, workDays = 0;
-    let dailyData = [];
-    
-    for (let k in days) {
-      if (k.startsWith(activeMonth)) {
-        const rec = days[k];
-        const dSalary = (+rec.total || 0);
-        const dOrders = (rec.night || 0) + (rec.ap || 0);
-        
-        salary += dSalary;
-        totalOrders += dOrders;
-        if (dOrders > 0 || dSalary > 0) workDays++;
-        
-        dailyData.push({ date: k, day: parseInt(k.split("-")[2]), salary: dSalary });
-      }
-    }
-    dailyData.sort((a, b) => a.day - b.day);
-
-    const ops = State.getOps().filter(o => o.date.startsWith(activeMonth));
-    const expenses = ops.filter(o => o.kind === "expense").reduce((s, o) => s + Math.abs(o.amount), 0);
-    
-    // П.3: Исправлен расчет. Топливо - это всё, где есть "Топливо". ТО - это только "Скутер: ..."
-    const fuelCost = ops.filter(o => o.kind === "expense" && o.cat.includes("Топливо")).reduce((s, o) => s + Math.abs(o.amount), 0);
-    const maintCost = ops.filter(o => o.kind === "expense" && (o.cat || "").startsWith("Скутер:")).reduce((s, o) => s + Math.abs(o.amount), 0);
-
+    const rec = days[ds] || { type: "weekend", night: 0, ap: 0, total: 0, note: "" };
+    const ops = State.getOps().filter(o => o.date === ds && o.kind === "expense");
+    const expenses = ops.reduce((s, o) => s + Math.abs(o.amount), 0);
+    const salary = rec.total || 0;
     const net = salary - expenses;
-    const avgDay = workDays ? salary / workDays : 0;
-    const avgOrder = totalOrders ? salary / totalOrders : 0;
 
+    document.getElementById("dayStatsTitle").innerText = `Статистика за ${ds.split("-").reverse().join(".")} (${getDayLabel(rec.type)})`;
+    document.getElementById("daySalary").innerText = salary;
+    document.getElementById("dayExpenses").innerText = expenses;
+    document.getElementById("dayNet").innerText = net;
+    document.getElementById("dayNight").innerText = rec.night || 0;
+    document.getElementById("dayAp").innerText = rec.ap || 0;
+    
+    // Список операций за день
+    const opsList = document.getElementById("dayOpsList");
+    if (ops.length) {
+      opsList.innerHTML = `<b>Расходы дня:</b>` + ops.map(o => `
+        <div class="list-row" style="font-size: 13px;">
+          <span>${o.cat}</span>
+          <b style="color: var(--red);">${o.amount} лей</b>
+        </div>
+      `).join("");
+    } else {
+      opsList.innerHTML = `<div class="list-row" style="color: var(--text-dim); font-size: 13px;">Нет трат в этот день</div>`;
+    }
+
+    document.getElementById("dayStatsContainer").style.display = "block";
+    render(); // перерисовываем календарь, чтобы выделить выбранный день
+  }
+
+  function render() {
+    // 1. Календарь
+    const y = currentDate.getFullYear(), m = currentDate.getMonth();
+    const first = (new Date(y, m, 1).getDay() + 6) % 7, last = new Date(y, m + 1, 0).getDate();
+    document.getElementById("currentMonth").textContent = `${MONTHS[m]} ${y}`;
+    
+    const hist = new Map(Object.keys(State.getDays()).map(d => [d, State.getDays()[d]]));
+    const today = UI.date.local();
+    
+    let html = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(n => `<div class="day-name">${n}</div>`).join("") + '<div class="day empty"></div>'.repeat(first);
+    
+    for (let d = 1; d <= last; d++) {
+      const ds = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const rec = hist.get(ds);
+      const dow = new Date(y, m, d).getDay();
+      let cls = "day", label = "", info = "";
+      
+      if (ds === today) cls += " today";
+      if (ds === selectedDate) cls += " selected";
+      
+      if (rec) {
+        const t = rec.type || "work";
+        cls += " " + t;
+        label = getDayLabel(t);
+        const parts = [];
+        if (rec.night > 0) parts.push("🌙" + rec.night);
+        if (rec.ap > 0) parts.push("📦" + rec.ap);
+        info = `<div class="orders-info">${parts.join(" ") || "—"}</div>` + (rec.total > 0 ? `<div class="total-info">${rec.total}</div>` : "");
+      } else if (dow === 0 || dow === 6) {
+        cls += " weekend"; label = "Выходной";
+      }
+      
+      html += `<div class="${cls}" data-date="${ds}"><div class="day-number">${d}</div>${label ? `<div class="day-label">${label}</div>` : ""}${info}</div>`;
+    }
+    document.getElementById("calendar").innerHTML = html;
+
+    // Обработчики кликов
+    document.querySelectorAll(".day:not(.empty)").forEach(el => {
+      el.addEventListener("click", () => selectDay(el.dataset.date));
+    });
+
+    // 2. Статистика за месяц
+    const prefix = `${y}-${String(m + 1).padStart(2, '0')}`;
+    const monthDays = Object.values(State.getDays()).filter((_, i) => Object.keys(State.getDays())[i].startsWith(prefix));
+    const monthKeys = Object.keys(State.getDays()).filter(k => k.startsWith(prefix));
+    
+    let salary = 0, totalOrders = 0, workDays = 0;
+    monthKeys.forEach(k => {
+      const rec = State.getDays()[k];
+      salary += rec.total || 0;
+      totalOrders += (rec.night || 0) + (rec.ap || 0);
+      if ((rec.night || 0) + (rec.ap || 0) > 0 || (rec.total || 0) > 0) workDays++;
+    });
+    
+    const monthOps = State.getOps().filter(o => o.date.startsWith(prefix));
+    const expenses = monthOps.filter(o => o.kind === "expense").reduce((s, o) => s + Math.abs(o.amount), 0);
+    const fuelCost = monthOps.filter(o => o.kind === "expense" && o.cat.includes("Топливо")).reduce((s, o) => s + Math.abs(o.amount), 0);
+    const maintCost = monthOps.filter(o => o.kind === "expense" && o.cat.includes("Скутер")).reduce((s, o) => s + Math.abs(o.amount), 0);
+    const net = salary - expenses;
+    
     document.getElementById("statSalary").textContent = UI.fmt(salary);
     document.getElementById("statExpenses").textContent = UI.fmt(expenses);
     document.getElementById("statNet").textContent = UI.fmt(net);
-    document.getElementById("statOrders").textContent = totalOrders;
-    document.getElementById("statWorkDays").textContent = workDays;
-    document.getElementById("statAvgDay").textContent = UI.fmt(avgDay);
-    document.getElementById("statAvgOrder").textContent = UI.fmt(avgOrder);
     document.getElementById("statFuelCost").textContent = UI.fmt(fuelCost);
     document.getElementById("statMaintCost").textContent = UI.fmt(maintCost);
-
-    const maxSalary = Math.max(...dailyData.map(d => d.salary), 1);
-    document.getElementById("chartContainer").innerHTML = dailyData.map(d => {
-      const height = (d.salary / maxSalary) * 100;
-      return `<div class="chart-bar-wrap"><div class="chart-bar" style="height: ${height}%;" title="${d.salary} лей"></div><div class="chart-label">${d.day}</div></div>`;
-    }).join("") || `<div style="color:var(--text-dim); text-align:center; width:100%;">Нет данных</div>`;
-
-    const topDays = dailyData.filter(d => d.salary > 0).sort((a, b) => b.salary - a.salary).slice(0, 5);
-    document.getElementById("topDaysList").innerHTML = topDays.length 
-      ? topDays.map((d, i) => `<div class="top-day-row"><span><span class="top-day-rank">${i+1}.</span>${UI.date.ru(d.date)}</span><b>${UI.fmt(d.salary)} лей</b></div>`).join("")
-      : `<div class="list-row" style="color:var(--text-dim)">Нет данных</div>`;
-
+    
+    // 3. Расходы по категориям
     const cats = {};
-    ops.filter(o => o.kind === "expense").forEach(o => {
+    monthOps.filter(o => o.kind === "expense").forEach(o => {
       cats[o.cat] = (cats[o.cat] || 0) + Math.abs(o.amount);
     });
     const sortedCats = Object.entries(cats).sort((a, b) => b[1] - a[1]);
