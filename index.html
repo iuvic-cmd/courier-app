@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/components.css">
   <style>
-    .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-bottom: 80px; }
+    .container { max-width: 480px; margin: 0 auto; padding: 16px; }
     .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 16px; }
     .day-name { text-align: center; font-size: 12px; color: var(--text-dim); font-weight: 600; margin-bottom: 8px; }
     .day { background: var(--panel); border: 1.5px solid var(--border); border-radius: 10px; padding: 8px 4px; text-align: center; cursor: pointer; min-height: 64px; display: flex; flex-direction: column; justify-content: space-between; transition: 0.2s; user-select: none; }
@@ -28,7 +28,6 @@
     .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
     .input-row > div { flex: 1; }
     .input-row label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
-    
     .save-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
     .cancel-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--border); color: var(--text); border: none; font-weight: 700; margin-top: 8px; cursor: pointer; }
   </style>
@@ -49,8 +48,8 @@
     <div style="background: var(--panel); border: 2px solid var(--accent); border-radius: 16px; padding: 16px;">
       <h3 id="dayFormTitle" style="margin-bottom: 12px; font-size: 16px;">📅 Редактировать день</h3>
       <div class="input-row">
-        <div><label>🌙 Ночной</label><input type="number" id="inp_night" class="form-control" placeholder="0"></div>
-        <div><label>📦 Единый</label><input type="number" id="inp_ap" class="form-control" placeholder="0"></div>
+        <div><label>🌙 Ночной</label><input type="number" id="inp_night" class="form-control" placeholder="0" inputmode="numeric"></div>
+        <div><label>📦 Единый</label><input type="number" id="inp_ap" class="form-control" placeholder="0" inputmode="numeric"></div>
       </div>
       <div style="margin-bottom: 10px;"><label>📝 Заметка</label><input type="text" id="inp_note" class="form-control" placeholder="Кого заменил..."></div>
       <button class="save-btn" onclick="saveDay()">💾 СОХРАНИТЬ</button>
@@ -66,7 +65,7 @@
     <a href="index.html" class="active"><span>📦</span>Учёт</a>
     <a href="fin.html"><span>💼</span>Финансы</a>
     <a href="cash.html"><span>🛵</span>Скутер</a>
-    <a href="stats.html"><span>📊</span>Стата</a>
+    <a href="stats.html"><span>📈</span>Отчёты</a>
     <a href="settings.html"><span>⚙</span>Настройки</a>
   </div>
 </nav>
@@ -91,12 +90,15 @@
     const month = currentDate.getMonth();
     const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
     document.getElementById("currentMonth").textContent = `${monthNames[month]} ${year}`;
+    
     const startDow = new Date(year, month, 1).getDay() || 7;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const daysData = State.getDays();
     const todayStr = UI.date.local();
+    
     let html = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(d => `<div class="day-name">${d}</div>`).join("");
     for (let i = 1; i < startDow; i++) html += `<div class="day empty"></div>`;
+    
     let totalMonth = 0;
     for (let d = 1; d <= daysInMonth; d++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -113,6 +115,7 @@
     }
     document.getElementById("calendar").innerHTML = html;
     document.getElementById("monthTotal").textContent = totalMonth + " лей";
+    
     document.querySelectorAll(".day:not(.empty)").forEach(el => {
       el.addEventListener("click", () => openDayForm(el.dataset.date));
     });
@@ -130,8 +133,6 @@
     
     document.getElementById("dayFormContainer").style.display = "block";
     document.getElementById("inp_night").focus();
-    
-    // Прокрутка к форме
     document.getElementById("dayFormContainer").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -158,7 +159,12 @@
     }
   }
 
-  function changeMonth(dir) { currentDate.setMonth(currentDate.getMonth() + dir); render(); }
+  // П.4: Исправлено переключение месяцев (всегда 1-е число)
+  function changeMonth(dir) { 
+    currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + dir, 1); 
+    render(); 
+  }
+  
   render();
 </script>
 </body>
