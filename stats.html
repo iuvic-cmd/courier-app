@@ -13,40 +13,46 @@
 
     .card { background: var(--panel); border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--border); }
     .card h3 { font-size: 14px; margin-bottom: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
-    
+    .card h4 { font-size: 13px; font-weight: 600; margin: 20px 0 10px; }
+    .card h4:first-of-type { margin-top: 0; }
+
     .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .stat-item { background: var(--bg); padding: 12px; border-radius: 12px; text-align: center; }
+    .stat-item { background: var(--bg); padding: 12px; border-radius: 12px; text-align: center; min-width: 0; }
     .stat-label { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; display: block; }
-    .stat-val { font-size: 18px; font-weight: 700; }
-    
+    .stat-val { font-size: 18px; font-weight: 700; overflow-wrap: anywhere; }
+    .stat-item.wide { grid-column: 1 / -1; }
+    .stat-item.wide .stat-val { font-size: 22px; }
+
     .stat-item.green { background: #e8f5e9; color: #2e7d32; }
     .stat-item.red { background: #ffebee; color: #c62828; }
     .stat-item.blue { background: #e3f2fd; color: #1565c0; }
     .stat-item.orange { background: #fff3e0; color: #e65100; }
+    .stat-item.green .stat-label, .stat-item.red .stat-label, .stat-item.blue .stat-label, .stat-item.orange .stat-label { color: inherit; opacity: .75; }
     :root[data-theme="dark"] .stat-item.green { background: #1a2a1a; color: #66bb6a; }
     :root[data-theme="dark"] .stat-item.red { background: #2a1414; color: #ef9a9a; }
     :root[data-theme="dark"] .stat-item.blue { background: #1a2a3a; color: #90caf9; }
     :root[data-theme="dark"] .stat-item.orange { background: #2a1a0a; color: #ffa726; }
 
-    .list-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .list-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
     .list-row:last-child { border-bottom: none; }
-    
+    .list-row.muted { color: var(--text-dim); }
+    .neg { color: var(--red, #c62828); }
+
     /* Календарь */
     .calendar-section { background: var(--panel); border-radius: 16px; padding: 16px 12px 12px; margin-bottom: 16px; border: 1px solid var(--border); }
     .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px; }
     .calendar-header h2 { font-size: 17px; font-weight: 600; margin: 0; }
-    .nav-btn { background: none; border: none; font-size: 20px; color: var(--accent); cursor: pointer; padding: 4px 10px; border-radius: 8px; width: auto; }
+    .nav-btn { background: none; border: none; font-size: 20px; color: var(--accent); cursor: pointer; padding: 8px 12px; border-radius: 8px; width: auto; }
     .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
     .day-name { padding: 6px 0; text-align: center; font-size: 11px; font-weight: 600; color: var(--text-dim); margin: 0; }
-    .day { background: var(--subtle-bg); padding: 4px 2px; text-align: center; border-radius: 10px; cursor: pointer; min-height: 56px; display: flex; flex-direction: column; justify-content: space-between; font-size: 12px; border: 2px solid transparent; min-width: 0; color: var(--text); transition: 0.1s; }
+    .day { background: var(--subtle-bg); padding: 4px 2px; text-align: center; border-radius: 10px; cursor: pointer; min-height: 56px; display: flex; flex-direction: column; justify-content: space-between; font-size: 12px; border: 2px solid transparent; min-width: 0; color: var(--text); transition: transform .1s; }
     .day:active { transform: scale(0.95); }
-    .day.selected { border-color: var(--accent) !important; box-shadow: 0 0 0 2px #007aff; }
+    .day.selected, .day.today { border-color: var(--accent) !important; box-shadow: 0 0 0 2px var(--accent); }
     .day-number { font-weight: 600; font-size: 14px; line-height: 1.3; }
     .day-label { font-size: 8px; font-weight: 600; opacity: .85; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .orders-info { font-size: 9px; opacity: .8; line-height: 1.2; }
     .total-info { font-size: 10px; font-weight: 600; color: var(--accent); }
     .day.empty { background: transparent; border: none; cursor: default; min-height: 30px; }
-    .day.today { border-color: var(--accent) !important; box-shadow: 0 0 0 2px #007aff; }
     .day.work { background: #e8f5e9; border-color: #43a047; color: #2e7d32; }
     .day.short { background: #fff3e0; border-color: #fb8c00; color: #e65100; }
     .day.replace { background: #f3e5f5; border-color: #8e24aa; color: #7b1fa2; }
@@ -63,11 +69,14 @@
     /* Графики */
     .chart-container { position: relative; height: 160px; display: flex; align-items: flex-end; gap: 4px; padding-top: 20px; overflow-x: auto; }
     .chart-bar-wrap { flex: 1; min-width: 20px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
-    .chart-bar { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; transition: height 0.3s; min-height: 2px; position: relative; }
+    .chart-bar { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; transition: height 0.3s; min-height: 2px; }
+    .chart-val { font-size: 9px; color: var(--text-dim); margin-bottom: 2px; white-space: nowrap; }
     .chart-label { font-size: 10px; color: var(--text-dim); margin-top: 4px; text-align: center; }
-    .pie-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; font-size: 12px; }
+    .chart-empty { color: var(--text-dim); text-align: center; padding: 20px; width: 100%; font-size: 14px; }
+    .pie-legend { display: flex; flex-wrap: wrap; gap: 8px 12px; margin-top: 10px; font-size: 12px; }
     .pie-legend span { display: flex; align-items: center; gap: 4px; }
     .pie-legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .pie { width: 150px; height: 150px; border-radius: 50%; margin: 0 auto; }
 
     .btn-close { width: 100%; padding: 12px; border-radius: 12px; background: var(--border); color: var(--text); border: none; font-weight: 600; margin-top: 10px; cursor: pointer; }
   </style>
@@ -81,9 +90,9 @@
   <!-- Календарь -->
   <div class="calendar-section">
     <div class="calendar-header">
-      <button class="nav-btn" onclick="changeMonth(-1)">◀</button>
+      <button class="nav-btn" onclick="changeMonth(-1)" aria-label="Предыдущий месяц">◀</button>
       <h2 id="currentMonth">—</h2>
-      <button class="nav-btn" onclick="changeMonth(1)">▶</button>
+      <button class="nav-btn" onclick="changeMonth(1)" aria-label="Следующий месяц">▶</button>
     </div>
     <div id="calendar" class="calendar"></div>
   </div>
@@ -95,7 +104,7 @@
       <div class="stat-grid" style="margin-bottom: 12px;">
         <div class="stat-item green"><span class="stat-label">💼 Заработано</span><span class="stat-val" id="daySalary">0</span></div>
         <div class="stat-item red"><span class="stat-label">💸 Потрачено</span><span class="stat-val" id="dayExpenses">0</span></div>
-        <div class="stat-item blue" style="grid-column: 1 / -1;"><span class="stat-label">Чистый доход</span><span class="stat-val" id="dayNet" style="font-size: 22px;">0</span></div>
+        <div class="stat-item blue wide"><span class="stat-label">Чистый доход</span><span class="stat-val" id="dayNet">0</span></div>
       </div>
       <div class="stat-grid">
         <div class="stat-item"><span class="stat-label">🌙 Ночной</span><span class="stat-val" id="dayNight">0</span></div>
@@ -112,7 +121,7 @@
     <div class="stat-grid">
       <div class="stat-item green"><span class="stat-label">💼 Заработано</span><span class="stat-val" id="statSalary">0</span></div>
       <div class="stat-item red"><span class="stat-label">💸 Потрачено</span><span class="stat-val" id="statExpenses">0</span></div>
-      <div class="stat-item blue" style="grid-column: 1 / -1;"><span class="stat-label">Чистый доход</span><span class="stat-val" id="statNet" style="font-size: 22px;">0</span></div>
+      <div class="stat-item blue wide"><span class="stat-label">Чистый доход</span><span class="stat-val" id="statNet">0</span></div>
     </div>
   </div>
 
@@ -141,7 +150,7 @@
       <div class="stat-item"><span class="stat-label">📅 Чистый в день</span><span class="stat-val" id="ecoNetPerDay">0</span></div>
     </div>
     <div class="list-row" style="margin-top:10px"><span>Состав заказов</span><span id="ecoMix" style="font-weight:600">—</span></div>
-    <div class="list-row"><span>Рекомендации</span><span id="ecoTips" style="font-size:12px;color:var(--text-dim)">—</span></div>
+    <div class="list-row"><span>Рекомендации</span><span id="ecoTips" style="font-size:12px;color:var(--text-dim);text-align:right">—</span></div>
   </div>
 
   <!-- Скутер -->
@@ -151,7 +160,7 @@
       <div class="stat-item"><span class="stat-label">⛽ Топливо (лей)</span><span class="stat-val" id="statFuelCost">0</span></div>
       <div class="stat-item"><span class="stat-label">🧼 Мойка / ТО (лей)</span><span class="stat-val" id="statMaintCost">0</span></div>
       <div class="stat-item"><span class="stat-label">⛽ Цена литра (ср.)</span><span class="stat-val" id="statPrice">0</span></div>
-      <div class="stat-item"><span class="stat-label">🛵 Пробег</span><span class="stat-val" id="statKm">0</span></div>
+      <div class="stat-item"><span class="stat-label" id="statKmLabel">🛵 Пробег</span><span class="stat-val" id="statKm">0</span></div>
       <div class="stat-item"><span class="stat-label">⛽ Расход</span><span class="stat-val" id="statCons">0</span></div>
       <div class="stat-item"><span class="stat-label">💰 Стоимость 1 км</span><span class="stat-val" id="statCostKm">0</span></div>
     </div>
@@ -160,16 +169,20 @@
   <!-- Графики -->
   <div class="card">
     <h3>📊 Графики</h3>
-    <div style="margin-bottom: 10px; font-weight: 600; font-size: 13px;">Доход по месяцам</div>
+    <h4>Доход по месяцам</h4>
     <div class="chart-container" id="chartMonths"></div>
-    
-    <div style="margin-bottom: 10px; font-weight: 600; font-size: 13px; margin-top: 20px;">🌙 vs 📦 (по дням)</div>
+
+    <h4>🌙 vs 📦 (по дням)</h4>
     <div class="chart-container" id="chartNightAp"></div>
-    
-    <div style="margin-bottom: 10px; font-weight: 600; font-size: 13px; margin-top: 20px;">Типы дней</div>
+    <div class="pie-legend">
+      <span><i style="background:#007aff"></i> 🌙 Ночной</span>
+      <span><i style="background:#ff9500"></i> 📦 Единый</span>
+    </div>
+
+    <h4>Типы дней</h4>
     <div id="pieTypes"></div>
-    
-    <div style="margin-bottom: 10px; font-weight: 600; font-size: 13px; margin-top: 20px;">🏆 Топ-5 дней</div>
+
+    <h4>🏆 Топ-5 дней</h4>
     <div id="topDaysList"></div>
   </div>
 
@@ -177,9 +190,9 @@
   <div class="card">
     <h3>🔮 Прогноз на месяц</h3>
     <div class="stat-grid">
-      <div class="stat-item"><span class="stat-label">💼 Зарплата</span><span class="stat-val" id="forecastSalary">0</span></div>
+      <div class="stat-item"><span class="stat-label">💼 Зарплата сейчас</span><span class="stat-val" id="forecastSalary">0</span></div>
       <div class="stat-item"><span class="stat-label">📅 Дней</span><span class="stat-val" id="forecastDays">0/0</span></div>
-      <div class="stat-item blue"><span class="stat-label">📈 По типам</span><span class="stat-val" id="forecastByType">0</span></div>
+      <div class="stat-item blue"><span class="stat-label">📈 По типам дней</span><span class="stat-val" id="forecastByType">0</span></div>
       <div class="stat-item blue"><span class="stat-label">📊 По среднему</span><span class="stat-val" id="forecastByAvg">0</span></div>
     </div>
   </div>
@@ -214,61 +227,71 @@
 
   const MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
   const MONTHS_SHORT = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
-  const DAY_TYPES = { work: "🏢", help: "🤝", short: "⚡", replace: "🔄", short_replace: "⚡🔄", weekend: "🏖" };
+  const DAY_LABELS = { work: "Рабочий", help: "Подмога", short: "Короткий", replace: "Замена", short_replace: "Кор.замена", weekend: "Выходной" };
 
-  function getDayLabel(t) {
-    return { work: "Рабочий", help: "Подмога", short: "Короткий", replace: "Замена", short_replace: "Кор.замена", weekend: "Выходной" }[t] || "";
-  }
+  const getDayLabel = t => DAY_LABELS[t] || "";
+  const num = v => Number(v) || 0;
+  const fmt = v => UI.fmt(v);
+  const esc = s => UI.esc(String(s ?? ""));
+  const $ = id => document.getElementById(id);
+  const setText = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+  const pad = n => String(n).padStart(2, "0");
+  const fmtDate = ds => ds.split("-").reverse().join(".");
+  const isExpense = o => o && o.kind === "expense";
+  const catHas = (o, word) => String(o.cat || "").includes(word);
 
   function changeMonth(dir) {
     currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + dir, 1);
+    selectedDate = null;
+    $("dayStatsContainer").style.display = "none";
     render();
   }
 
   function closeDayStats() {
-    document.getElementById("dayStatsContainer").style.display = "none";
+    $("dayStatsContainer").style.display = "none";
     selectedDate = null;
     render();
   }
 
   function selectDay(ds) {
     selectedDate = ds;
-    const days = State.getDays();
-    const rec = days[ds] || { type: "weekend", night: 0, ap: 0, total: 0 };
-    const ops = State.getOps().filter(o => o.date === ds && o.kind === "expense");
-    const expenses = ops.reduce((s, o) => s + Math.abs(o.amount), 0);
-    const salary = rec.total || 0;
+    const rec = State.getDays()[ds] || { type: "weekend", night: 0, ap: 0, total: 0 };
+    const ops = State.getOps().filter(o => o.date === ds && isExpense(o));
+    const expenses = ops.reduce((s, o) => s + Math.abs(num(o.amount)), 0);
+    const salary = num(rec.total);
     const net = salary - expenses;
 
-    document.getElementById("dayStatsTitle").innerText = `Статистика за ${ds.split("-").reverse().join(".")} (${getDayLabel(rec.type)})`;
-    document.getElementById("daySalary").innerText = salary;
-    document.getElementById("dayExpenses").innerText = expenses;
-    document.getElementById("dayNet").innerText = net;
-    document.getElementById("dayNight").innerText = rec.night || 0;
-    document.getElementById("dayAp").innerText = rec.ap || 0;
-    
-    const opsList = document.getElementById("dayOpsList");
-    opsList.innerHTML = ops.length 
-      ? `<b>Траты дня:</b>` + ops.map(o => `<div class="list-row"><span>${o.cat}</span><b style="color:var(--red)">${Math.abs(o.amount)} лей</b></div>`).join("")
-      : `<div class="list-row" style="color:var(--text-dim)">Нет трат</div>`;
+    setText("dayStatsTitle", `Статистика за ${fmtDate(ds)} (${getDayLabel(rec.type)})`);
+    setText("daySalary", fmt(salary));
+    setText("dayExpenses", fmt(expenses));
+    setText("dayNet", fmt(net));
+    setText("dayNight", num(rec.night));
+    setText("dayAp", num(rec.ap));
 
-    document.getElementById("dayStatsContainer").style.display = "block";
+    $("dayOpsList").innerHTML = ops.length
+      ? `<b>Траты дня:</b>` + ops.map(o => `<div class="list-row"><span>${esc(o.cat)}</span><b class="neg">${fmt(Math.abs(num(o.amount)))} лей</b></div>`).join("")
+      : `<div class="list-row muted">Нет трат</div>`;
+
+    $("dayStatsContainer").style.display = "block";
     render();
+    $("dayStatsContainer").scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
   function drawBarChart(id, labels, values, color = "var(--accent)") {
-    const el = document.getElementById(id);
+    const el = $(id);
     if (!el) return;
+    if (!values.length) { el.innerHTML = `<div class="chart-empty">Нет данных</div>`; return; }
     const max = Math.max(1, ...values);
     el.innerHTML = labels.map((l, i) => {
       const h = (values[i] / max) * 100;
-      return `<div class="chart-bar-wrap"><div class="chart-bar" style="height:${h}%; background:${color}" title="${values[i]}"></div><div class="chart-label">${l}</div></div>`;
+      return `<div class="chart-bar-wrap"><div class="chart-val">${fmt(values[i])}</div><div class="chart-bar" style="height:${h}%; background:${color}"></div><div class="chart-label">${esc(l)}</div></div>`;
     }).join("");
   }
 
   function drawGroupedChart(id, labels, s1, s2) {
-    const el = document.getElementById(id);
+    const el = $(id);
     if (!el) return;
+    if (!labels.length) { el.innerHTML = `<div class="chart-empty">Нет данных</div>`; return; }
     const max = Math.max(1, ...s1, ...s2);
     el.innerHTML = labels.map((l, i) => {
       const h1 = (s1[i] / max) * 100, h2 = (s2[i] / max) * 100;
@@ -277,17 +300,18 @@
           <div class="chart-bar" style="height:${h1}%; background:#007aff"></div>
           <div class="chart-bar" style="height:${h2}%; background:#ff9500"></div>
         </div>
-        <div class="chart-label">${l}</div>
+        <div class="chart-label">${esc(l)}</div>
       </div>`;
     }).join("");
   }
 
   function drawPie(id, data) {
-    const el = document.getElementById(id);
+    const el = $(id);
     if (!el) return;
+    data = data.filter(d => d.value > 0);
     const total = data.reduce((s, d) => s + d.value, 0);
-    if (total === 0) { el.innerHTML = `<div style="color:var(--text-dim); text-align:center; padding:20px">Нет данных</div>`; return; }
-    
+    if (total === 0) { el.innerHTML = `<div class="chart-empty">Нет данных</div>`; return; }
+
     let conic = [], angle = 0;
     data.forEach(d => {
       const deg = (d.value / total) * 360;
@@ -296,170 +320,220 @@
     });
 
     el.innerHTML = `
-      <div style="width:150px; height:150px; border-radius:50%; background:conic-gradient(${conic.join(",")}); margin:0 auto;"></div>
+      <div class="pie" style="background:conic-gradient(${conic.join(",")})"></div>
       <div class="pie-legend">
-        ${data.map(d => `<span><i style="background:${d.color}"></i> ${d.label}: ${d.value}</span>`).join("")}
-      </div>
-    `;
+        ${data.map(d => `<span><i style="background:${d.color}"></i> ${esc(d.label)}: ${d.value}</span>`).join("")}
+      </div>`;
   }
 
   function render() {
     const y = currentDate.getFullYear(), m = currentDate.getMonth();
-    const prefix = `${y}-${String(m + 1).padStart(2, '0')}`;
-    
-    // === 1. Календарь ===
-    const first = (new Date(y, m, 1).getDay() + 6) % 7, last = new Date(y, m + 1, 0).getDate();
-    document.getElementById("currentMonth").textContent = `${MONTHS[m]} ${y}`;
-    const hist = State.getDays();
+    const prefix = `${y}-${pad(m + 1)}`;
+    const days = State.getDays();
+    const allOps = State.getOps();
     const today = UI.date.local();
-    
-    let html = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(n => `<div class="day-name">${n}</div>`).join("") + '<div class="day empty"></div>'.repeat(first);
+
+    // === 1. Календарь ===
+    const first = (new Date(y, m, 1).getDay() + 6) % 7;
+    const last = new Date(y, m + 1, 0).getDate();
+    setText("currentMonth", `${MONTHS[m]} ${y}`);
+
+    let html = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(n => `<div class="day-name">${n}</div>`).join("")
+      + '<div class="day empty"></div>'.repeat(first);
     for (let d = 1; d <= last; d++) {
-      const ds = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const rec = hist[ds];
+      const ds = `${prefix}-${pad(d)}`;
+      const rec = days[ds];
       const dow = new Date(y, m, d).getDay();
       let cls = "day", label = "", info = "";
       if (ds === today) cls += " today";
       if (ds === selectedDate) cls += " selected";
-      
+
       if (rec) {
         cls += " " + (rec.type || "work");
         label = getDayLabel(rec.type);
         const parts = [];
-        if (rec.night > 0) parts.push("🌙" + rec.night);
-        if (rec.ap > 0) parts.push("📦" + rec.ap);
-        info = `<div class="orders-info">${parts.join(" ") || "—"}</div>` + (rec.total > 0 ? `<div class="total-info">${rec.total}</div>` : "");
+        if (num(rec.night) > 0) parts.push("🌙" + num(rec.night));
+        if (num(rec.ap) > 0) parts.push("📦" + num(rec.ap));
+        info = `<div class="orders-info">${parts.join(" ") || "—"}</div>` + (num(rec.total) > 0 ? `<div class="total-info">${fmt(num(rec.total))}</div>` : "");
       } else if (dow === 0 || dow === 6) {
         cls += " weekend"; label = "Выходной";
       }
       html += `<div class="${cls}" data-date="${ds}"><div class="day-number">${d}</div>${label ? `<div class="day-label">${label}</div>` : ""}${info}</div>`;
     }
-    document.getElementById("calendar").innerHTML = html;
+    $("calendar").innerHTML = html;
     document.querySelectorAll(".day:not(.empty)").forEach(el => {
       el.addEventListener("click", () => selectDay(el.dataset.date));
     });
 
     // === 2. Итоги месяца ===
-    const days = State.getDays();
-    const monthKeys = Object.keys(days).filter(k => k.startsWith(prefix));
-    let salary = 0, totalOrders = 0, workDays = 0;
+    // Сортируем ключи один раз — все графики используют один и тот же порядок
+    const monthKeys = Object.keys(days).filter(k => k.startsWith(prefix)).sort();
+    let salary = 0, totalOrders = 0, workDays = 0, nightSum = 0, apSum = 0;
     monthKeys.forEach(k => {
       const r = days[k];
-      salary += r.total || 0;
-      const o = (r.night || 0) + (r.ap || 0);
-      totalOrders += o;
-      if (o > 0 || r.total > 0) workDays++;
+      const night = num(r.night), ap = num(r.ap), total = num(r.total);
+      salary += total;
+      nightSum += night;
+      apSum += ap;
+      totalOrders += night + ap;
+      if (night + ap > 0 || total > 0) workDays++;
     });
-    
-    const monthOps = State.getOps().filter(o => o.date.startsWith(prefix));
-    const expenses = monthOps.filter(o => o.kind === "expense").reduce((s, o) => s + Math.abs(o.amount), 0);
-    const fuelCost = monthOps.filter(o => o.kind === "expense" && o.cat.includes("Топливо")).reduce((s, o) => s + Math.abs(o.amount), 0);
-    const maintCost = monthOps.filter(o => o.kind === "expense" && o.cat.includes("Скутер")).reduce((s, o) => s + Math.abs(o.amount), 0);
+
+    const monthOps = allOps.filter(o => String(o.date || "").startsWith(prefix));
+    const monthExp = monthOps.filter(isExpense);
+    const sumAbs = list => list.reduce((s, o) => s + Math.abs(num(o.amount)), 0);
+    const expenses = sumAbs(monthExp);
+    const fuelCost = sumAbs(monthExp.filter(o => catHas(o, "Топливо")));
+    const maintCost = sumAbs(monthExp.filter(o => catHas(o, "Скутер")));
     const net = salary - expenses;
-    
-    document.getElementById("statSalary").textContent = UI.fmt(salary);
-    document.getElementById("statExpenses").textContent = UI.fmt(expenses);
-    document.getElementById("statNet").textContent = UI.fmt(net);
-    document.getElementById("statFuelCost").textContent = UI.fmt(fuelCost);
-    document.getElementById("statMaintCost").textContent = UI.fmt(maintCost);
+
+    setText("statSalary", fmt(salary));
+    setText("statExpenses", fmt(expenses));
+    setText("statNet", fmt(net));
+    setText("statFuelCost", fmt(fuelCost));
+    setText("statMaintCost", fmt(maintCost));
 
     // === 3. Эффективность ===
     const avgDay = workDays ? salary / workDays : 0;
     const avgOrder = totalOrders ? salary / totalOrders : 0;
-    document.getElementById("statOrders").textContent = totalOrders;
-    document.getElementById("statWorkDays").textContent = workDays;
-    document.getElementById("statAvgDay").textContent = UI.fmt(avgDay);
-    document.getElementById("statAvgOrder").textContent = UI.fmt(avgOrder);
+    setText("statOrders", totalOrders);
+    setText("statWorkDays", workDays);
+    setText("statAvgDay", fmt(avgDay));
+    setText("statAvgOrder", fmt(avgOrder));
 
     // === 4. Экономика заказа ===
-    const kpd = salary > 0 ? ((salary - expenses) / salary * 100) : 0;
-    const profit = salary - expenses;
-    const incPerOrder = totalOrders ? salary / totalOrders : 0;
-    const fuelPerOrder = totalOrders ? fuelCost / totalOrders : 0;
-    const expPerOrder = totalOrders ? expenses / totalOrders : 0;
-    const netPerOrder = totalOrders ? (salary - expenses) / totalOrders : 0;
-    const incPerDay = workDays ? salary / workDays : 0;
-    const netPerDay = workDays ? (salary - expenses) / workDays : 0;
-    
-    document.getElementById("ecoKpd").textContent = kpd.toFixed(1) + "%";
-    document.getElementById("ecoProfit").textContent = UI.fmt(profit);
-    document.getElementById("ecoIncPerOrder").textContent = UI.fmt(incPerOrder);
-    document.getElementById("ecoFuelPerOrder").textContent = UI.fmt(fuelPerOrder);
-    document.getElementById("ecoExpPerOrder").textContent = UI.fmt(expPerOrder);
-    document.getElementById("ecoNetPerOrder").textContent = UI.fmt(netPerOrder);
-    document.getElementById("ecoIncPerDay").textContent = UI.fmt(incPerDay);
-    document.getElementById("ecoNetPerDay").textContent = UI.fmt(netPerDay);
-    
-    let tips = [];
-    if (kpd < 40) tips.push("⚠ Низкий КПД, проверь расходы");
-    if (kpd >= 60) tips.push("✅ Отличный КПД!");
-    document.getElementById("ecoTips").textContent = tips.join(" • ") || "Держите курс!";
+    const kpd = salary > 0 ? (net / salary * 100) : 0;
+    setText("ecoKpd", kpd.toFixed(1) + "%");
+    setText("ecoProfit", fmt(net));
+    setText("ecoIncPerOrder", fmt(avgOrder));
+    setText("ecoFuelPerOrder", fmt(totalOrders ? fuelCost / totalOrders : 0));
+    setText("ecoExpPerOrder", fmt(totalOrders ? expenses / totalOrders : 0));
+    setText("ecoNetPerOrder", fmt(totalOrders ? net / totalOrders : 0));
+    setText("ecoIncPerDay", fmt(avgDay));
+    setText("ecoNetPerDay", fmt(workDays ? net / workDays : 0));
+
+    if (totalOrders > 0) {
+      const pN = Math.round(nightSum / totalOrders * 100);
+      setText("ecoMix", `🌙 ${nightSum} (${pN}%) · 📦 ${apSum} (${100 - pN}%)`);
+    } else {
+      setText("ecoMix", "—");
+    }
+
+    const tips = [];
+    if (salary > 0) {
+      if (kpd < 40) tips.push("⚠ Низкий КПД, проверь расходы");
+      else if (kpd >= 60) tips.push("✅ Отличный КПД!");
+    }
+    setText("ecoTips", tips.join(" • ") || (salary > 0 ? "Держите курс!" : "—"));
 
     // === 5. Скутер ===
-    const fuels = State.getFuel().filter(f => f.date.startsWith(prefix));
-    const totalLiters = fuels.reduce((s, f) => s + (f.liters || 0), 0);
+    const fuels = State.getFuel().filter(f => String(f.date || "").startsWith(prefix));
+    const totalLiters = fuels.reduce((s, f) => s + num(f.liters), 0);
     const price = totalLiters > 0 ? fuelCost / totalLiters : 0;
-    const scooterData = State.getScooter();
-    const currentKm = scooterData.currentKm || 0;
-    const startKm = scooterData.startKm || 0;
-    const totalKm = Math.max(currentKm - startKm, 0);
-    const cons = totalKm > 0 ? (totalLiters / totalKm * 100) : 0;
-    const costKm = totalKm > 0 ? fuelCost / totalKm : 0;
-    
-    document.getElementById("statPrice").textContent = UI.fmt(price);
-    document.getElementById("statKm").textContent = totalKm;
-    document.getElementById("statCons").textContent = cons.toFixed(2) + " л/100км";
-    document.getElementById("statCostKm").textContent = UI.fmt(costKm);
+
+    // Пробег за месяц: если в заправках есть показания одометра (km) — берём разницу в месяце,
+    // иначе показываем общий пробег (текущий − стартовый) и помечаем это в подписи.
+    const odo = fuels.map(f => num(f.km)).filter(v => v > 0);
+    let totalKm, kmIsMonthly = false;
+    if (odo.length >= 2) {
+      totalKm = Math.max(...odo) - Math.min(...odo);
+      kmIsMonthly = true;
+    } else {
+      const sc = State.getScooter() || {};
+      totalKm = Math.max(num(sc.currentKm) - num(sc.startKm), 0);
+    }
+    setText("statKmLabel", kmIsMonthly ? "🛵 Пробег (за месяц)" : "🛵 Пробег (всего)");
+    const cons = totalKm > 0 && kmIsMonthly ? (totalLiters / totalKm * 100) : 0;
+    const costKm = totalKm > 0 && kmIsMonthly ? fuelCost / totalKm : 0;
+
+    setText("statPrice", fmt(price));
+    setText("statKm", totalKm);
+    setText("statCons", kmIsMonthly ? cons.toFixed(2) + " л/100км" : "—");
+    setText("statCostKm", kmIsMonthly ? fmt(costKm) : "—");
 
     // === 6. Графики ===
     const byMonth = {};
     Object.keys(days).forEach(k => {
       const mKey = k.slice(0, 7);
-      byMonth[mKey] = (byMonth[mKey] || 0) + (days[k].total || 0);
+      byMonth[mKey] = (byMonth[mKey] || 0) + num(days[k].total);
     });
     const sortedM = Object.keys(byMonth).sort().slice(-6);
-    drawBarChart("chartMonths", sortedM.map(k => MONTHS_SHORT[+k.slice(5,7)-1]), sortedM.map(k => byMonth[k]));
+    drawBarChart("chartMonths", sortedM.map(k => MONTHS_SHORT[+k.slice(5, 7) - 1]), sortedM.map(k => byMonth[k]));
 
-    const dayLabels = monthKeys.map(k => k.slice(8, 10)).sort((a,b) => a-b);
-    const nights = monthKeys.map(k => days[k].night || 0);
-    const aps = monthKeys.map(k => days[k].ap || 0);
-    drawGroupedChart("chartNightAp", dayLabels, nights, aps);
+    drawGroupedChart(
+      "chartNightAp",
+      monthKeys.map(k => k.slice(8, 10)),
+      monthKeys.map(k => num(days[k].night)),
+      monthKeys.map(k => num(days[k].ap))
+    );
 
-    const typeCnt = { work: 0, help: 0, short: 0, replace: 0, short_replace: 0, weekend: 0 };
-    monthKeys.forEach(k => { if (days[k].total > 0 || (days[k].night || 0) + (days[k].ap || 0) > 0) typeCnt[days[k].type] = (typeCnt[days[k].type] || 0) + 1; });
+    const typeCnt = {};
+    monthKeys.forEach(k => {
+      const r = days[k];
+      if (num(r.total) > 0 || num(r.night) + num(r.ap) > 0) {
+        const t = r.type || "work";
+        typeCnt[t] = (typeCnt[t] || 0) + 1;
+      }
+    });
     drawPie("pieTypes", [
-      { label: "Рабочий", value: typeCnt.work, color: "#34c759" },
-      { label: "Короткий", value: typeCnt.short, color: "#ff9500" },
-      { label: "Подмога", value: typeCnt.help, color: "#007aff" },
-      { label: "Замена", value: typeCnt.replace, color: "#af52de" },
-      { label: "Выходной", value: typeCnt.weekend, color: "#8e8e93" }
+      { label: "Рабочий", value: typeCnt.work || 0, color: "#34c759" },
+      { label: "Короткий", value: typeCnt.short || 0, color: "#ff9500" },
+      { label: "Подмога", value: typeCnt.help || 0, color: "#007aff" },
+      { label: "Замена", value: typeCnt.replace || 0, color: "#af52de" },
+      { label: "Кор.замена", value: typeCnt.short_replace || 0, color: "#ffcc00" },
+      { label: "Выходной", value: typeCnt.weekend || 0, color: "#8e8e93" }
     ]);
 
-    const top = monthKeys.map(k => ({ date: k, total: days[k].total || 0 })).filter(d => d.total > 0).sort((a,b) => b.total - a.total).slice(0, 5);
-    document.getElementById("topDaysList").innerHTML = top.map((d, i) => `<div class="list-row"><span>${i+1}. ${d.date.split("-").reverse().join(".")}</span><b>${d.total} лей</b></div>`).join("") || `<div class="list-row" style="color:var(--text-dim)">Нет данных</div>`;
+    const top = monthKeys.map(k => ({ date: k, total: num(days[k].total) }))
+      .filter(d => d.total > 0).sort((a, b) => b.total - a.total).slice(0, 5);
+    $("topDaysList").innerHTML = top.map((d, i) =>
+      `<div class="list-row"><span>${i + 1}. ${fmtDate(d.date)}</span><b>${fmt(d.total)} лей</b></div>`
+    ).join("") || `<div class="list-row muted">Нет данных</div>`;
 
     // === 7. Прогноз ===
     const now = new Date();
-    const dim = new Date(y, m + 1, 0).getDate();
-    const passedDays = (y === now.getFullYear() && m === now.getMonth()) ? now.getDate() : dim;
+    const dim = last;
+    const curKey = now.getFullYear() * 12 + now.getMonth();
+    const viewKey = y * 12 + m;
+    const passedDays = viewKey < curKey ? dim : viewKey > curKey ? 0 : now.getDate();
     const remain = dim - passedDays;
-    const avg = passedDays > 0 ? salary / passedDays : 0;
-    const forecast = salary + (avg * remain);
-    
-    document.getElementById("forecastSalary").textContent = UI.fmt(salary);
-    document.getElementById("forecastDays").textContent = `${passedDays}/${dim}`;
-    document.getElementById("forecastByType").textContent = UI.fmt(forecast);
-    document.getElementById("forecastByAvg").textContent = UI.fmt(forecast);
+
+    // По среднему: средний доход за прошедший календарный день × оставшиеся дни
+    const byAvg = passedDays > 0 ? salary + (salary / passedDays) * remain : salary;
+
+    // По типам: для каждого типа дня — средний доход; оставшиеся дни без записи
+    // считаем «выходной» (Сб/Вс) или «рабочий» (остальные), записи в будущем берём по их типу.
+    const typeSum = {}, typeN = {};
+    monthKeys.forEach(k => {
+      const r = days[k], t = r.type || "work";
+      if (num(r.total) > 0) { typeSum[t] = (typeSum[t] || 0) + num(r.total); typeN[t] = (typeN[t] || 0) + 1; }
+    });
+    const typeAvg = t => typeN[t] ? typeSum[t] / typeN[t] : 0;
+    let byType = salary;
+    for (let d = passedDays + 1; d <= dim; d++) {
+      const ds = `${prefix}-${pad(d)}`;
+      const dow = new Date(y, m, d).getDay();
+      const planned = days[ds];
+      if (planned && num(planned.total) > 0) { byType += 0; continue; } // уже учтено в salary
+      const t = planned ? (planned.type || "work") : (dow === 0 || dow === 6 ? "weekend" : "work");
+      byType += t === "weekend" ? 0 : typeAvg(t) || typeAvg("work");
+    }
+
+    setText("forecastSalary", fmt(salary));
+    setText("forecastDays", `${passedDays}/${dim}`);
+    setText("forecastByType", fmt(byType));
+    setText("forecastByAvg", fmt(byAvg));
 
     // === 8. Категории ===
     const cats = {};
-    monthOps.filter(o => o.kind === "expense").forEach(o => {
-      cats[o.cat] = (cats[o.cat] || 0) + Math.abs(o.amount);
+    monthExp.forEach(o => {
+      const c = o.cat || "Без категории";
+      cats[c] = (cats[c] || 0) + Math.abs(num(o.amount));
     });
-    const sortedC = Object.entries(cats).sort((a,b) => b[1]-a[1]);
-    document.getElementById("categoryList").innerHTML = sortedC.length
-      ? sortedC.map(([c, v]) => `<div class="list-row"><span>${UI.esc(c)}</span><b>${UI.fmt(v)} лей</b></div>`).join("")
-      : `<div class="list-row" style="color:var(--text-dim)">Нет расходов</div>`;
+    const sortedC = Object.entries(cats).sort((a, b) => b[1] - a[1]);
+    $("categoryList").innerHTML = sortedC.length
+      ? sortedC.map(([c, v]) => `<div class="list-row"><span>${esc(c)}</span><b>${fmt(v)} лей</b></div>`).join("")
+      : `<div class="list-row muted">Нет расходов</div>`;
   }
 
   render();
