@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/components.css">
   <style>
-    .container { max-width: 480px; margin: 0 auto; padding: 16px; }
+    .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-bottom: 80px; }
     .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 16px; }
     .day-name { text-align: center; font-size: 12px; color: var(--text-dim); font-weight: 600; margin-bottom: 8px; }
     .day { background: var(--panel); border: 1.5px solid var(--border); border-radius: 10px; padding: 8px 4px; text-align: center; cursor: pointer; min-height: 64px; display: flex; flex-direction: column; justify-content: space-between; transition: 0.2s; user-select: none; }
@@ -28,6 +28,9 @@
     .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
     .input-row > div { flex: 1; }
     .input-row label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+    
+    .save-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
+    .cancel-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--border); color: var(--text); border: none; font-weight: 700; margin-top: 8px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -41,6 +44,20 @@
     <h2 id="currentMonth" style="font-size: 18px;">—</h2>
     <button class="btn btn-primary" style="width: auto; padding: 8px 16px;" onclick="changeMonth(1)">▶</button>
   </div>
+
+  <div id="dayFormContainer" style="display: none; margin-bottom: 16px;">
+    <div style="background: var(--panel); border: 2px solid var(--accent); border-radius: 16px; padding: 16px;">
+      <h3 id="dayFormTitle" style="margin-bottom: 12px; font-size: 16px;">📅 Редактировать день</h3>
+      <div class="input-row">
+        <div><label>🌙 Ночной</label><input type="number" id="inp_night" class="form-control" placeholder="0"></div>
+        <div><label>📦 Единый</label><input type="number" id="inp_ap" class="form-control" placeholder="0"></div>
+      </div>
+      <div style="margin-bottom: 10px;"><label>📝 Заметка</label><input type="text" id="inp_note" class="form-control" placeholder="Кого заменил..."></div>
+      <button class="save-btn" onclick="saveDay()">💾 СОХРАНИТЬ</button>
+      <button class="cancel-btn" onclick="closeDayForm()">Отмена</button>
+    </div>
+  </div>
+
   <div class="calendar" id="calendar"></div>
 </div>
 
@@ -54,7 +71,6 @@
 
 <script src="js/lib/storage.js"></script>
 <script src="js/lib/ui.js"></script>
-<script src="js/lib/dialog.js"></script>
 <script src="js/lib/notify.js"></script>
 <script src="js/lib/guard.js"></script>
 <script src="js/lib/theme.js"></script>
@@ -66,6 +82,7 @@
 <script>
   Theme.init();
   let currentDate = new Date();
+  let activeDateStr = "";
 
   function render() {
     const year = currentDate.getFullYear();
@@ -95,47 +112,50 @@
     document.getElementById("calendar").innerHTML = html;
     document.getElementById("monthTotal").textContent = totalMonth + " лей";
     document.querySelectorAll(".day:not(.empty)").forEach(el => {
-      el.addEventListener("click", () => openDay(el.dataset.date));
+      el.addEventListener("click", () => openDayForm(el.dataset.date));
     });
   }
 
-  function openDay(dateStr) {
+  function openDayForm(dateStr) {
+    activeDateStr = dateStr;
     const days = State.getDays();
     const rec = days[dateStr] || { type: Schedule.getDefaultDayType(dateStr), night: 0, ap: 0, note: "" };
-    const ov = document.createElement("div"); ov.className = "dialog-overlay";
-    const box = document.createElement("div"); box.className = "dialog-box";
     
-    // Используем type="text" inputmode="numeric" для правильной клавиатуры
-    box.innerHTML = `
-      <h3 style="margin-bottom: 16px;">📅 ${UI.date.ru(dateStr)}</h3>
-      <div class="input-row">
-        <div><label>🌙 Ночной</label><input type="text" inputmode="numeric" id="inp_night" class="form-control" value="${rec.night || ""}" placeholder="0"></div>
-        <div><label>📦 Единый</label><input type="text" inputmode="numeric" id="inp_ap" class="form-control" value="${rec.ap || ""}" placeholder="0"></div>
-      </div>
-      <div style="margin-bottom: 16px;"><label>📝 Заметка</label><input type="text" id="inp_note" class="form-control" value="${UI.esc(rec.note || "")}" placeholder="Кого заменил..."></div>
-      <div class="dialog-buttons">
-        <button class="dialog-yes" id="btn-save">💾 Сохранить</button>
-        <button class="dialog-no" id="btn-cancel">Отмена</button>
-      </div>
-    `;
-    ov.appendChild(box); document.body.appendChild(ov);
+    document.getElementById("dayFormTitle").innerText = `📅 ${UI.date.ru(dateStr)}`;
+    document.getElementById("inp_night").value = rec.night || "";
+    document.getElementById("inp_ap").value = rec.ap || "";
+    document.getElementById("inp_note").value = rec.note || "";
     
-    document.getElementById("btn-cancel").onclick = () => ov.remove();
-    document.getElementById("btn-save").onclick = () => {
-      if (!guardAction("saveDay")) return;
-      // Принудительно убираем фокус с поля ввода
-      if (document.activeElement) document.activeElement.blur();
-      
+    document.getElementById("dayFormContainer").style.display = "block";
+    document.getElementById("inp_night").focus();
+    
+    // Прокрутка к форме
+    document.getElementById("dayFormContainer").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function closeDayForm() {
+    document.getElementById("dayFormContainer").style.display = "none";
+  }
+
+  function saveDay() {
+    if (!guardAction("saveDay")) return;
+    try {
       const night = UI.num(document.getElementById("inp_night").value);
       const ap = UI.num(document.getElementById("inp_ap").value);
       const note = document.getElementById("inp_note").value.trim();
-      const total = Tariff.calcTotal(dateStr, night, ap);
+      const total = Tariff.calcTotal(activeDateStr, night, ap);
       const days = State.getDays();
-      days[dateStr] = { type: Schedule.getDefaultDayType(dateStr), night, ap, total, note };
+      days[activeDateStr] = { type: Schedule.getDefaultDayType(activeDateStr), night, ap, total, note };
       State.setDays(days);
-      ov.remove(); render(); Notify.show(`✅ Сохранено: ${total} лей`);
-    };
+      
+      closeDayForm();
+      render();
+      Notify.show(`✅ Сохранено: ${total} лей`);
+    } catch (e) {
+      Notify.error(e.message);
+    }
   }
+
   function changeMonth(dir) { currentDate.setMonth(currentDate.getMonth() + dir); render(); }
   render();
 </script>
