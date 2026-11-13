@@ -7,7 +7,6 @@
 <link rel="stylesheet" href="css/theme.css">
 <link rel="stylesheet" href="css/components.css">
 <style>
-/* Доп. переменные (остальные — из theme.css: --bg, --text, --text-dim, --accent, --green, --red) */
 :root{--card-bg:rgba(255,255,255,.92);--card-border:rgba(255,255,255,.5);--panel-bg:#fff;--subtle-bg:#f8f8fc;--subtle-bg-2:#f0f0f5;--input-bg:#f8f8fc;--input-border:#e5e5ea;--divider:#e5e5ea;--modal-bg:#fff;--good:#2e7d32;
 --work-bg:#e8f5e9;--work-border:#43a047;--work-text:#2e7d32;--help-bg:#e3f2fd;--help-border:#1e88e5;--help-text:#1565c0;--short-bg:#fff3e0;--short-border:#fb8c00;--short-text:#e65100;--replace-bg:#f3e5f5;--replace-border:#8e24aa;--replace-text:#7b1fa2;--short_replace-bg:#fff8e1;--short_replace-border:#f9a825;--short_replace-text:#f57f17;--weekend-bg:#f5f5f5;--weekend-border:#bdbdbd;--weekend-text:#616161}
 :root[data-theme="dark"]{--card-bg:rgba(28,28,30,.95);--card-border:rgba(255,255,255,.06);--panel-bg:rgba(28,28,30,.95);--subtle-bg:#1c1c1e;--subtle-bg-2:#2c2c2e;--input-bg:#1c1c1e;--input-border:#3a3a3c;--divider:#2c2c2e;--modal-bg:#1c1c1e;--good:#66bb6a;
@@ -105,7 +104,6 @@ details.tree.d>summary{background:var(--subtle-bg);color:var(--accent);font-weig
 .dialog-buttons{display:flex;gap:8px}
 .dialog-buttons button{flex:1;padding:12px;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer}
 .dialog-yes,.dialog-ok{background:#007aff;color:#fff}.dialog-no{background:var(--subtle-bg-2);color:var(--text)}
-/* экран блокировки */
 #pinScreen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;transition:transform .05s}
 #pinScreen.active{display:flex}
 .pin-dots{display:flex;gap:16px;margin-bottom:40px}
@@ -122,7 +120,6 @@ details.tree.d>summary{background:var(--subtle-bg);color:var(--accent);font-weig
 </head>
 <body>
 
-<!-- ЭКРАН БЛОКИРОВКИ -->
 <div id="pinScreen">
   <div class="pin-title">🔒 Введите PIN-код</div>
   <div class="pin-dots">
@@ -269,23 +266,47 @@ details.tree.d>summary{background:var(--subtle-bg);color:var(--accent);font-weig
 <script>
 try{Theme.init()}catch(e){}
 
-/* Ключи, которых ещё нет в state.js (подмога и лог заказов).
-   Если добавишь эти методы в state.js — шим ниже просто не сработает. */
+/* Ключи, которых ещё нет в state.js (подмога и лог заказов) */
 if(!State.getHelp){State.getHelp=()=>AppStorage.get("help",null);State.setHelp=v=>AppStorage.set("help",v)}
 if(!State.getOrdersLog){State.getOrdersLog=()=>AppStorage.get("orders_log",null);State.setOrdersLog=v=>AppStorage.set("orders_log",v)}
 
 // ==========================================
 //  БЛОКИРОВКА PIN-КОДОМ
 // ==========================================
-const CORRECT_PIN="1234";
-let enteredPin="";
-if(sessionStorage.getItem("appUnlocked")!=="true")document.getElementById("pinScreen").classList.add("active");
-function pinInput(n){if(enteredPin.length<4){enteredPin+=n;updateDots()}if(enteredPin.length===4)setTimeout(checkPin,150)}
-function pinDelete(){if(enteredPin.length>0){enteredPin=enteredPin.slice(0,-1);updateDots()}}
-function updateDots(){for(let i=0;i<4;i++)document.getElementById("dot"+i).classList.toggle("filled",i<enteredPin.length)}
-function checkPin(){
-  if(enteredPin===CORRECT_PIN){sessionStorage.setItem("appUnlocked","true");document.getElementById("pinScreen").classList.remove("active")}
-  else{const s=document.getElementById("pinScreen");s.style.transform="translateX(10px)";setTimeout(()=>s.style.transform="translateX(-10px)",50);setTimeout(()=>s.style.transform="translateX(0)",100);setTimeout(()=>{enteredPin="";updateDots()},300)}
+const DEFAULT_PIN = "1234";
+let enteredPin = "";
+
+if (sessionStorage.getItem("appUnlocked") !== "true") {
+    document.getElementById("pinScreen").classList.add("active");
+}
+
+function getPin() {
+    return AppStorage.get("pin", DEFAULT_PIN);
+}
+
+function pinInput(n) {
+    if (enteredPin.length < 4) { enteredPin += n; updateDots(); }
+    if (enteredPin.length === 4) setTimeout(checkPin, 150);
+}
+function pinDelete() {
+    if (enteredPin.length > 0) { enteredPin = enteredPin.slice(0, -1); updateDots(); }
+}
+function updateDots() {
+    for (let i = 0; i < 4; i++) {
+        document.getElementById("dot" + i).classList.toggle("filled", i < enteredPin.length);
+    }
+}
+function checkPin() {
+    if (enteredPin === getPin()) {
+        sessionStorage.setItem("appUnlocked", "true");
+        document.getElementById("pinScreen").classList.remove("active");
+    } else {
+        const s = document.getElementById("pinScreen");
+        s.style.transform = "translateX(10px)";
+        setTimeout(() => s.style.transform = "translateX(-10px)", 50);
+        setTimeout(() => s.style.transform = "translateX(0)", 100);
+        setTimeout(() => { enteredPin = ""; updateDots(); }, 300);
+    }
 }
 
 // ==========================================
@@ -315,8 +336,7 @@ const getDayTypeIcon=t=>DAY_TYPES[t]?DAY_TYPES[t].icon:"📅";
 const validType=t=>DAY_TYPES[t]?t:"work";
 
 // ==========================================
-//  ДАННЫЕ: все через State (ключи days / shift / help / roster / orders_log / tariff)
-//  Формат дня в State: { type, night, ap, total, note, generated }
+//  ДАННЫЕ: все через State
 // ==========================================
 let DAYS={},shiftConfig=null,helpConfig=null,rosterConfig={A:{},B:{}},ordersLog=[];
 const toRec=(date,r)=>({date,dayType:r.type||"work",nightOrders:r.night||0,apOrders:r.ap||0,total:r.total||0,note:r.note||"",generated:r.generated});
@@ -334,7 +354,7 @@ function loadData(){
   helpConfig=State.getHelp();
   rosterConfig=State.getRoster()||{A:{},B:{}};
   ordersLog=State.getOrdersLog();
-  if(!Array.isArray(ordersLog)){ // первый запуск: восстановить лог из истории дней
+  if(!Array.isArray(ordersLog)){
     ordersLog=getHistory().filter(d=>(d.nightOrders||0)+(d.apOrders||0)>0).map(d=>({id:"bf_"+d.date,date:d.date,time:"из истории дня",addedNight:d.nightOrders||0,addedAp:d.apOrders||0}));
     State.setOrdersLog(ordersLog);
   }
@@ -432,8 +452,6 @@ function getShortPairForOtherShift(ds){
 }
 const autoType=ds=>isWorkDay(ds,shiftConfig.firstWorkDay)?(isMyShortDay(ds)?"short":"work"):(!isWeekendStr(ds)&&isMyHelpDay(ds)?"help":"weekend");
 
-/* Генерация графика: 2 месяца назад … 12 месяцев вперёд.
-   Ручные дни (generated:false, с заказами/заметкой или «особого» типа) не трогаются. */
 const GEN_BACK=2,GEN_FWD=12;
 function markAutoSchedule(){
   let h=getHistory().filter(d=>!(d.generated!==false&&["help","short","work","weekend"].includes(d.dayType)&&!d.nightOrders&&!d.apOrders&&!d.total&&!d.note));
@@ -452,7 +470,7 @@ function markAutoSchedule(){
 }
 
 // ==========================================
-//  Настройка графика и подмоги (в самой странице)
+//  Настройка графика и подмоги
 // ==========================================
 function initSetupForm(){
   $("cfgMy").innerHTML=[1,2,3,4,5,6,7].map(n=>`<option value="${n}">А${n}</option>`).join("");
@@ -460,7 +478,7 @@ function initSetupForm(){
 }
 function fillSetupForm(){
   const open=$("shiftSetup")&&$("shiftSetup").open;
-  if(open)return; // не затираем ввод, пока форма открыта
+  if(open)return;
   const s=shiftConfig||{},h=helpConfig||{};
   $("cfgFirst").value=s.firstWorkDay||"";
   $("cfgMy").value=s.myNumber||1;
