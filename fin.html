@@ -43,6 +43,14 @@
   <div class="op-list" id="opsList"></div>
 </div>
 
+<nav class="tabbar">
+  <div class="in">
+    <a href="index.html"><span>📦</span>Учёт</a>
+    <a href="fin.html" class="active"><span>💼</span>Финансы</a>
+    <a href="cash.html"><span>🛵</span>Скутер</a>
+  </div>
+</nav>
+
 <script src="js/lib/storage.js"></script>
 <script src="js/lib/ui.js"></script>
 <script src="js/lib/dialog.js"></script>
@@ -87,9 +95,10 @@
     const wallets = Object.keys(State.getWallets());
     const ov = document.createElement("div"); ov.className = "dialog-overlay";
     const box = document.createElement("div"); box.className = "dialog-box";
+    
     box.innerHTML = `
       <h3 style="margin-bottom: 16px;">${isExpense ? "➖ Трата" : "➕ Доход"}</h3>
-      <div style="margin-bottom: 10px;"><label>Сумма</label><input type="number" id="inp_amount" class="form-control" placeholder="0"></div>
+      <div style="margin-bottom: 10px;"><label>Сумма</label><input type="text" inputmode="decimal" id="inp_amount" class="form-control" placeholder="0"></div>
       <div class="input-row">
         <div><label>Кошелёк</label><select id="inp_wallet" class="form-control">${wallets.map(w => `<option value="${w}">${w}</option>`).join("")}</select></div>
         <div><label>Категория</label><select id="inp_cat" class="form-control">${cats.map(c => `<option value="${c}">${c}</option>`).join("")}</select></div>
@@ -101,9 +110,12 @@
       </div>
     `;
     ov.appendChild(box); document.body.appendChild(ov);
+    
     document.getElementById("btn-cancel").onclick = () => ov.remove();
     document.getElementById("btn-save").onclick = () => {
       if (!guardAction("saveOp")) return;
+      if (document.activeElement) document.activeElement.blur(); // Скрываем клавиатуру
+      
       try {
         const amount = UI.num(document.getElementById("inp_amount").value);
         const wallet = document.getElementById("inp_wallet").value;
@@ -117,13 +129,5 @@
   }
   render();
 </script>
-  <!-- Нижнее меню -->
-<nav class="tabbar">
-  <div class="in">
-    <a href="index.html"><span>📦</span>Учёт</a>
-    <a href="fin.html" class="active"><span>💼</span>Финансы</a>
-    <a href="cash.html"><span>🛵</span>Скутер</a>
-  </div>
-</nav>
 </body>
 </html>
