@@ -27,7 +27,7 @@
     .action-buttons { display: flex; gap: 8px; margin-bottom: 24px; }
     .action-buttons .btn { flex: 1; }
     
-    /* Общие стили для списков */
+    /* Списки */
     .op-list { background: var(--panel); border-radius: 16px; padding: 0 16px; border: 1px solid var(--border); }
     .op-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
     .op-item:last-child { border-bottom: none; }
@@ -38,11 +38,11 @@
     .op-expense { color: var(--red); }
     .op-income { color: var(--green); }
 
-    /* Прогресс-бар для целей/бюджетов */
+    /* Прогресс-бар */
     .progress-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 6px; }
     .progress-fill { height: 100%; background: var(--green); transition: width 0.3s; }
     
-    /* Формы внутри страницы */
+    /* Формы */
     .inline-form { background: var(--panel); border: 2px solid var(--accent); border-radius: 16px; padding: 16px; margin-bottom: 16px; display: none; }
     .inline-form.active { display: block; }
     .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
@@ -50,6 +50,8 @@
     .input-row label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
     .save-btn { width: 100%; padding: 14px; font-size: 15px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
     .cancel-btn { width: 100%; padding: 12px; font-size: 14px; border-radius: 12px; background: var(--border); color: var(--text); border: none; font-weight: 700; margin-top: 8px; cursor: pointer; }
+
+    .btn-sm { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; border: none; cursor: pointer; background: var(--bg); color: var(--text); }
   </style>
 </head>
 <body>
@@ -60,9 +62,9 @@
 
   <!-- Внутренние вкладки -->
   <div class="fin-tabs">
-    <div class="fin-tab active" onclick="switchTab('wallet')">💰 Кошельки</div>
-    <div class="fin-tab" onclick="switchTab('goals')">🎯 Цели</div>
-    <div class="fin-tab" onclick="switchTab('debts')">💸 Долги</div>
+    <div class="fin-tab active" onclick="switchTab('wallet', this)">💰 Кошельки</div>
+    <div class="fin-tab" onclick="switchTab('goals', this)">🎯 Цели</div>
+    <div class="fin-tab" onclick="switchTab('debts', this)">🤝 Долги</div>
   </div>
 
   <!-- ВКЛАДКА: КОШЕЛЬКИ -->
@@ -90,7 +92,7 @@
     <div class="op-list" id="opsList"></div>
   </div>
 
-  <!-- ВКЛАДКА: ЦЕЛИ И БЮДЖЕТЫ -->
+  <!-- ВКЛАДКА: ЦЕЛИ -->
   <div id="tab-goals" class="tab-content">
     <button class="btn btn-primary" style="width: 100%; margin-bottom: 16px;" onclick="toggleGoalForm()">➕ Добавить цель</button>
     
@@ -98,19 +100,33 @@
       <h3 style="margin-bottom: 12px; font-size: 16px;">🎯 Новая цель</h3>
       <div style="margin-bottom: 10px;"><label>Название (напр. Новый телефон)</label><input type="text" id="g_name" class="form-control" placeholder="Название"></div>
       <div style="margin-bottom: 10px;"><label>Сумма цели</label><input type="number" id="g_target" class="form-control" placeholder="0"></div>
-      <button class="save-btn" onclick="saveGoal()">💾 СОХРАНИТЬ</button>
+      <button class="save-btn" onclick="saveGoal()">💾 СОЗДАТЬ</button>
       <button class="cancel-btn" onclick="toggleGoalForm()">Отмена</button>
     </div>
 
     <div id="goalsList"></div>
   </div>
 
-  <!-- ВКЛАДКА: ДОЛГИ И КРЕДИТЫ -->
+  <!-- ВКЛАДКА: ДОЛГИ -->
   <div id="tab-debts" class="tab-content">
-    <div style="text-align: center; padding: 40px 20px; color: var(--text-dim);">
-      <div style="font-size: 40px; margin-bottom: 10px;">🤝</div>
-      <div>Учёт долгов и кредитов <br> появится в следующем обновлении.</div>
+    <button class="btn btn-primary" style="width: 100%; margin-bottom: 16px;" onclick="toggleDebtForm()">➕ Добавить долг</button>
+    
+    <div id="debtFormContainer" class="inline-form">
+      <h3 style="margin-bottom: 12px; font-size: 16px;">🤝 Новый долг</h3>
+      <div style="margin-bottom: 10px;">
+        <label>Тип долга</label>
+        <select id="d_type" class="form-control">
+          <option value="i_owe">Я должен (взял в долг)</option>
+          <option value="owe_me">Мне должны (дал в долг)</option>
+        </select>
+      </div>
+      <div style="margin-bottom: 10px;"><label>Кому / Кто</label><input type="text" id="d_name" class="form-control" placeholder="Имя или описание"></div>
+      <div style="margin-bottom: 10px;"><label>Сумма</label><input type="number" id="d_amount" class="form-control" placeholder="0"></div>
+      <button class="save-btn" onclick="saveDebt()">💾 СОХРАНИТЬ</button>
+      <button class="cancel-btn" onclick="toggleDebtForm()">Отмена</button>
     </div>
+
+    <div id="debtsList"></div>
   </div>
 </div>
 
@@ -135,15 +151,15 @@
   Theme.init();
   let currentOpType = 'expense';
 
-  function switchTab(tabId) {
+  function switchTab(tabId, btn) {
     document.querySelectorAll('.fin-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    event.target.classList.add('active');
+    btn.classList.add('active');
     document.getElementById('tab-' + tabId).classList.add('active');
   }
 
   function render() {
-    // Кошельки
+    // --- 1. Кошельки ---
     const wallets = State.getWallets();
     document.getElementById("walletsGrid").innerHTML = Object.keys(wallets).map(name => `
       <div class="wallet-card">
@@ -152,7 +168,7 @@
       </div>
     `).join("");
 
-    // История операций (последние 10)
+    // История операций
     const ops = State.getOps().reverse().slice(0, 10);
     document.getElementById("opsList").innerHTML = ops.length ? ops.map(op => {
       let sign = op.amount < 0 ? "−" : "+";
@@ -169,7 +185,7 @@
       `;
     }).join("") : `<div style="padding: 16px; text-align: center; color: var(--text-dim);">Нет операций</div>`;
 
-    // Цели
+    // --- 2. Цели ---
     const goals = State.getGoals();
     document.getElementById("goalsList").innerHTML = goals.length ? goals.map(g => {
       const percent = g.target > 0 ? Math.min(100, Math.round(g.saved / g.target * 100)) : 0;
@@ -180,28 +196,46 @@
             <span>${UI.fmt(g.saved)} / ${UI.fmt(g.target)}</span>
           </div>
           <div class="progress-bar"><div class="progress-fill" style="width: ${percent}%"></div></div>
-          <div style="text-align:right; font-size:12px; color:var(--text-dim); margin-top:4px;">${percent}%</div>
+          <div style="display:flex; justify-content:space-between; margin-top:8px;">
+            <span style="font-size:12px; color:var(--text-dim);">${percent}%</span>
+            <button class="btn-sm" onclick="addToGoal('${g.id}')">➕ Пополнить</button>
+          </div>
         </div>
       `;
     }).join("") : `<div style="text-align: center; color: var(--text-dim); padding: 20px;">Пока нет целей</div>`;
+
+    // --- 3. Долги ---
+    const debts = State.getDebts();
+    document.getElementById("debtsList").innerHTML = debts.length ? debts.map(d => {
+      const isIOwe = d.type === 'i_owe';
+      const color = isIOwe ? 'op-expense' : 'op-income';
+      const label = isIOwe ? 'Вы должны' : 'Вам должны';
+      return `
+        <div class="op-list" style="margin-bottom: 10px; padding: 16px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <b>${UI.esc(d.name)}</b>
+            <span class="op-amount ${color}">${UI.fmt(d.amount)} лей</span>
+          </div>
+          <div style="font-size:12px; color:var(--text-dim); margin-bottom:8px;">${label}</div>
+          <button class="btn-sm" style="width:100%; background:var(--accent); color:white;" onclick="closeDebt('${d.id}')">✅ Погасить</button>
+        </div>
+      `;
+    }).join("") : `<div style="text-align: center; color: var(--text-dim); padding: 20px;">Нет активных долгов</div>`;
   }
 
-  // --- ФОРМА ОПЕРАЦИИ ---
+  // --- ОПЕРАЦИИ ---
   function toggleOpForm(type) {
     const container = document.getElementById("opFormContainer");
-    
     if (container.classList.contains("active") && currentOpType === type) {
       container.classList.remove("active");
       return;
     }
-    
     currentOpType = type;
     container.classList.add("active");
     document.getElementById("opFormTitle").innerText = type === 'expense' ? "➖ Новая трата" : "➕ Новый доход";
     
     const wallets = Object.keys(State.getWallets());
     document.getElementById("op_wallet").innerHTML = wallets.map(w => `<option value="${w}">${w}</option>`).join("");
-    
     const cats = State.getCategories()[type === 'expense' ? "expense" : "income"];
     document.getElementById("op_cat").innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join("");
     
@@ -218,47 +252,92 @@
       
       if (amount <= 0) throw new Error("Введите сумму больше нуля");
       
-      if (currentOpType === 'expense') {
-        FinanceAPI.spend({ wallet, amount, category: cat, note });
-      } else {
-        FinanceAPI.receive({ wallet, amount, category: cat, note });
-      }
+      if (currentOpType === 'expense') FinanceAPI.spend({ wallet, amount, category: cat, note });
+      else FinanceAPI.receive({ wallet, amount, category: cat, note });
       
       document.getElementById("opFormContainer").classList.remove("active");
       render();
       Notify.show(`✅ Записано: ${amount} лей`);
-    } catch (e) {
-      Notify.error(e.message);
-    }
+    } catch (e) { Notify.error(e.message); }
   }
 
-  // --- ФОРМА ЦЕЛИ ---
-  function toggleGoalForm() {
-    document.getElementById("goalFormContainer").classList.toggle("active");
-  }
+  // --- ЦЕЛИ ---
+  function toggleGoalForm() { document.getElementById("goalFormContainer").classList.toggle("active"); }
 
   function saveGoal() {
     if (!guardAction("saveGoal")) return;
     try {
       const name = document.getElementById("g_name").value.trim();
       const target = UI.num(document.getElementById("g_target").value);
-      
-      if (!name) throw new Error("Введите название цели");
-      if (target <= 0) throw new Error("Введите сумму цели");
+      if (!name || target <= 0) throw new Error("Заполните поля");
       
       const goals = State.getGoals();
       goals.push({ id: Date.now().toString(), name, target, saved: 0 });
       State.setGoals(goals);
       
       document.getElementById("goalFormContainer").classList.remove("active");
-      document.getElementById("g_name").value = "";
-      document.getElementById("g_target").value = "";
+      document.getElementById("g_name").value = ""; document.getElementById("g_target").value = "";
+      render();
+      Notify.show(`🎯 Цель добавлена`);
+    } catch (e) { Notify.error(e.message); }
+  }
+
+  function addToGoal(id) {
+    const amountStr = prompt("Сколько отложить на цель? (спишется с Наличных)");
+    if (!amountStr) return;
+    const amount = UI.num(amountStr);
+    if (amount <= 0) return Notify.error("Неверная сумма");
+
+    try {
+      FinanceAPI.spend({ wallet: "Наличные", amount, category: "Цель", note: "Пополнение цели" });
+      const goals = State.getGoals();
+      const g = goals.find(x => x.id === id);
+      if (g) { g.saved += amount; State.setGoals(goals); }
       
       render();
-      Notify.show(`🎯 Цель «${name}» добавлена`);
-    } catch (e) {
-      Notify.error(e.message);
-    }
+      Notify.show(`✅ Отложено ${amount} лей`);
+    } catch (e) { Notify.error(e.message); }
+  }
+
+  // --- ДОЛГИ ---
+  function toggleDebtForm() { document.getElementById("debtFormContainer").classList.toggle("active"); }
+
+  function saveDebt() {
+    if (!guardAction("saveDebt")) return;
+    try {
+      const type = document.getElementById("d_type").value;
+      const name = document.getElementById("d_name").value.trim();
+      const amount = UI.num(document.getElementById("d_amount").value);
+      if (!name || amount <= 0) throw new Error("Заполните поля");
+      
+      const debts = State.getDebts();
+      debts.push({ id: Date.now().toString(), type, name, amount });
+      State.setDebts(debts);
+      
+      document.getElementById("debtFormContainer").classList.remove("active");
+      document.getElementById("d_name").value = ""; document.getElementById("d_amount").value = "";
+      render();
+      Notify.show(`✅ Долг записан`);
+    } catch (e) { Notify.error(e.message); }
+  }
+
+  function closeDebt(id) {
+    if (!confirm("Погасить этот долг? (Деньги спишутся/зачислятся на Наличные)")) return;
+    try {
+      const debts = State.getDebts();
+      const d = debts.find(x => x.id === id);
+      if (!d) return;
+
+      if (d.type === 'i_owe') {
+        FinanceAPI.spend({ wallet: "Наличные", amount: d.amount, category: "Погашение долга", note: d.name });
+      } else {
+        FinanceAPI.receive({ wallet: "Наличные", amount: d.amount, category: "Возврат долга", note: d.name });
+      }
+
+      State.setDebts(debts.filter(x => x.id !== id));
+      render();
+      Notify.show("✅ Долг погашен");
+    } catch (e) { Notify.error(e.message); }
   }
 
   render();
