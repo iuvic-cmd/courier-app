@@ -44,6 +44,14 @@
   <div class="calendar" id="calendar"></div>
 </div>
 
+<nav class="tabbar">
+  <div class="in">
+    <a href="index.html" class="active"><span>📦</span>Учёт</a>
+    <a href="fin.html"><span>💼</span>Финансы</a>
+    <a href="cash.html"><span>🛵</span>Скутер</a>
+  </div>
+</nav>
+
 <script src="js/lib/storage.js"></script>
 <script src="js/lib/ui.js"></script>
 <script src="js/lib/dialog.js"></script>
@@ -96,11 +104,13 @@
     const rec = days[dateStr] || { type: Schedule.getDefaultDayType(dateStr), night: 0, ap: 0, note: "" };
     const ov = document.createElement("div"); ov.className = "dialog-overlay";
     const box = document.createElement("div"); box.className = "dialog-box";
+    
+    // Используем type="text" inputmode="numeric" для правильной клавиатуры
     box.innerHTML = `
       <h3 style="margin-bottom: 16px;">📅 ${UI.date.ru(dateStr)}</h3>
       <div class="input-row">
-        <div><label>🌙 Ночной</label><input type="number" id="inp_night" class="form-control" value="${rec.night || ""}" placeholder="0"></div>
-        <div><label>📦 Единый</label><input type="number" id="inp_ap" class="form-control" value="${rec.ap || ""}" placeholder="0"></div>
+        <div><label>🌙 Ночной</label><input type="text" inputmode="numeric" id="inp_night" class="form-control" value="${rec.night || ""}" placeholder="0"></div>
+        <div><label>📦 Единый</label><input type="text" inputmode="numeric" id="inp_ap" class="form-control" value="${rec.ap || ""}" placeholder="0"></div>
       </div>
       <div style="margin-bottom: 16px;"><label>📝 Заметка</label><input type="text" id="inp_note" class="form-control" value="${UI.esc(rec.note || "")}" placeholder="Кого заменил..."></div>
       <div class="dialog-buttons">
@@ -109,9 +119,13 @@
       </div>
     `;
     ov.appendChild(box); document.body.appendChild(ov);
+    
     document.getElementById("btn-cancel").onclick = () => ov.remove();
     document.getElementById("btn-save").onclick = () => {
       if (!guardAction("saveDay")) return;
+      // Принудительно убираем фокус с поля ввода
+      if (document.activeElement) document.activeElement.blur();
+      
       const night = UI.num(document.getElementById("inp_night").value);
       const ap = UI.num(document.getElementById("inp_ap").value);
       const note = document.getElementById("inp_note").value.trim();
@@ -125,13 +139,5 @@
   function changeMonth(dir) { currentDate.setMonth(currentDate.getMonth() + dir); render(); }
   render();
 </script>
-  <!-- Нижнее меню -->
-<nav class="tabbar">
-  <div class="in">
-    <a href="index.html" class="active"><span>📦</span>Учёт</a>
-    <a href="fin.html"><span>💼</span>Финансы</a>
-    <a href="cash.html"><span>🛵</span>Скутер</a>
-  </div>
-</nav>
 </body>
 </html>
