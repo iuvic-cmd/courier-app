@@ -7,27 +7,19 @@
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/components.css">
   <style>
-    .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-bottom: 80px; }
+    .container { max-width: 480px; margin: 0 auto; padding: 16px; }
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    
-    /* Внутренние вкладки */
     .fin-tabs { display: flex; background: var(--bg); padding: 4px; border-radius: 12px; margin-bottom: 16px; }
     .fin-tab { flex: 1; text-align: center; padding: 10px 4px; font-size: 13px; font-weight: 600; border-radius: 10px; cursor: pointer; color: var(--text-dim); transition: 0.2s; }
     .fin-tab.active { background: var(--panel); color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-
     .tab-content { display: none; }
     .tab-content.active { display: block; }
-
-    /* Кошельки */
     .wallets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
     .wallet-card { background: var(--panel); padding: 16px; border-radius: 16px; text-align: center; border: 1px solid var(--border); }
     .wallet-name { font-size: 13px; color: var(--text-dim); margin-bottom: 4px; }
     .wallet-balance { font-size: 20px; font-weight: 700; color: var(--accent); }
-    
     .action-buttons { display: flex; gap: 8px; margin-bottom: 24px; }
     .action-buttons .btn { flex: 1; }
-    
-    /* Списки */
     .op-list { background: var(--panel); border-radius: 16px; padding: 0 16px; border: 1px solid var(--border); }
     .op-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
     .op-item:last-child { border-bottom: none; }
@@ -37,12 +29,8 @@
     .op-amount { font-weight: 700; font-size: 16px; }
     .op-expense { color: var(--red); }
     .op-income { color: var(--green); }
-
-    /* Прогресс-бар */
     .progress-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 6px; }
     .progress-fill { height: 100%; background: var(--green); transition: width 0.3s; }
-    
-    /* Формы */
     .inline-form { background: var(--panel); border: 2px solid var(--accent); border-radius: 16px; padding: 16px; margin-bottom: 16px; display: none; }
     .inline-form.active { display: block; }
     .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
@@ -50,8 +38,8 @@
     .input-row label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
     .save-btn { width: 100%; padding: 14px; font-size: 15px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
     .cancel-btn { width: 100%; padding: 12px; font-size: 14px; border-radius: 12px; background: var(--border); color: var(--text); border: none; font-weight: 700; margin-top: 8px; cursor: pointer; }
-
     .btn-sm { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; border: none; cursor: pointer; background: var(--bg); color: var(--text); }
+    .btn-del { background: var(--red-bg); color: var(--red); border: none; border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; margin-left: 8px; }
   </style>
 </head>
 <body>
@@ -60,17 +48,14 @@
     <h1>💼 Финансы</h1>
   </div>
 
-  <!-- Внутренние вкладки -->
   <div class="fin-tabs">
     <div class="fin-tab active" onclick="switchTab('wallet', this)">💰 Кошельки</div>
     <div class="fin-tab" onclick="switchTab('goals', this)">🎯 Цели</div>
     <div class="fin-tab" onclick="switchTab('debts', this)">🤝 Долги</div>
   </div>
 
-  <!-- ВКЛАДКА: КОШЕЛЬКИ -->
   <div id="tab-wallet" class="tab-content active">
     <div class="wallets-grid" id="walletsGrid"></div>
-    
     <div class="action-buttons">
       <button class="btn btn-orange" onclick="toggleOpForm('expense')">➖ Трата</button>
       <button class="btn btn-green" onclick="toggleOpForm('income')">➕ Доход</button>
@@ -85,17 +70,15 @@
       </div>
       <div style="margin-bottom: 10px;"><label>Заметка</label><input type="text" id="op_note" class="form-control" placeholder="Детали..."></div>
       <button class="save-btn" onclick="saveOp()">💾 СОХРАНИТЬ</button>
-      <button class="cancel-btn" onclick="toggleOpForm()">Отмена</button>
+      <button class="cancel-btn" onclick="closeOpForm()">Отмена</button>
     </div>
 
     <h3 style="margin-bottom: 10px; font-size: 16px;">Последние операции</h3>
     <div class="op-list" id="opsList"></div>
   </div>
 
-  <!-- ВКЛАДКА: ЦЕЛИ -->
   <div id="tab-goals" class="tab-content">
     <button class="btn btn-primary" style="width: 100%; margin-bottom: 16px;" onclick="toggleGoalForm()">➕ Добавить цель</button>
-    
     <div id="goalFormContainer" class="inline-form">
       <h3 style="margin-bottom: 12px; font-size: 16px;">🎯 Новая цель</h3>
       <div style="margin-bottom: 10px;"><label>Название (напр. Новый телефон)</label><input type="text" id="g_name" class="form-control" placeholder="Название"></div>
@@ -103,14 +86,11 @@
       <button class="save-btn" onclick="saveGoal()">💾 СОЗДАТЬ</button>
       <button class="cancel-btn" onclick="toggleGoalForm()">Отмена</button>
     </div>
-
     <div id="goalsList"></div>
   </div>
 
-  <!-- ВКЛАДКА: ДОЛГИ -->
   <div id="tab-debts" class="tab-content">
     <button class="btn btn-primary" style="width: 100%; margin-bottom: 16px;" onclick="toggleDebtForm()">➕ Добавить долг</button>
-    
     <div id="debtFormContainer" class="inline-form">
       <h3 style="margin-bottom: 12px; font-size: 16px;">🤝 Новый долг</h3>
       <div style="margin-bottom: 10px;">
@@ -125,7 +105,6 @@
       <button class="save-btn" onclick="saveDebt()">💾 СОХРАНИТЬ</button>
       <button class="cancel-btn" onclick="toggleDebtForm()">Отмена</button>
     </div>
-
     <div id="debtsList"></div>
   </div>
 </div>
@@ -159,17 +138,16 @@
   }
 
   function render() {
-    // --- 1. Кошельки ---
     const wallets = State.getWallets();
     document.getElementById("walletsGrid").innerHTML = Object.keys(wallets).map(name => `
       <div class="wallet-card">
-        <div class="wallet-name">${name}</div>
+        <div class="wallet-name">${UI.esc(name)}</div>
         <div class="wallet-balance">${UI.fmt(wallets[name])} лей</div>
       </div>
     `).join("");
 
-    // История операций
-    const ops = State.getOps().reverse().slice(0, 10);
+    // П.4: slice().reverse() чтобы не мутировать массив
+    const ops = State.getOps().slice().reverse().slice(0, 10);
     document.getElementById("opsList").innerHTML = ops.length ? ops.map(op => {
       let sign = op.amount < 0 ? "−" : "+";
       let cls = op.kind === "expense" ? "op-expense" : "op-income";
@@ -178,14 +156,16 @@
         <div class="op-item">
           <div class="op-info">
             <span class="op-cat">${UI.esc(cat)}</span>
-            <span class="op-details">${op.date} · ${op.wallet}${op.note ? " · " + UI.esc(op.note) : ""}</span>
+            <span class="op-details">${op.date} · ${UI.esc(op.wallet)}${op.note ? " · " + UI.esc(op.note) : ""}</span>
           </div>
-          <div class="op-amount ${cls}">${sign}${Math.abs(op.amount)}</div>
+          <div style="display:flex; align-items:center;">
+            <div class="op-amount ${cls}">${sign}${Math.abs(op.amount)}</div>
+            <button class="btn-del" onclick="deleteOp('${op.id}')">✕</button>
+          </div>
         </div>
       `;
     }).join("") : `<div style="padding: 16px; text-align: center; color: var(--text-dim);">Нет операций</div>`;
 
-    // --- 2. Цели ---
     const goals = State.getGoals();
     document.getElementById("goalsList").innerHTML = goals.length ? goals.map(g => {
       const percent = g.target > 0 ? Math.min(100, Math.round(g.saved / g.target * 100)) : 0;
@@ -198,13 +178,12 @@
           <div class="progress-bar"><div class="progress-fill" style="width: ${percent}%"></div></div>
           <div style="display:flex; justify-content:space-between; margin-top:8px;">
             <span style="font-size:12px; color:var(--text-dim);">${percent}%</span>
-            <button class="btn-sm" onclick="addToGoal('${g.id}')">➕ Пополнить</button>
+            <button class="btn-sm" onclick="addToGoal('${UI.esc(g.id)}')">➕ Пополнить</button>
           </div>
         </div>
       `;
     }).join("") : `<div style="text-align: center; color: var(--text-dim); padding: 20px;">Пока нет целей</div>`;
 
-    // --- 3. Долги ---
     const debts = State.getDebts();
     document.getElementById("debtsList").innerHTML = debts.length ? debts.map(d => {
       const isIOwe = d.type === 'i_owe';
@@ -217,13 +196,21 @@
             <span class="op-amount ${color}">${UI.fmt(d.amount)} лей</span>
           </div>
           <div style="font-size:12px; color:var(--text-dim); margin-bottom:8px;">${label}</div>
-          <button class="btn-sm" style="width:100%; background:var(--accent); color:white;" onclick="closeDebt('${d.id}')">✅ Погасить</button>
+          <button class="btn-sm" style="width:100%; background:var(--accent); color:white;" onclick="closeDebt('${UI.esc(d.id)}')">✅ Погасить</button>
         </div>
       `;
     }).join("") : `<div style="text-align: center; color: var(--text-dim); padding: 20px;">Нет активных долгов</div>`;
   }
 
-  // --- ОПЕРАЦИИ ---
+  function deleteOp(id) {
+    if (!confirm("Удалить операцию? Баланс восстановится.")) return;
+    try {
+      FinanceAPI.undo(id);
+      render();
+      Notify.show("🗑 Операция удалена");
+    } catch (e) { Notify.error(e.message); }
+  }
+
   function toggleOpForm(type) {
     const container = document.getElementById("opFormContainer");
     if (container.classList.contains("active") && currentOpType === type) {
@@ -233,13 +220,16 @@
     currentOpType = type;
     container.classList.add("active");
     document.getElementById("opFormTitle").innerText = type === 'expense' ? "➖ Новая трата" : "➕ Новый доход";
-    
     const wallets = Object.keys(State.getWallets());
-    document.getElementById("op_wallet").innerHTML = wallets.map(w => `<option value="${w}">${w}</option>`).join("");
+    document.getElementById("op_wallet").innerHTML = wallets.map(w => `<option value="${UI.esc(w)}">${UI.esc(w)}</option>`).join("");
     const cats = State.getCategories()[type === 'expense' ? "expense" : "income"];
-    document.getElementById("op_cat").innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join("");
-    
+    document.getElementById("op_cat").innerHTML = cats.map(c => `<option value="${UI.esc(c)}">${UI.esc(c)}</option>`).join("");
     document.getElementById("op_amount").focus();
+  }
+
+  // П.2: отдельная функция закрытия
+  function closeOpForm() {
+    document.getElementById("opFormContainer").classList.remove("active");
   }
 
   function saveOp() {
@@ -249,19 +239,15 @@
       const wallet = document.getElementById("op_wallet").value;
       const cat = document.getElementById("op_cat").value;
       const note = document.getElementById("op_note").value.trim();
-      
       if (amount <= 0) throw new Error("Введите сумму больше нуля");
-      
       if (currentOpType === 'expense') FinanceAPI.spend({ wallet, amount, category: cat, note });
       else FinanceAPI.receive({ wallet, amount, category: cat, note });
-      
-      document.getElementById("opFormContainer").classList.remove("active");
+      closeOpForm();
       render();
       Notify.show(`✅ Записано: ${amount} лей`);
     } catch (e) { Notify.error(e.message); }
   }
 
-  // --- ЦЕЛИ ---
   function toggleGoalForm() { document.getElementById("goalFormContainer").classList.toggle("active"); }
 
   function saveGoal() {
@@ -270,11 +256,9 @@
       const name = document.getElementById("g_name").value.trim();
       const target = UI.num(document.getElementById("g_target").value);
       if (!name || target <= 0) throw new Error("Заполните поля");
-      
       const goals = State.getGoals();
       goals.push({ id: Date.now().toString(), name, target, saved: 0 });
       State.setGoals(goals);
-      
       document.getElementById("goalFormContainer").classList.remove("active");
       document.getElementById("g_name").value = ""; document.getElementById("g_target").value = "";
       render();
@@ -287,19 +271,16 @@
     if (!amountStr) return;
     const amount = UI.num(amountStr);
     if (amount <= 0) return Notify.error("Неверная сумма");
-
     try {
       FinanceAPI.spend({ wallet: "Наличные", amount, category: "Цель", note: "Пополнение цели" });
       const goals = State.getGoals();
       const g = goals.find(x => x.id === id);
       if (g) { g.saved += amount; State.setGoals(goals); }
-      
       render();
       Notify.show(`✅ Отложено ${amount} лей`);
     } catch (e) { Notify.error(e.message); }
   }
 
-  // --- ДОЛГИ ---
   function toggleDebtForm() { document.getElementById("debtFormContainer").classList.toggle("active"); }
 
   function saveDebt() {
@@ -309,11 +290,9 @@
       const name = document.getElementById("d_name").value.trim();
       const amount = UI.num(document.getElementById("d_amount").value);
       if (!name || amount <= 0) throw new Error("Заполните поля");
-      
       const debts = State.getDebts();
       debts.push({ id: Date.now().toString(), type, name, amount });
       State.setDebts(debts);
-      
       document.getElementById("debtFormContainer").classList.remove("active");
       document.getElementById("d_name").value = ""; document.getElementById("d_amount").value = "";
       render();
@@ -327,13 +306,8 @@
       const debts = State.getDebts();
       const d = debts.find(x => x.id === id);
       if (!d) return;
-
-      if (d.type === 'i_owe') {
-        FinanceAPI.spend({ wallet: "Наличные", amount: d.amount, category: "Погашение долга", note: d.name });
-      } else {
-        FinanceAPI.receive({ wallet: "Наличные", amount: d.amount, category: "Возврат долга", note: d.name });
-      }
-
+      if (d.type === 'i_owe') FinanceAPI.spend({ wallet: "Наличные", amount: d.amount, category: "Погашение долга", note: d.name });
+      else FinanceAPI.receive({ wallet: "Наличные", amount: d.amount, category: "Возврат долга", note: d.name });
       State.setDebts(debts.filter(x => x.id !== id));
       render();
       Notify.show("✅ Долг погашен");
