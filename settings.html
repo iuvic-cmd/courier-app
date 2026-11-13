@@ -10,15 +10,22 @@
     .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-bottom: 90px; }
     .header { margin-bottom: 20px; }
     .header h1 { font-size: 24px; }
+    
     .card { background: var(--panel); border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--border); }
     .card h3 { font-size: 16px; margin-bottom: 12px; color: var(--accent); }
+    
     .form-group { margin-bottom: 12px; }
     .form-group label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 4px; }
     .form-control { width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--text); font-size: 16px; }
+    
     .btn-save { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
     .btn-danger { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; background: var(--red); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
+    .btn-warn { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; background: var(--orange); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
+    
     .hint { font-size: 13px; color: var(--text-dim); margin-bottom: 16px; line-height: 1.5; }
     textarea { width: 100%; min-height: 100px; font-family: monospace; font-size: 12px; padding: 10px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); color: var(--text); margin-top: 8px; }
+    
+    .tariff-history { font-size: 12px; color: var(--text-dim); margin-top: 10px; padding: 10px; background: var(--bg); border-radius: 10px; line-height: 1.6; }
   </style>
 </head>
 <body>
@@ -27,9 +34,34 @@
     <h1>⚙ Настройки</h1>
   </div>
 
+  <!-- Тариф -->
+  <div class="card">
+    <h3>💰 Настройка тарифа</h3>
+    <p class="hint">Укажи новые цены и дату, с которой они действуют. Старые дни сохранят свою цену.</p>
+    
+    <div class="form-group">
+      <label>🌙 Ночной заказ (лей)</label>
+      <input type="number" inputmode="numeric" id="tariffNight" class="form-control" placeholder="74">
+    </div>
+    <div class="form-group">
+      <label>📦 Единый заказ (лей)</label>
+      <input type="number" inputmode="numeric" id="tariffAp" class="form-control" placeholder="54">
+    </div>
+    <div class="form-group">
+      <label>📅 Действует с</label>
+      <input type="date" id="tariffDate" class="form-control">
+    </div>
+    
+    <button class="btn-save" onclick="saveTariff()">💾 Применить тариф</button>
+    <button class="btn-warn" onclick="recalcHistory()">🔄 Пересчитать всю историю</button>
+    
+    <div id="tariffHistoryBox" class="tariff-history"></div>
+  </div>
+
+  <!-- PIN -->
   <div class="card">
     <h3>🔐 PIN-код</h3>
-    <p class="hint">По умолчанию код — <b>1234</b>. Если забудешь новый, просто поменяй <code>DEFAULT_PIN</code> в <code>index.html</code>.</p>
+    <p class="hint">По умолчанию код — <b>1234</b>. Если забудешь новый, поменяй <code>DEFAULT_PIN</code> в <code>index.html</code>.</p>
     <div class="form-group">
       <label>Новый PIN (4 цифры)</label>
       <input type="text" id="newPin" maxlength="4" inputmode="numeric" class="form-control" placeholder="0000">
@@ -37,9 +69,10 @@
     <button class="btn-save" onclick="savePin()">💾 Сменить PIN</button>
   </div>
 
+  <!-- Экспорт/Импорт -->
   <div class="card">
     <h3>📤 Экспорт данных</h3>
-    <p class="hint">Скопируй текст ниже и сохрани (например, в заметки), чтобы не потерять данные.</p>
+    <p class="hint">Сохрани текст, чтобы не потерять данные при сбросе или переносе.</p>
     <button class="btn-save" onclick="exportData()">📋 Сгенерировать JSON</button>
     <textarea id="exportBox" readonly style="display:none"></textarea>
     <button class="btn-save" id="copyBtn" style="display:none" onclick="copyExport()">Скопировать</button>
@@ -47,14 +80,15 @@
 
   <div class="card">
     <h3>📥 Импорт данных</h3>
-    <p class="hint">Вставь ранее сохраненный JSON в поле ниже и нажми «Импортировать».</p>
+    <p class="hint">Вставь ранее сохраненный JSON и нажми «Импортировать».</p>
     <textarea id="importBox" placeholder="Вставь JSON сюда"></textarea>
     <button class="btn-save" onclick="importData()">📥 Импортировать</button>
   </div>
 
+  <!-- Опасная зона -->
   <div class="card" style="border-color: var(--red);">
     <h3 style="color: var(--red);">⚠️ Опасная зона</h3>
-    <p class="hint">Удалит ВСЕ данные приложения (включая PIN, график, деньги, заказы).</p>
+    <p class="hint">Это действие удалит <b>ВСЕ</b> данные приложения.</p>
     <button class="btn-danger" onclick="resetAllData()">🗑 Сбросить все данные</button>
   </div>
 </div>
@@ -73,20 +107,66 @@
 <script src="js/lib/ui.js"></script>
 <script src="js/lib/notify.js"></script>
 <script src="js/lib/theme.js"></script>
+<script src="js/domain/state.js"></script>
+<script src="js/domain/tariff.js"></script>
 <script>
   Theme.init();
 
+  // --- Тариф ---
+  function renderTariff() {
+    const rates = Tariff.getForDate(UI.date.local());
+    document.getElementById("tariffNight").value = rates.night;
+    document.getElementById("tariffAp").value = rates.ap;
+    document.getElementById("tariffDate").value = UI.date.local();
+    
+    const hist = State.getTariff();
+    const box = document.getElementById("tariffHistoryBox");
+    if (hist && hist.length > 0) {
+      box.innerHTML = "<b>История тарифов:</b><br>" + hist.slice().sort((a,b) => a.from.localeCompare(b.from))
+        .map(t => `с ${t.from}: 🌙${t.night} / 📦${t.ap}`).join("<br>");
+    } else {
+      box.innerHTML = "Тарифы по умолчанию.";
+    }
+  }
+
+  function saveTariff() {
+    const night = parseInt(document.getElementById("tariffNight").value);
+    const ap = parseInt(document.getElementById("tariffAp").value);
+    const date = document.getElementById("tariffDate").value;
+    if (!(night > 0) || !(ap > 0)) return Notify.error("Введите цены");
+    if (!date) return Notify.error("Укажите дату");
+    Tariff.setNewRate(date, night, ap);
+    renderTariff();
+    Notify.show(`✅ Тариф с ${date}: 🌙${night} / 📦${ap}`);
+  }
+
+  function recalcHistory() {
+    if (!confirm("Пересчитать ВСЮ историю по текущему тарифу?\nЭто изменит суммы в прошлых днях!")) return;
+    
+    const days = State.getDays();
+    const today = UI.date.local();
+    Object.keys(days).forEach(ds => {
+      if (days[ds].night !== undefined || days[ds].ap !== undefined) {
+        const rates = Tariff.getForDate(ds);
+        days[ds].total = (days[ds].night || 0) * rates.night + (days[ds].ap || 0) * rates.ap;
+      }
+    });
+    State.setDays(days);
+    Notify.show("✅ История пересчитана по тарифам на дату дня");
+  }
+
+  // --- PIN ---
   function savePin() {
     const pin = document.getElementById("newPin").value.trim();
-    if (!/^\d{4}$/.test(pin)) return Notify.error("PIN должен состоять из 4 цифр");
+    if (!/^\d{4}$/.test(pin)) return Notify.error("PIN должен быть 4 цифры");
     AppStorage.set("pin", pin);
     document.getElementById("newPin").value = "";
     Notify.show("✅ PIN успешно изменен");
   }
 
+  // --- Экспорт / Импорт ---
   function exportData() {
     const data = {};
-    // Собираем все ключи с префиксом uchot.v2.
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key.startsWith("uchot.v2.")) {
@@ -99,20 +179,18 @@
     box.style.display = "block";
     document.getElementById("copyBtn").style.display = "block";
   }
-
   function copyExport() {
     const box = document.getElementById("exportBox");
     box.select();
     document.execCommand("copy");
     Notify.show("📋 Скопировано в буфер");
   }
-
   function importData() {
     const text = document.getElementById("importBox").value.trim();
     if (!text) return Notify.error("Вставь JSON");
     try {
       const data = JSON.parse(text);
-      if (typeof data !== "object") throw "Неверный формат";
+      if (typeof data !== "object") throw new Error("Неверный формат");
       for (const key in data) {
         if (key.startsWith("uchot.v2.")) {
           localStorage.setItem(key, JSON.stringify(data[key]));
@@ -125,14 +203,18 @@
     }
   }
 
+  // --- Сброс ---
   function resetAllData() {
-    if (!confirm("ВНИМАНИЕ! Вы уверены, что хотите удалить ВСЕ данные? Это необратимо.")) return;
+    if (!confirm("ВНИМАНИЕ! Вы уверены, что хотите удалить ВСЕ данные?")) return;
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith("uchot.v2.")) localStorage.removeItem(key);
     });
     alert("Все данные удалены. Приложение перезагрузится.");
     location.reload();
   }
+
+  // Инициализация
+  renderTariff();
 </script>
 </body>
 </html>
