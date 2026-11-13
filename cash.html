@@ -41,8 +41,9 @@
     .history-list { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
     .history-item { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; color: var(--text-dim); }
     .section-title { font-size: 14px; font-weight: 700; margin: 24px 0 10px; color: var(--text-dim); text-transform: uppercase; }
-    
-    .save-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
+
+    .save-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; transition: 0.2s; }
+    .save-btn:active { background: #2e7d32; transform: scale(0.98); }
     .cancel-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--border); color: var(--text); border: none; font-weight: 700; margin-top: 8px; cursor: pointer; }
   </style>
 </head>
@@ -69,6 +70,7 @@
     <button class="btn btn-green" onclick="toggleMileageForm()"><span>📏</span> Пробег</button>
   </div>
 
+  <!-- Форма заправки -->
   <div id="fuelFormContainer" style="display: none; margin-bottom: 20px;">
     <div style="background: var(--panel); border: 2px solid var(--accent); border-radius: 16px; padding: 16px;">
       <h3 style="margin-bottom: 12px; font-size: 16px;">⛽ Новая заправка</h3>
@@ -76,12 +78,16 @@
         <div><label>Сумма по чеку</label><input type="number" id="f_total" class="form-control" placeholder="0" inputmode="decimal"></div>
         <div><label>Цена за литр</label><input type="number" id="f_price" class="form-control" placeholder="0" inputmode="decimal"></div>
       </div>
-      <div style="margin-bottom: 12px;"><label>Кошелёк</label><select id="f_wall" class="form-control" onfocus="this.blur()">${walletSelectHtml()}</select></div>
+      <div style="margin-bottom: 12px;">
+        <label>Кошелёк</label>
+        <select id="f_wall" class="form-control"></select>
+      </div>
       <button class="save-btn" onclick="saveFuel()">💾 СОХРАНИТЬ</button>
       <button class="cancel-btn" onclick="toggleFuelForm()">Отмена</button>
     </div>
   </div>
 
+  <!-- Форма пробега -->
   <div id="mileageFormContainer" style="display: none; margin-bottom: 20px;">
     <div style="background: var(--panel); border: 2px solid var(--green); border-radius: 16px; padding: 16px;">
       <h3 style="margin-bottom: 12px; font-size: 16px;">📏 Обновить пробег</h3>
@@ -106,7 +112,7 @@
     <a href="index.html"><span>📦</span>Учёт</a>
     <a href="fin.html"><span>💼</span>Финансы</a>
     <a href="cash.html" class="active"><span>🛵</span>Скутер</a>
-    <a href="stats.html"><span>📊</span>Стата</a>
+    <a href="stats.html"><span>📈</span>Отчёты</a>
     <a href="settings.html"><span>⚙</span>Настройки</a>
   </div>
 </nav>
@@ -120,6 +126,12 @@
 <script src="js/domain/finance-api.js"></script>
 <script>
   Theme.init();
+  
+  // Гарантируем, что кошельки существуют при старте
+  if (!State.getWallets()["Наличные"] && !State.getWallets()["Карта"]) {
+    State.setWallets({ "Наличные": 0, "Карта": 0 });
+  }
+
   const COMPONENTS = [
     { id: 'oil', title: '🛢 Масло', interval: 2000 },
     { id: 'air_filter', title: '💨 Воздушный фильтр', interval: 3000 },
@@ -141,6 +153,9 @@
     const wallets = State.getWallets();
     document.getElementById("walletDisplay").innerText = `💳 ${Object.keys(wallets).map(w => `${w}: ${wallets[w]}`).join(" | ")}`;
 
+    // Заполняем селект в форме заправки
+    document.getElementById("f_wall").innerHTML = walletSelectHtml();
+
     const scooter = State.getScooter();
     const fuels = State.getFuel();
     const totalKm = Math.max(scooter.currentKm - scooter.startKm, 0);
@@ -149,6 +164,7 @@
     const totalLiters = fuels.reduce((s, f) => s + f.liters, 0);
     document.getElementById("statConsumption").innerText = (totalKm > 0 ? (totalLiters / totalKm * 100) : 0).toFixed(2) + " л/100км";
 
+    // Компоненты
     document.getElementById("componentsList").innerHTML = COMPONENTS.map(c => {
       const data = State.getComponent(c.id);
       const nextKm = data.lastKm ? data.lastKm + data.intervalKm : 0;
@@ -177,6 +193,7 @@
       </details>`;
     }).join("");
 
+    // Документы
     document.getElementById("officialList").innerHTML = OFFICIALS.map(o => {
       const data = State.getOfficial(o.id);
       let status = data.nextDate ? `Действует до: ${data.nextDate} (${data.cost} лей)` : "Нет данных";
@@ -197,6 +214,7 @@
       </details>`;
     }).join("");
 
+    // История
     let historyHtml = "";
     State.getMileageLog().slice().reverse().slice(0, 5).forEach(m => historyHtml += `<div class="history-item"><span>📏 Пробег</span><span>${m.date}: <b>${m.km} км</b></span></div>`);
     fuels.slice().reverse().slice(0, 5).forEach(f => historyHtml += `<div class="history-item"><span>⛽ Заправка</span><span>${f.date}: <b>${f.total} лей</b> (${f.liters.toFixed(2)} л)</span></div>`);
@@ -220,7 +238,10 @@
       const totalCost = UI.num(document.getElementById("f_total").value);
       const price = UI.num(document.getElementById("f_price").value);
       const wallet = document.getElementById("f_wall").value;
+      
+      if (!wallet) throw new Error("Кошелёк не выбран");
       if (totalCost <= 0 || price <= 0) throw new Error("Заполните сумму и цену");
+      
       const liters = UI.r2(totalCost / price);
       
       FinanceAPI.spend({ wallet, amount: totalCost, category: "Топливо (Скутер)", note: `${liters}л` });
