@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>📊 Статистика</title>
+  <title>📈 Отчёты</title>
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/components.css">
   <style>
@@ -11,33 +11,47 @@
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .header h1 { font-size: 24px; }
     
+    .scroller { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 16px; scrollbar-width: none; }
+    .scroller::-webkit-scrollbar { display: none; }
+    .month-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border); background: var(--panel); color: var(--text); font-weight: 600; white-space: nowrap; cursor: pointer; }
+    .month-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    
     .card { background: var(--panel); border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--border); }
-    .card h3 { font-size: 15px; margin-bottom: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+    .card h3 { font-size: 14px; margin-bottom: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
     
     .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .stat-item { background: var(--bg); padding: 12px; border-radius: 12px; text-align: center; }
     .stat-label { font-size: 12px; color: var(--text-dim); margin-bottom: 4px; display: block; }
     .stat-val { font-size: 18px; font-weight: 700; }
     
-    .stat-item.green { background: var(--green-bg); color: var(--green-fg); }
-    .stat-item.green .stat-label { color: var(--green-fg); opacity: 0.8; }
-    .stat-item.red { background: var(--red-bg); color: var(--red-fg); }
-    .stat-item.red .stat-label { color: var(--red-fg); opacity: 0.8; }
-    .stat-item.accent { background: var(--blue-bg); color: var(--blue-fg); }
-    .stat-item.accent .stat-label { color: var(--blue-fg); opacity: 0.8; }
-
-    .scroller { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 16px; }
-    .month-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border); background: var(--panel); color: var(--text); font-weight: 600; white-space: nowrap; cursor: pointer; }
-    .month-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .stat-item.green { background: #e8f5e9; color: #2e7d32; }
+    .stat-item.red { background: #ffebee; color: #c62828; }
+    .stat-item.blue { background: #e3f2fd; color: #1565c0; }
     
+    :root[data-theme="dark"] .stat-item.green { background: #1a2a1a; color: #66bb6a; }
+    :root[data-theme="dark"] .stat-item.red { background: #2a1414; color: #ef9a9a; }
+    :root[data-theme="dark"] .stat-item.blue { background: #1a2a3a; color: #90caf9; }
+
     .list-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
     .list-row:last-child { border-bottom: none; }
+    
+    /* График */
+    .chart-container { position: relative; height: 160px; display: flex; align-items: flex-end; gap: 4px; padding-top: 20px; overflow-x: auto; }
+    .chart-bar-wrap { flex: 1; min-width: 20px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+    .chart-bar { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; transition: height 0.3s; min-height: 2px; position: relative; }
+    .chart-bar:hover { opacity: 0.8; }
+    .chart-label { font-size: 10px; color: var(--text-dim); margin-top: 4px; text-align: center; }
+    
+    /* Топ дней */
+    .top-day-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; border-bottom: 1px solid var(--border); }
+    .top-day-row:last-child { border-bottom: none; }
+    .top-day-rank { font-weight: 700; color: var(--accent); margin-right: 8px; }
   </style>
 </head>
 <body>
 <div class="container">
   <div class="header">
-    <h1>📊 Статистика</h1>
+    <h1>📈 Отчёты</h1>
   </div>
 
   <!-- Выбор месяца -->
@@ -45,21 +59,56 @@
 
   <!-- Итоги месяца -->
   <div class="card">
-    <h3>Итоги за месяц</h3>
+    <h3>💰 Финансовый итог</h3>
     <div class="stat-grid">
       <div class="stat-item green">
-        <span class="stat-label">💼 Заработано (зарплата)</span>
+        <span class="stat-label">💼 Заработано</span>
         <span class="stat-val" id="statSalary">0</span>
       </div>
       <div class="stat-item red">
-        <span class="stat-label">💸 Потрачено (всего)</span>
+        <span class="stat-label">💸 Потрачено</span>
         <span class="stat-val" id="statExpenses">0</span>
       </div>
-      <div class="stat-item accent" style="grid-column: 1 / -1;">
-        <span class="stat-label">💰 Чистый доход (зарплата - расходы)</span>
-        <span class="stat-val" id="statNet" style="font-size: 24px;">0</span>
+      <div class="stat-item blue" style="grid-column: 1 / -1;">
+        <span class="stat-label">Чистый доход (зарплата - расходы)</span>
+        <span class="stat-val" id="statNet" style="font-size: 22px;">0</span>
       </div>
     </div>
+  </div>
+
+  <!-- Эффективность и заказы -->
+  <div class="card">
+    <h3>📦 Заказы и эффективность</h3>
+    <div class="stat-grid">
+      <div class="stat-item">
+        <span class="stat-label">Всего заказов</span>
+        <span class="stat-val" id="statOrders">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Рабочих дней</span>
+        <span class="stat-val" id="statWorkDays">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Ср. доход в день</span>
+        <span class="stat-val" id="statAvgDay">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Доход за заказ</span>
+        <span class="stat-val" id="statAvgOrder">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- График по дням -->
+  <div class="card">
+    <h3>📊 Заработок по дням</h3>
+    <div class="chart-container" id="chartContainer"></div>
+  </div>
+
+  <!-- Топ дней -->
+  <div class="card">
+    <h3>🏆 Лучшие дни месяца</h3>
+    <div id="topDaysList"></div>
   </div>
 
   <!-- Детали по скутеру -->
@@ -79,7 +128,7 @@
 
   <!-- Расходы по категориям -->
   <div class="card">
-    <h3>Расходы по категориям</h3>
+    <h3>🗂 Расходы по категориям</h3>
     <div id="categoryList"></div>
   </div>
 </div>
@@ -89,27 +138,21 @@
     <a href="index.html"><span>📦</span>Учёт</a>
     <a href="fin.html"><span>💼</span>Финансы</a>
     <a href="cash.html"><span>🛵</span>Скутер</a>
-    <a href="stats.html" class="active"><span>📊</span>Стата</a>
+    <a href="stats.html" class="active"><span>📈</span>Отчёты</a>
     <a href="settings.html"><span>⚙</span>Настройки</a>
   </div>
 </nav>
 
 <script src="js/lib/storage.js"></script>
 <script src="js/lib/ui.js"></script>
-<script src="js/lib/notify.js"></script>
-<script src="js/lib/guard.js"></script>
 <script src="js/lib/theme.js"></script>
 <script src="js/domain/state.js"></script>
-<script src="js/domain/tariff.js"></script>
-<script src="js/domain/schedule.js"></script>
-<script src="js/domain/finance-api.js"></script>
 <script src="js/domain/ledger.js"></script>
 <script>
   Theme.init();
   let activeMonth = UI.date.month(); // "2026-11"
 
   function renderMonths() {
-    // Собираем все месяцы, где есть данные
     const months = new Set([UI.date.month()]);
     const days = State.getDays();
     for (let k in days) months.add(k.slice(0, 7));
@@ -133,12 +176,27 @@
   function render() {
     renderMonths();
 
-    // 1. Зарплата по дням
+    // 1. Сбор данных
     const days = State.getDays();
-    let salary = 0;
+    let salary = 0, totalOrders = 0, workDays = 0;
+    let dailyData = []; // Для графика
+    
     for (let k in days) {
-      if (k.startsWith(activeMonth)) salary += (+days[k].total || 0);
+      if (k.startsWith(activeMonth)) {
+        const rec = days[k];
+        const dSalary = (+rec.total || 0);
+        const dOrders = (rec.night || 0) + (rec.ap || 0);
+        
+        salary += dSalary;
+        totalOrders += dOrders;
+        if (dOrders > 0 || dSalary > 0) workDays++;
+        
+        dailyData.push({ date: k, day: parseInt(k.split("-")[2]), salary: dSalary });
+      }
     }
+
+    // Сортируем график по дням
+    dailyData.sort((a, b) => a.day - b.day);
 
     // 2. Операции из журнала
     const ops = State.getOps().filter(o => o.date.startsWith(activeMonth));
@@ -148,17 +206,43 @@
     const fuelCost = ops.filter(o => o.kind === "expense" && o.cat.includes("Топливо")).reduce((s, o) => s + Math.abs(o.amount), 0);
     const maintCost = ops.filter(o => o.kind === "expense" && o.cat.includes("Скутер")).reduce((s, o) => s + Math.abs(o.amount), 0);
 
-    // 4. Чистый доход
+    // 4. Расчёт показателей
     const net = salary - expenses;
+    const avgDay = workDays ? salary / workDays : 0;
+    const avgOrder = totalOrders ? salary / totalOrders : 0;
 
     // Вывод
     document.getElementById("statSalary").textContent = UI.fmt(salary);
     document.getElementById("statExpenses").textContent = UI.fmt(expenses);
     document.getElementById("statNet").textContent = UI.fmt(net);
+    
+    document.getElementById("statOrders").textContent = totalOrders;
+    document.getElementById("statWorkDays").textContent = workDays;
+    document.getElementById("statAvgDay").textContent = UI.fmt(avgDay);
+    document.getElementById("statAvgOrder").textContent = UI.fmt(avgOrder);
+
     document.getElementById("statFuelCost").textContent = UI.fmt(fuelCost);
     document.getElementById("statMaintCost").textContent = UI.fmt(maintCost);
 
-    // 5. По категориям
+    // 5. График
+    const maxSalary = Math.max(...dailyData.map(d => d.salary), 1);
+    document.getElementById("chartContainer").innerHTML = dailyData.map(d => {
+      const height = (d.salary / maxSalary) * 100;
+      return `
+        <div class="chart-bar-wrap">
+          <div class="chart-bar" style="height: ${height}%;" title="${d.salary} лей"></div>
+          <div class="chart-label">${d.day}</div>
+        </div>
+      `;
+    }).join("") || `<div style="color:var(--text-dim); text-align:center; width:100%;">Нет данных</div>`;
+
+    // 6. Топ дней
+    const topDays = dailyData.filter(d => d.salary > 0).sort((a, b) => b.salary - a.salary).slice(0, 5);
+    document.getElementById("topDaysList").innerHTML = topDays.length 
+      ? topDays.map((d, i) => `<div class="top-day-row"><span><span class="top-day-rank">${i+1}.</span>${UI.date.ru(d.date)}</span><b>${UI.fmt(d.salary)} лей</b></div>`).join("")
+      : `<div class="list-row" style="color:var(--text-dim)">Нет данных</div>`;
+
+    // 7. По категориям
     const cats = {};
     ops.filter(o => o.kind === "expense").forEach(o => {
       cats[o.cat] = (cats[o.cat] || 0) + Math.abs(o.amount);
