@@ -1,0 +1,20 @@
+{
+  "name": "Учёт курьера",
+  "short_name": "Учёт",
+  "description": "Учёт смен, скутера и финансов",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2f2f7",
+  "theme_color": "#007aff",
+  "lang": "ru",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
