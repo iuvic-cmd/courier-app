@@ -9,12 +9,25 @@
   <style>
     .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-bottom: 80px; }
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    
+    /* Внутренние вкладки */
+    .fin-tabs { display: flex; background: var(--bg); padding: 4px; border-radius: 12px; margin-bottom: 16px; }
+    .fin-tab { flex: 1; text-align: center; padding: 10px 4px; font-size: 13px; font-weight: 600; border-radius: 10px; cursor: pointer; color: var(--text-dim); transition: 0.2s; }
+    .fin-tab.active { background: var(--panel); color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Кошельки */
     .wallets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
     .wallet-card { background: var(--panel); padding: 16px; border-radius: 16px; text-align: center; border: 1px solid var(--border); }
     .wallet-name { font-size: 13px; color: var(--text-dim); margin-bottom: 4px; }
     .wallet-balance { font-size: 20px; font-weight: 700; color: var(--accent); }
+    
     .action-buttons { display: flex; gap: 8px; margin-bottom: 24px; }
     .action-buttons .btn { flex: 1; }
+    
+    /* Общие стили для списков */
     .op-list { background: var(--panel); border-radius: 16px; padding: 0 16px; border: 1px solid var(--border); }
     .op-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
     .op-item:last-child { border-bottom: none; }
@@ -24,11 +37,19 @@
     .op-amount { font-weight: 700; font-size: 16px; }
     .op-expense { color: var(--red); }
     .op-income { color: var(--green); }
+
+    /* Прогресс-бар для целей/бюджетов */
+    .progress-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 6px; }
+    .progress-fill { height: 100%; background: var(--green); transition: width 0.3s; }
+    
+    /* Формы внутри страницы */
+    .inline-form { background: var(--panel); border: 2px solid var(--accent); border-radius: 16px; padding: 16px; margin-bottom: 16px; display: none; }
+    .inline-form.active { display: block; }
     .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
     .input-row > div { flex: 1; }
     .input-row label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
-    .save-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
-    .cancel-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--border); color: var(--text); border: none; font-weight: 700; margin-top: 8px; cursor: pointer; }
+    .save-btn { width: 100%; padding: 14px; font-size: 15px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
+    .cancel-btn { width: 100%; padding: 12px; font-size: 14px; border-radius: 12px; background: var(--border); color: var(--text); border: none; font-weight: 700; margin-top: 8px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -36,15 +57,24 @@
   <div class="header">
     <h1>💼 Финансы</h1>
   </div>
-  <div class="wallets-grid" id="walletsGrid"></div>
-  
-  <div class="action-buttons">
-    <button class="btn btn-orange" onclick="toggleOpForm('expense')">➖ Трата</button>
-    <button class="btn btn-green" onclick="toggleOpForm('income')">➕ Доход</button>
+
+  <!-- Внутренние вкладки -->
+  <div class="fin-tabs">
+    <div class="fin-tab active" onclick="switchTab('wallet')">💰 Кошельки</div>
+    <div class="fin-tab" onclick="switchTab('goals')">🎯 Цели</div>
+    <div class="fin-tab" onclick="switchTab('debts')">💸 Долги</div>
   </div>
 
-  <div id="opFormContainer" style="display: none; margin-bottom: 20px;">
-    <div style="background: var(--panel); border: 2px solid var(--accent); border-radius: 16px; padding: 16px;">
+  <!-- ВКЛАДКА: КОШЕЛЬКИ -->
+  <div id="tab-wallet" class="tab-content active">
+    <div class="wallets-grid" id="walletsGrid"></div>
+    
+    <div class="action-buttons">
+      <button class="btn btn-orange" onclick="toggleOpForm('expense')">➖ Трата</button>
+      <button class="btn btn-green" onclick="toggleOpForm('income')">➕ Доход</button>
+    </div>
+
+    <div id="opFormContainer" class="inline-form">
       <h3 id="opFormTitle" style="margin-bottom: 12px; font-size: 16px;">Новая операция</h3>
       <div style="margin-bottom: 10px;"><label>Сумма</label><input type="number" id="op_amount" class="form-control" placeholder="0" inputmode="decimal"></div>
       <div class="input-row">
@@ -55,10 +85,33 @@
       <button class="save-btn" onclick="saveOp()">💾 СОХРАНИТЬ</button>
       <button class="cancel-btn" onclick="toggleOpForm()">Отмена</button>
     </div>
+
+    <h3 style="margin-bottom: 10px; font-size: 16px;">Последние операции</h3>
+    <div class="op-list" id="opsList"></div>
   </div>
 
-  <h3 style="margin-bottom: 10px; font-size: 16px;">Последние операции</h3>
-  <div class="op-list" id="opsList"></div>
+  <!-- ВКЛАДКА: ЦЕЛИ И БЮДЖЕТЫ -->
+  <div id="tab-goals" class="tab-content">
+    <button class="btn btn-primary" style="width: 100%; margin-bottom: 16px;" onclick="toggleGoalForm()">➕ Добавить цель</button>
+    
+    <div id="goalFormContainer" class="inline-form">
+      <h3 style="margin-bottom: 12px; font-size: 16px;">🎯 Новая цель</h3>
+      <div style="margin-bottom: 10px;"><label>Название (напр. Новый телефон)</label><input type="text" id="g_name" class="form-control" placeholder="Название"></div>
+      <div style="margin-bottom: 10px;"><label>Сумма цели</label><input type="number" id="g_target" class="form-control" placeholder="0"></div>
+      <button class="save-btn" onclick="saveGoal()">💾 СОХРАНИТЬ</button>
+      <button class="cancel-btn" onclick="toggleGoalForm()">Отмена</button>
+    </div>
+
+    <div id="goalsList"></div>
+  </div>
+
+  <!-- ВКЛАДКА: ДОЛГИ И КРЕДИТЫ -->
+  <div id="tab-debts" class="tab-content">
+    <div style="text-align: center; padding: 40px 20px; color: var(--text-dim);">
+      <div style="font-size: 40px; margin-bottom: 10px;">🤝</div>
+      <div>Учёт долгов и кредитов <br> появится в следующем обновлении.</div>
+    </div>
+  </div>
 </div>
 
 <nav class="tabbar">
@@ -66,7 +119,7 @@
     <a href="index.html"><span>📦</span>Учёт</a>
     <a href="fin.html" class="active"><span>💼</span>Финансы</a>
     <a href="cash.html"><span>🛵</span>Скутер</a>
-    <a href="stats.html"><span>📊</span>Стата</a>
+    <a href="stats.html"><span>📈</span>Отчёты</a>
     <a href="settings.html"><span>⚙</span>Настройки</a>
   </div>
 </nav>
@@ -82,7 +135,15 @@
   Theme.init();
   let currentOpType = 'expense';
 
+  function switchTab(tabId) {
+    document.querySelectorAll('.fin-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('tab-' + tabId).classList.add('active');
+  }
+
   function render() {
+    // Кошельки
     const wallets = State.getWallets();
     document.getElementById("walletsGrid").innerHTML = Object.keys(wallets).map(name => `
       <div class="wallet-card">
@@ -90,6 +151,8 @@
         <div class="wallet-balance">${UI.fmt(wallets[name])} лей</div>
       </div>
     `).join("");
+
+    // История операций (последние 10)
     const ops = State.getOps().reverse().slice(0, 10);
     document.getElementById("opsList").innerHTML = ops.length ? ops.map(op => {
       let sign = op.amount < 0 ? "−" : "+";
@@ -105,19 +168,35 @@
         </div>
       `;
     }).join("") : `<div style="padding: 16px; text-align: center; color: var(--text-dim);">Нет операций</div>`;
+
+    // Цели
+    const goals = State.getGoals();
+    document.getElementById("goalsList").innerHTML = goals.length ? goals.map(g => {
+      const percent = g.target > 0 ? Math.min(100, Math.round(g.saved / g.target * 100)) : 0;
+      return `
+        <div class="op-list" style="margin-bottom: 10px; padding: 16px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <b>${UI.esc(g.name)}</b>
+            <span>${UI.fmt(g.saved)} / ${UI.fmt(g.target)}</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width: ${percent}%"></div></div>
+          <div style="text-align:right; font-size:12px; color:var(--text-dim); margin-top:4px;">${percent}%</div>
+        </div>
+      `;
+    }).join("") : `<div style="text-align: center; color: var(--text-dim); padding: 20px;">Пока нет целей</div>`;
   }
 
+  // --- ФОРМА ОПЕРАЦИИ ---
   function toggleOpForm(type) {
     const container = document.getElementById("opFormContainer");
     
-    // Если форма уже открыта и нажали на тот же тип — закрываем
-    if (container.style.display === "block" && currentOpType === type) {
-      container.style.display = "none";
+    if (container.classList.contains("active") && currentOpType === type) {
+      container.classList.remove("active");
       return;
     }
     
     currentOpType = type;
-    container.style.display = "block";
+    container.classList.add("active");
     document.getElementById("opFormTitle").innerText = type === 'expense' ? "➖ Новая трата" : "➕ Новый доход";
     
     const wallets = Object.keys(State.getWallets());
@@ -145,9 +224,38 @@
         FinanceAPI.receive({ wallet, amount, category: cat, note });
       }
       
-      document.getElementById("opFormContainer").style.display = "none";
+      document.getElementById("opFormContainer").classList.remove("active");
       render();
       Notify.show(`✅ Записано: ${amount} лей`);
+    } catch (e) {
+      Notify.error(e.message);
+    }
+  }
+
+  // --- ФОРМА ЦЕЛИ ---
+  function toggleGoalForm() {
+    document.getElementById("goalFormContainer").classList.toggle("active");
+  }
+
+  function saveGoal() {
+    if (!guardAction("saveGoal")) return;
+    try {
+      const name = document.getElementById("g_name").value.trim();
+      const target = UI.num(document.getElementById("g_target").value);
+      
+      if (!name) throw new Error("Введите название цели");
+      if (target <= 0) throw new Error("Введите сумму цели");
+      
+      const goals = State.getGoals();
+      goals.push({ id: Date.now().toString(), name, target, saved: 0 });
+      State.setGoals(goals);
+      
+      document.getElementById("goalFormContainer").classList.remove("active");
+      document.getElementById("g_name").value = "";
+      document.getElementById("g_target").value = "";
+      
+      render();
+      Notify.show(`🎯 Цель «${name}» добавлена`);
     } catch (e) {
       Notify.error(e.message);
     }
