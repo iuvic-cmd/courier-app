@@ -69,6 +69,14 @@
   <div id="officialList"></div>
 </div>
 
+<nav class="tabbar">
+  <div class="in">
+    <a href="index.html"><span>📦</span>Учёт</a>
+    <a href="fin.html"><span>💼</span>Финансы</a>
+    <a href="cash.html" class="active"><span>🛵</span>Скутер</a>
+  </div>
+</nav>
+
 <script src="js/lib/storage.js"></script>
 <script src="js/lib/ui.js"></script>
 <script src="js/lib/dialog.js"></script>
@@ -140,10 +148,10 @@
     box.innerHTML = `
       <h3 style="margin-bottom: 16px;">${title}</h3>
       <div class="input-row">
-        <div><label>Пробег (км)</label><input type="number" id="inp_km" class="form-control" value="${scooter.currentKm}"></div>
-        <div><label>Интервал (км)</label><input type="number" id="inp_int" class="form-control" value="${data.intervalKm || defaultInterval}"></div>
+        <div><label>Пробег (км)</label><input type="text" inputmode="numeric" id="inp_km" class="form-control" value="${scooter.currentKm}"></div>
+        <div><label>Интервал (км)</label><input type="text" inputmode="numeric" id="inp_int" class="form-control" value="${data.intervalKm || defaultInterval}"></div>
       </div>
-      <div style="margin-bottom: 10px;"><label>Стоимость (лей)</label><input type="number" id="inp_cost" class="form-control" placeholder="0" step="0.01"></div>
+      <div style="margin-bottom: 10px;"><label>Стоимость (лей)</label><input type="text" inputmode="decimal" id="inp_cost" class="form-control" placeholder="0"></div>
       <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="inp_wallet" class="form-control">${walletSelectHtml()}</select></div>
       <div class="dialog-buttons"><button class="dialog-yes" id="btn-save">💾 Записать</button><button class="dialog-no" id="btn-cancel">Отмена</button></div>
       ${data.history.length ? `<div style="margin-top:16px;border-top:1px solid var(--border);padding-top:10px"><b>📜 История:</b>${data.history.map(h => `<div style="font-size:12px;color:var(--text-dim);margin-top:4px">${h.date} — ${h.km} км ${h.cost ? `(${h.cost} лей)` : ""}</div>`).join("")}</div>` : ""}
@@ -151,6 +159,7 @@
     ov.appendChild(box); document.body.appendChild(ov);
     document.getElementById("btn-cancel").onclick = () => ov.remove();
     document.getElementById("btn-save").onclick = () => {
+      if (document.activeElement) document.activeElement.blur();
       const km = UI.num(document.getElementById("inp_km").value);
       const interval = UI.num(document.getElementById("inp_int").value);
       const cost = UI.num(document.getElementById("inp_cost").value);
@@ -173,13 +182,14 @@
       <h3 style="margin-bottom: 16px;">${title}</h3>
       <div style="margin-bottom: 10px;"><label>Дата прохождения</label><input type="date" id="inp_date" class="form-control" value="${UI.date.local()}"></div>
       <div style="margin-bottom: 10px;"><label>Действует до</label><input type="date" id="inp_next" class="form-control" value="${data.nextDate || ""}"></div>
-      <div style="margin-bottom: 10px;"><label>Стоимость (лей)</label><input type="number" id="inp_cost" class="form-control" placeholder="0" step="0.01"></div>
+      <div style="margin-bottom: 10px;"><label>Стоимость (лей)</label><input type="text" inputmode="decimal" id="inp_cost" class="form-control" placeholder="0"></div>
       <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="inp_wallet" class="form-control">${walletSelectHtml()}</select></div>
       <div class="dialog-buttons"><button class="dialog-yes" id="btn-save">💾 Сохранить</button><button class="dialog-no" id="btn-cancel">Отмена</button></div>
     `;
     ov.appendChild(box); document.body.appendChild(ov);
     document.getElementById("btn-cancel").onclick = () => ov.remove();
     document.getElementById("btn-save").onclick = () => {
+      if (document.activeElement) document.activeElement.blur();
       const date = document.getElementById("inp_date").value;
       const next = document.getElementById("inp_next").value;
       const cost = UI.num(document.getElementById("inp_cost").value);
@@ -200,8 +210,8 @@
     box.innerHTML = `
       <h3 style="margin-bottom: 16px;">⛽ Заправка</h3>
       <div class="input-row">
-        <div><label>Сумма по чеку</label><input type="number" id="inp_total" class="form-control" placeholder="0"></div>
-        <div><label>Цена за литр</label><input type="number" id="inp_price" class="form-control" placeholder="0"></div>
+        <div><label>Сумма по чеку</label><input type="text" inputmode="decimal" id="inp_total" class="form-control" placeholder="0"></div>
+        <div><label>Цена за литр</label><input type="text" inputmode="decimal" id="inp_price" class="form-control" placeholder="0"></div>
       </div>
       <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="inp_wallet" class="form-control">${walletSelectHtml()}</select></div>
       <div class="dialog-buttons"><button class="dialog-yes" id="btn-save">💾 Записать</button><button class="dialog-no" id="btn-cancel">Отмена</button></div>
@@ -209,6 +219,7 @@
     ov.appendChild(box); document.body.appendChild(ov);
     document.getElementById("btn-cancel").onclick = () => ov.remove();
     document.getElementById("btn-save").onclick = () => {
+      if (document.activeElement) document.activeElement.blur();
       try {
         const totalCost = UI.num(document.getElementById("inp_total").value);
         const price = UI.num(document.getElementById("inp_price").value);
@@ -228,12 +239,13 @@
     const box = document.createElement("div"); box.className = "dialog-box";
     box.innerHTML = `
       <h3 style="margin-bottom: 16px;">📏 Пробег</h3>
-      <div style="margin-bottom: 10px;"><label>Текущий пробег (км)</label><input type="number" id="inp_km" class="form-control" value="${scooter.currentKm || ""}"></div>
+      <div style="margin-bottom: 10px;"><label>Текущий пробег (км)</label><input type="text" inputmode="numeric" id="inp_km" class="form-control" value="${scooter.currentKm || ""}"></div>
       <div class="dialog-buttons"><button class="dialog-yes" id="btn-save">💾 Сохранить</button><button class="dialog-no" id="btn-cancel">Отмена</button></div>
     `;
     ov.appendChild(box); document.body.appendChild(ov);
     document.getElementById("btn-cancel").onclick = () => ov.remove();
     document.getElementById("btn-save").onclick = () => {
+      if (document.activeElement) document.activeElement.blur();
       const km = UI.num(document.getElementById("inp_km").value);
       if (km < scooter.currentKm) return Notify.error("Пробег не может уменьшаться");
       State.setMileageLog([...State.getMileageLog(), { date: UI.date.local(), km }]);
@@ -248,13 +260,5 @@
 
   render();
 </script>
-  <!-- Нижнее меню -->
-<nav class="tabbar">
-  <div class="in">
-    <a href="index.html"><span>📦</span>Учёт</a>
-    <a href="fin.html"><span>💼</span>Финансы</a>
-    <a href="cash.html" class="active"><span>🛵</span>Скутер</a>
-  </div>
-</nav>
 </body>
 </html>
