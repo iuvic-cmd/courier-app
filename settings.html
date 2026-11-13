@@ -23,6 +23,7 @@
     .file-label { display: block; padding: 14px; background: var(--accent); color: #fff; text-align: center; border-radius: 12px; font-weight: 700; cursor: pointer; margin-top: 10px; }
     .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
     .btn-sm-reset { padding: 12px; font-size: 13px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; color: #fff; }
+    textarea { width: 100%; min-height: 100px; font-family: monospace; font-size: 12px; padding: 10px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); color: var(--text); margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -31,24 +32,26 @@
     <h1>⚙ Настройки</h1>
   </div>
 
-  <!-- Импорт -->
+  <!-- PIN -->
   <div class="card">
-    <h3>📥 Импорт данных</h3>
-    <p class="hint">Выбери файл `import-data.json` для восстановления данных.</p>
-    <label for="fileInput" class="file-label">📂 Выбрать файл</label>
-    <input type="file" id="fileInput" class="file-input" accept=".json" onchange="handleFile(this)">
-    <div id="importStatus" class="hint" style="margin-top:10px;"></div>
+    <h3>🔐 PIN-код</h3>
+    <p class="hint">По умолчанию <b>1234</b>. Если забудешь новый, поменяй <code>DEFAULT_PIN</code> в <code>index.html</code>.</p>
+    <div class="form-group">
+      <label>Новый PIN (4 цифры)</label>
+      <input type="text" id="newPin" maxlength="4" inputmode="numeric" class="form-control" placeholder="0000">
+    </div>
+    <button class="btn-save" onclick="savePin()">💾 Сменить PIN</button>
   </div>
 
   <!-- Тариф -->
   <div class="card">
-    <h3>💰 Настройка тарифа</h3>
+    <h3>💰 Тариф</h3>
     <div class="form-group">
-      <label>🌙 Ночной заказ (лей)</label>
+      <label>🌙 Ночной (лей)</label>
       <input type="number" id="tariffNight" class="form-control" placeholder="73">
     </div>
     <div class="form-group">
-      <label>📦 Единый заказ (лей)</label>
+      <label>📦 Единый (лей)</label>
       <input type="number" id="tariffAp" class="form-control" placeholder="54">
     </div>
     <div class="form-group">
@@ -58,18 +61,28 @@
     <button class="btn-save" onclick="saveTariff()">💾 Применить тариф</button>
   </div>
 
-  <!-- Сброс по разделам -->
+  <!-- Импорт JSON -->
+  <div class="card">
+    <h3>📥 Импорт данных</h3>
+    <p class="hint">Вставь текст JSON в поле ниже или выбери файл.</p>
+    <textarea id="importBox" placeholder="Вставь JSON сюда"></textarea>
+    <button class="btn-save" onclick="importFromText()">📥 Импортировать</button>
+    
+    <label for="fileInput" class="file-label">📂 Выбрать файл</label>
+    <input type="file" id="fileInput" class="file-input" accept=".json" onchange="handleFile(this)">
+    <div id="importStatus" class="hint" style="margin-top:10px;"></div>
+  </div>
+
+  <!-- Сброс -->
   <div class="card" style="border-color: var(--red);">
     <h3 style="color: var(--red);">⚠️ Сброс данных</h3>
-    <p class="hint">Выбери, что именно удалить. Действие необратимо.</p>
-    
+    <p class="hint">Выбери, что удалить. Действие необратимо.</p>
     <div class="btn-grid">
       <button class="btn-sm-reset" style="background: var(--orange);" onclick="resetSection('days')">📦 Дни и учёт</button>
       <button class="btn-sm-reset" style="background: var(--accent);" onclick="resetSection('fin')">💼 Финансы</button>
       <button class="btn-sm-reset" style="background: var(--purple);" onclick="resetSection('cash')">🛵 Скутер</button>
       <button class="btn-sm-reset" style="background: var(--text-dim);" onclick="resetSection('settings')">⚙ Настройки</button>
     </div>
-
     <button class="btn-danger" onclick="resetAllData()" style="margin-top:20px;">🗑 Сбросить ВСЁ</button>
   </div>
 </div>
@@ -93,28 +106,13 @@
 <script>
   Theme.init();
 
-  // --- Импорт ---
-  function handleFile(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      try {
-        const data = JSON.parse(e.target.result);
-        let count = 0;
-        for (const key in data) {
-          if (key.startsWith("uchot.v2.")) {
-            localStorage.setItem(key, JSON.stringify(data[key]));
-            count++;
-          }
-        }
-        document.getElementById("importStatus").innerHTML = `<span style="color: green">✅ Импортировано ключей: ${count}. Перезагрузка...</span>`;
-        setTimeout(() => location.reload(), 1500);
-      } catch (err) {
-        document.getElementById("importStatus").innerHTML = `<span style="color: red">❌ Ошибка: ${err.message}</span>`;
-      }
-    };
-    reader.readAsText(file);
+  // --- PIN ---
+  function savePin() {
+    const pin = document.getElementById("newPin").value.trim();
+    if (!/^\d{4}$/.test(pin)) return Notify.error("PIN должен состоять из 4 цифр");
+    AppStorage.set("pin", pin);
+    document.getElementById("newPin").value = "";
+    Notify.show("✅ PIN успешно изменен");
   }
 
   // --- Тариф ---
@@ -128,40 +126,64 @@
     Notify.show(`✅ Тариф с ${date}: 🌙${night} / 📦${ap}`);
   }
 
-  // --- Сброс по разделам ---
+  // --- Импорт ---
+  function importFromText() {
+    const text = document.getElementById("importBox").value.trim();
+    if (!text) return Notify.error("Вставь JSON");
+    try {
+      const data = JSON.parse(text);
+      let count = 0;
+      for (const key in data) {
+        if (key.startsWith("uchot.v2.")) {
+          localStorage.setItem(key, JSON.stringify(data[key]));
+          count++;
+        }
+      }
+      Notify.show(`✅ Импортировано ключей: ${count}. Перезагрузка...`);
+      setTimeout(() => location.reload(), 1000);
+    } catch (e) {
+      Notify.error("Ошибка JSON: " + e.message);
+    }
+  }
+
+  function handleFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById("importBox").value = e.target.result;
+      importFromText();
+    };
+    reader.readAsText(file);
+  }
+
+  // --- Сброс ---
   function resetSection(section) {
     const names = {
       days: "Дни учёта (календарь, заказы, лог)",
       fin: "Финансы (кошельки, операции, долги, кредиты)",
       cash: "Скутер (пробег, заправки, ТО)",
-      settings: "Настройки смен, подмоги, тариф"
+      settings: "Настройки смен, подмоги, тариф, PIN"
     };
-    if (!confirm(`Удалить раздел «${names[section]}»? Это действие необратимо.`)) return;
+    if (!confirm(`Удалить раздел «${names[section]}»? Это необратимо.`)) return;
 
-    const keysToRemove = [];
-
-    if (section === "days") {
-      keysToRemove.push("days", "orders_log");
-    } else if (section === "fin") {
-      keysToRemove.push("wallets", "ops", "debts", "goals", "credits", "cards", "lombard", "lombard_info", "assets", "budgets", "regulars", "categories", "currencies", "rates");
-    } else if (section === "cash") {
-      keysToRemove.push("scooter", "scooter_fuel", "mileage_log", "comp_oil", "comp_air_filter", "comp_belt", "comp_brakes", "scooter_expenses");
-    } else if (section === "settings") {
-      keysToRemove.push("shift", "help", "roster", "tariff", "pin");
-    }
+    let keysToRemove = [];
+    if (section === "days") keysToRemove = ["days", "orders_log"];
+    else if (section === "fin") keysToRemove = ["wallets", "ops", "debts", "goals", "credits", "cards", "lombard", "lombard_info", "assets", "budgets", "regulars", "categories", "currencies", "rates"];
+    else if (section === "cash") keysToRemove = ["scooter", "scooter_fuel", "mileage_log", "comp_oil", "comp_air_filter", "comp_belt", "comp_brakes", "scooter_expenses"];
+    else if (section === "settings") keysToRemove = ["shift", "help", "roster", "tariff", "pin"];
 
     keysToRemove.forEach(k => localStorage.removeItem("uchot.v2." + k));
     Notify.show(`✅ Раздел «${names[section]}» удален`);
     setTimeout(() => location.reload(), 800);
   }
 
-  // --- Полный сброс ---
   function resetAllData() {
-    if (!confirm("ВНИМАНИЕ! Удалить ВСЕ данные приложения? Это необратимо.")) return;
+    if (!confirm("ВНИМАНИЕ! Удалить ВСЕ данные приложения?")) return;
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith("uchot.v2.")) localStorage.removeItem(key);
     });
-    alert("Все данные удалены. Перезагрузка.");
+    alert("Данные удалены. Перезагрузка.");
     location.reload();
   }
 
