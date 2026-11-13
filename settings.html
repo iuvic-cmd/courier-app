@@ -7,29 +7,22 @@
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/components.css">
   <style>
-    .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-bottom: 80px; }
+    .container { max-width: 480px; margin: 0 auto; padding: 16px; }
     .header { margin-bottom: 20px; }
     .header h1 { font-size: 24px; }
-    
     .card { background: var(--panel); border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--border); }
     .card h3 { font-size: 16px; margin-bottom: 12px; color: var(--accent); }
-    
     .form-group { margin-bottom: 12px; }
     .form-group label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 4px; }
     .form-control { width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--text); font-size: 16px; }
-    
     .btn-save { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
     .btn-danger { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; background: var(--red); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
-    
     .hint { font-size: 12px; color: var(--text-dim); margin-top: 4px; line-height: 1.4; }
-    
     .pair-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--bg); border-radius: 8px; font-size: 13px; margin-bottom: 4px; }
     .pair-row.mine { background: var(--help-bg); border-left: 3px solid var(--accent); }
     .pair-num { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
     .partner-btn { padding: 8px 14px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--panel); color: var(--text); font-weight: 600; font-size: 13px; cursor: pointer; }
     .partner-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-    /* Список кошельков */
     .wallet-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
     .wallet-item:last-child { border-bottom: none; }
     .wallet-del { background: var(--red-bg); color: var(--red); border: none; border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
@@ -41,7 +34,6 @@
     <h1>⚙ Настройки</h1>
   </div>
 
-  <!-- Кошельки -->
   <div class="card">
     <h3>💳 Мои кошельки</h3>
     <div id="walletsList"></div>
@@ -51,16 +43,13 @@
     </div>
   </div>
 
-  <!-- График смен -->
   <div class="card">
     <h3>⚡ График смен (2/2)</h3>
     <p class="hint">Скользящие пары: (1,2)→(3,4)→(5,6)→(7,1)→(2,3)→(4,5)→(6,7)</p>
-    
     <div class="form-group">
       <label>📅 Первый рабочий день</label>
       <input type="date" id="shiftFirstDay" class="form-control">
     </div>
-    
     <div class="form-group">
       <label>Мой номер в смене (1–7)</label>
       <select id="myNumber" class="form-control" onchange="onMyNumberChange()">
@@ -68,25 +57,20 @@
         <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option>
       </select>
     </div>
-    
     <div id="myPairsInfo" style="display:none">
       <div class="hint" id="pairInfoBox" style="background:var(--bg); padding:10px; border-radius:8px; margin-bottom:10px;"></div>
-      
       <div class="form-group" style="margin-top:8px">
         <label>📅 Дата короткого дня</label>
         <input type="date" id="refShortDate" class="form-control">
       </div>
-      
       <div class="form-group">
         <label>Напарник в этот день</label>
         <div style="display:flex; gap:8px; flex-wrap:wrap" id="partnerBtns"></div>
       </div>
     </div>
-    
     <button class="btn-save" onclick="applyShiftSchedule()">✅ Применить график</button>
   </div>
 
-  <!-- Опасная зона -->
   <div class="card" style="border-color: var(--red);">
     <h3 style="color: var(--red);">⚠️ Опасная зона</h3>
     <p class="hint">Это действие удалит ВСЕ данные: историю дней, финансы, заправки и настройки. Приложение вернется в исходное состояние.</p>
@@ -128,13 +112,13 @@
   const getPairForWorkDay = (wdi, offset) => { const idx = (((wdi + offset) % 7) + 7) % 7; return PAIRS[idx]; };
   const findPairsForNumber = n => PAIRS.map((pair, index) => ({ index, pair, partner: pair[0] === n ? pair[1] : pair[0] })).filter(p => p.pair.includes(n));
 
-  // --- Кошельки ---
   function renderWallets() {
     const wallets = State.getWallets();
+    // Экранирование имени кошелька
     document.getElementById("walletsList").innerHTML = Object.keys(wallets).map(name => `
       <div class="wallet-item">
-        <span>${name}</span>
-        <button class="wallet-del" onclick="deleteWallet('${name}')">Удалить</button>
+        <span>${UI.esc(name)}</span>
+        <button class="wallet-del" data-name="${UI.esc(name)}" onclick="deleteWallet(this.dataset.name)">Удалить</button>
       </div>
     `).join("") || `<div class="hint">Нет кошельков</div>`;
   }
@@ -160,7 +144,6 @@
     Notify.show("Кошелёк удалён");
   }
 
-  // --- График смен ---
   function onMyNumberChange() {
     const n = parseInt(document.getElementById("myNumber").value) || 0;
     if (!n) { document.getElementById("myPairsInfo").style.display = "none"; return; }
@@ -244,20 +227,15 @@
     State.setDays(days);
   }
 
-  // --- Сброс ---
   function resetAllData() {
     if (!confirm("ВНИМАНИЕ! Вы уверены, что хотите удалить ВСЕ данные приложения? Это действие необратимо.")) return;
-    
-    // Удаляем только ключи с префиксом uchot.v2.
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith("uchot.v2.")) localStorage.removeItem(key);
     });
-    
     alert("Все данные удалены. Приложение перезагрузится.");
     location.reload();
   }
 
-  // Загрузка при старте
   function loadSettings() {
     const shift = State.getShift();
     if (shift) {
