@@ -17,13 +17,8 @@
     .form-control { width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--text); font-size: 16px; }
     .btn-save { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
     .btn-danger { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; background: var(--red); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
-    .hint { font-size: 12px; color: var(--text-dim); margin-top: 4px; line-height: 1.4; }
-    .partner-btn { padding: 8px 14px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--panel); color: var(--text); font-weight: 600; font-size: 13px; cursor: pointer; }
-    .partner-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .roster-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-    .roster-item { display: flex; align-items: center; gap: 6px; }
-    .roster-label { font-weight: 700; font-size: 12px; width: 24px; color: var(--text-dim); }
-    .roster-input { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 14px; }
+    .hint { font-size: 13px; color: var(--text-dim); margin-bottom: 16px; line-height: 1.5; }
+    textarea { width: 100%; min-height: 100px; font-family: monospace; font-size: 12px; padding: 10px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); color: var(--text); margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -33,62 +28,33 @@
   </div>
 
   <div class="card">
-    <h3>⚡ Короткие дни (2/2)</h3>
-    <p class="hint">Скользящие пары: (1,2)→(3,4)→(5,6)→(7,1)→(2,3)→(4,5)→(6,7)</p>
-    
+    <h3>🔐 PIN-код</h3>
+    <p class="hint">По умолчанию код — <b>1234</b>. Если забудешь новый, просто поменяй <code>DEFAULT_PIN</code> в <code>index.html</code>.</p>
     <div class="form-group">
-      <label>📅 Первый рабочий день</label>
-      <input type="date" id="shiftFirstDay" class="form-control">
+      <label>Новый PIN (4 цифры)</label>
+      <input type="text" id="newPin" maxlength="4" inputmode="numeric" class="form-control" placeholder="0000">
     </div>
-    
-    <div class="form-group">
-      <label>Мой номер в смене (1–7)</label>
-      <select id="myNumber" class="form-control" onchange="onMyNumberChange()">
-        <option value="">—</option>
-        <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option>
-      </select>
-    </div>
-    
-    <div id="myPairsInfo" style="display:none">
-      <div class="hint" id="pairInfoBox" style="background:var(--bg); padding:10px; border-radius:8px; margin-bottom:10px;"></div>
-      <div class="form-group" style="margin-top:8px">
-        <label>📅 Дата короткого дня (напарник)</label>
-        <input type="date" id="refShortDate" class="form-control">
-      </div>
-      <div class="form-group">
-        <label>Напарник в этот день</label>
-        <div style="display:flex; gap:8px; flex-wrap:wrap" id="partnerBtns"></div>
-      </div>
-    </div>
-    
-    <button class="btn-save" onclick="applyShiftSchedule()">✅ Применить график</button>
+    <button class="btn-save" onclick="savePin()">💾 Сменить PIN</button>
   </div>
 
   <div class="card">
-    <h3>🤝 Подмога</h3>
-    <p class="hint">Укажи дату последней подмоги, чтобы приложение считало очередь.</p>
-    <div class="form-group">
-      <label>📅 Последняя моя подмога</label>
-      <input type="date" id="helpStartDate" class="form-control">
-    </div>
-    <div class="form-group">
-      <label>📅 Последняя подмога другой смены</label>
-      <input type="date" id="helpOtherStartDate" class="form-control">
-      <small class="hint">Опционально, для отображения их очереди</small>
-    </div>
-    <button class="btn-save" onclick="applyHelpSchedule()">✅ Применить подмогу</button>
+    <h3>📤 Экспорт данных</h3>
+    <p class="hint">Скопируй текст ниже и сохрани (например, в заметки), чтобы не потерять данные.</p>
+    <button class="btn-save" onclick="exportData()">📋 Сгенерировать JSON</button>
+    <textarea id="exportBox" readonly style="display:none"></textarea>
+    <button class="btn-save" id="copyBtn" style="display:none" onclick="copyExport()">Скопировать</button>
   </div>
 
   <div class="card">
-    <h3>👥 Список смен</h3>
-    <div class="roster-grid" id="rosterA"></div>
-    <div class="roster-grid" id="rosterB"></div>
-    <button class="btn-save" onclick="saveRoster()">💾 Сохранить</button>
+    <h3>📥 Импорт данных</h3>
+    <p class="hint">Вставь ранее сохраненный JSON в поле ниже и нажми «Импортировать».</p>
+    <textarea id="importBox" placeholder="Вставь JSON сюда"></textarea>
+    <button class="btn-save" onclick="importData()">📥 Импортировать</button>
   </div>
 
   <div class="card" style="border-color: var(--red);">
     <h3 style="color: var(--red);">⚠️ Опасная зона</h3>
-    <p class="hint">Это действие удалит ВСЕ данные: историю дней, финансы, заправки и настройки. Приложение вернется в исходное состояние.</p>
+    <p class="hint">Удалит ВСЕ данные приложения (включая PIN, график, деньги, заказы).</p>
     <button class="btn-danger" onclick="resetAllData()">🗑 Сбросить все данные</button>
   </div>
 </div>
@@ -106,162 +72,67 @@
 <script src="js/lib/storage.js"></script>
 <script src="js/lib/ui.js"></script>
 <script src="js/lib/notify.js"></script>
-<script src="js/lib/guard.js"></script>
 <script src="js/lib/theme.js"></script>
-<script src="js/domain/state.js"></script>
-<script src="js/domain/schedule.js"></script>
-<script src="js/domain/tariff.js"></script>
-<script src="js/domain/finance-api.js"></script>
 <script>
   Theme.init();
-  let selectedRefPartner = null;
 
-  const PAIRS = [[1,2],[3,4],[5,6],[7,1],[2,3],[4,5],[6,7]];
-  const dayDiff = (a, b) => Math.round((new Date(b + "T12:00:00") - new Date(a + "T12:00:00")) / 86400000);
-  const isWeekendStr = ds => { const w = new Date(ds + "T12:00:00").getDay(); return w === 0 || w === 6; };
-  
-  function getWorkDayIndex(ds, first) {
-    const diff = dayDiff(first, ds), pos = ((diff % 4) + 4) % 4;
-    if (pos >= 2) return null;
-    return (diff >= 0 ? Math.floor(diff / 4) : Math.ceil((diff - 3) / 4)) * 2 + pos;
-  }
-  const getPairForWorkDay = (wdi, offset) => { const idx = (((wdi + offset) % 7) + 7) % 7; return PAIRS[idx]; };
-  const findPairsForNumber = n => PAIRS.map((pair, index) => ({ index, pair, partner: pair[0] === n ? pair[1] : pair[0] })).filter(p => p.pair.includes(n));
-  const isWorkDay = (ds, first) => { const p = ((dayDiff(first, ds) % 4) + 4) % 4; return p === 0 || p === 1; };
-
-  function onMyNumberChange() {
-    const n = parseInt(document.getElementById("myNumber").value) || 0;
-    if (!n) { document.getElementById("myPairsInfo").style.display = "none"; return; }
-    document.getElementById("myPairsInfo").style.display = "block";
-    const mine = findPairsForNumber(n);
-    document.getElementById("pairInfoBox").innerHTML = `Вы <b>№${n}</b> — в <b>2 парах</b>:<br>` + mine.map(p => `• Пара ${p.index + 1}: <b>(${p.pair[0]}, ${p.pair[1]})</b> — напарник <b>№${p.partner}</b>`).join("<br>");
-    const btns = document.getElementById("partnerBtns"); btns.innerHTML = "";
-    mine.forEach(p => {
-      const b = document.createElement("button"); b.className = "partner-btn"; b.textContent = `№${p.partner}`;
-      b.onclick = () => { btns.querySelectorAll(".partner-btn").forEach(x => x.classList.remove("active")); b.classList.add("active"); selectedRefPartner = p.partner; };
-      btns.appendChild(b);
-    });
-    selectedRefPartner = null; 
+  function savePin() {
+    const pin = document.getElementById("newPin").value.trim();
+    if (!/^\d{4}$/.test(pin)) return Notify.error("PIN должен состоять из 4 цифр");
+    AppStorage.set("pin", pin);
+    document.getElementById("newPin").value = "";
+    Notify.show("✅ PIN успешно изменен");
   }
 
-  function applyShiftSchedule() {
-    const first = document.getElementById("shiftFirstDay").value;
-    const myNum = parseInt(document.getElementById("myNumber").value) || 0;
-    const ref = document.getElementById("refShortDate").value;
-    if (!first || !myNum || !ref) { Notify.error("Заполните все поля."); return; }
-    if (!selectedRefPartner) { Notify.error("Выберите напарника."); return; }
-    const wdi = getWorkDayIndex(ref, first);
-    if (wdi === null) { Notify.error("Дата — НЕ рабочий день!"); return; }
-    const refPair = findPairsForNumber(myNum).find(p => p.partner === selectedRefPartner);
-    if (!refPair) { Notify.error("Пара не найдена."); return; }
-    const offset = ((refPair.index - wdi) % 7 + 7) % 7;
-    State.setShift({ firstWorkDay: first, myNumber: myNum, offset, refPartner: selectedRefPartner });
-    recalculateCalendarTypes();
-    Notify.show("✅ График применен!");
-  }
-
-  function applyHelpSchedule() {
-    const mine = document.getElementById("helpStartDate").value;
-    const other = document.getElementById("helpOtherStartDate").value;
-    if (!mine) { Notify.error("Укажите дату вашей подмоги."); return; }
-    const helpConfig = { lastMyHelpDate: mine };
-    if (other) helpConfig.lastOtherHelpDate = other;
-    AppStorage.set("help", helpConfig);
-    recalculateCalendarTypes();
-    Notify.show("✅ Подмога применена!");
-  }
-
-  function recalculateCalendarTypes() {
-    const shift = State.getShift(), help = AppStorage.get("help", {});
-    if (!shift || !shift.firstWorkDay) return;
-    const days = State.getDays(), now = new Date();
-    
-    const getHelpPosition = (ds) => {
-        if (!help.lastMyHelpDate || ds < help.lastMyHelpDate) return null;
-        if (ds === help.lastMyHelpDate) return shift.myNumber;
-        let count = 0;
-        const d = new Date(help.lastMyHelpDate + "T12:00:00");
-        const target = new Date(ds + "T12:00:00");
-        while (d < target) {
-            d.setDate(d.getDate() + 1);
-            const dStr = d.toISOString().split("T")[0];
-            if (!isWeekendStr(dStr) && !isWorkDay(dStr, shift.firstWorkDay)) count++;
-        }
-        return ((shift.myNumber - 1 + count) % 7) + 1;
-    };
-
-    for (let mo = -1; mo <= 3; mo++) {
-      const dt = new Date(now.getFullYear(), now.getMonth() + mo, 1);
-      const year = dt.getFullYear(), month = dt.getMonth(), last = new Date(year, month + 1, 0).getDate();
-      for (let d = 1; d <= last; d++) {
-        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        if (days[dateStr] && days[dateStr].generated === false) continue; 
-        
-        days[dateStr] = days[dateStr] || {};
-        const isWork = isWorkDay(dateStr, shift.firstWorkDay);
-        const wdi = getWorkDayIndex(dateStr, shift.firstWorkDay);
-        const isShort = wdi !== null && getPairForWorkDay(wdi, shift.offset).includes(shift.myNumber);
-        const isWknd = isWeekendStr(dateStr);
-        const helpPos = (!isWork && !isWknd) ? getHelpPosition(dateStr) : null;
-        const isMyHelp = helpPos === shift.myNumber;
-
-        if (isWork) days[dateStr].type = isShort ? "short" : "work";
-        else if (isMyHelp) days[dateStr].type = "help";
-        else days[dateStr].type = "weekend";
-
-        days[dateStr].generated = true;
-        days[dateStr].night = days[dateStr].night || 0;
-        days[dateStr].ap = days[dateStr].ap || 0;
-        days[dateStr].total = days[dateStr].total || 0;
+  function exportData() {
+    const data = {};
+    // Собираем все ключи с префиксом uchot.v2.
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith("uchot.v2.")) {
+        data[key] = JSON.parse(localStorage.getItem(key));
       }
     }
-    State.setDays(days);
+    const json = JSON.stringify(data, null, 2);
+    const box = document.getElementById("exportBox");
+    box.value = json;
+    box.style.display = "block";
+    document.getElementById("copyBtn").style.display = "block";
   }
 
-  function renderRosterInputs() {
-    const roster = AppStorage.get("roster", { A: {}, B: {} });
-    let htmlA = "", htmlB = "";
-    for (let n = 1; n <= 7; n++) {
-      htmlA += `<div class="roster-item"><span class="roster-label">А${n}</span><input type="text" class="roster-input" data-shift="A" data-num="${n}" value="${UI.esc(roster.A[n] || "")}" placeholder="Имя"></div>`;
-      htmlB += `<div class="roster-item"><span class="roster-label">Б${n}</span><input type="text" class="roster-input" data-shift="B" data-num="${n}" value="${UI.esc(roster.B[n] || "")}" placeholder="Имя"></div>`;
+  function copyExport() {
+    const box = document.getElementById("exportBox");
+    box.select();
+    document.execCommand("copy");
+    Notify.show("📋 Скопировано в буфер");
+  }
+
+  function importData() {
+    const text = document.getElementById("importBox").value.trim();
+    if (!text) return Notify.error("Вставь JSON");
+    try {
+      const data = JSON.parse(text);
+      if (typeof data !== "object") throw "Неверный формат";
+      for (const key in data) {
+        if (key.startsWith("uchot.v2.")) {
+          localStorage.setItem(key, JSON.stringify(data[key]));
+        }
+      }
+      Notify.show("✅ Данные импортированы. Перезагрузка...");
+      setTimeout(() => location.reload(), 1000);
+    } catch (e) {
+      Notify.error("Ошибка JSON: " + e.message);
     }
-    document.getElementById("rosterA").innerHTML = htmlA;
-    document.getElementById("rosterB").innerHTML = htmlB;
-  }
-
-  function saveRoster() {
-    const next = { A: {}, B: {} };
-    document.querySelectorAll(".roster-input").forEach(i => { const v = i.value.trim(); if (v) next[i.dataset.shift][i.dataset.num] = v; });
-    AppStorage.set("roster", next);
-    Notify.show("✅ Список сохранён");
   }
 
   function resetAllData() {
-    if (!confirm("ВНИМАНИЕ! Вы уверены, что хотите удалить ВСЕ данные?")) return;
-    Object.keys(localStorage).forEach(key => { if (key.startsWith("uchot.v2.")) localStorage.removeItem(key); });
+    if (!confirm("ВНИМАНИЕ! Вы уверены, что хотите удалить ВСЕ данные? Это необратимо.")) return;
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith("uchot.v2.")) localStorage.removeItem(key);
+    });
     alert("Все данные удалены. Приложение перезагрузится.");
     location.reload();
   }
-
-  function loadSettings() {
-    const shift = State.getShift();
-    if (shift) {
-      document.getElementById("shiftFirstDay").value = shift.firstWorkDay || "";
-      document.getElementById("myNumber").value = shift.myNumber || "";
-      if (shift.myNumber) {
-        onMyNumberChange();
-        if (shift.refPartner) {
-          selectedRefPartner = shift.refPartner;
-          document.querySelectorAll(".partner-btn").forEach(b => { if (b.textContent === `№${shift.refPartner}`) b.classList.add("active"); });
-        }
-      }
-    }
-    const help = AppStorage.get("help", {});
-    if (help.lastMyHelpDate) document.getElementById("helpStartDate").value = help.lastMyHelpDate;
-    if (help.lastOtherHelpDate) document.getElementById("helpOtherStartDate").value = help.lastOtherHelpDate;
-    renderRosterInputs();
-  }
-  loadSettings();
 </script>
 </body>
 </html>
