@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Тест библиотек</title>
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/components.css">
+  <style>
+    body { padding: 20px; max-width: 480px; margin: 0 auto; }
+    h1 { margin-bottom: 20px; font-size: 22px; }
+    .section { margin-bottom: 24px; }
+  </style>
+</head>
+<body>
+
+  <h1>🧪 Тест Этапа 1</h1>
+  
+  <div class="section">
+    <label style="display: flex; align-items: center; gap: 8px; font-weight: 600;">
+      <input type="checkbox" id="theme-toggle" style="width: 20px; height: 20px;"> 
+      Включить тёмную тему
+    </label>
+  </div>
+
+  <div class="section">
+    <button class="btn btn-primary" onclick="testDialog()">Тест Dialog (Confirm)</button>
+    <button class="btn btn-green" onclick="testPrompt()">Тест Dialog (Prompt)</button>
+    <button class="btn btn-orange" onclick="testNotify()">Тест Notify (Тост)</button>
+    <button class="btn btn-purple" onclick="testStorage()">Тест Storage (Запись/Чтение)</button>
+  </div>
+  
+  <div id="res" style="margin-top: 20px; font-weight: bold; color: var(--green);"></div>
+
+  <!-- Подключение наших модулей -->
+  <script src="js/lib/storage.js"></script>
+  <script src="js/lib/ui.js"></script>
+  <script src="js/lib/dialog.js"></script>
+  <script src="js/lib/notify.js"></script>
+  <script src="js/lib/guard.js"></script>
+  <script src="js/lib/theme.js"></script>
+
+  <script>
+    Theme.init();
+
+    function testDialog() {
+        Dialog.confirm("Вы уверены, что хотите удалить запись?", () => {
+            Notify.show("✅ Вы нажали Да");
+        });
+    }
+
+    function testPrompt() {
+        Dialog.prompt("Введите ваше имя:", "Курьер", (val) => {
+            if (!val) return Notify.error("Имя не может быть пустым");
+            Notify.show("Привет, " + val);
+        });
+    }
+
+    function testNotify() {
+        if (!guardAction("testNotify")) return; // Защита от двойного клика
+        Notify.show("🛎 Уведомление появилось!");
+    }
+
+    function testStorage() {
+        // Записываем
+        AppStorage.set("test_key", { date: UI.date.local(), value: 42.5 });
+        // Читаем
+        const val = AppStorage.get("test_key");
+        document.getElementById("res").innerText = "✅ Считано из Storage: " + JSON.stringify(val);
+        Notify.show("Данные записаны и прочитаны");
+    }
+  </script>
+</body>
+</html>
