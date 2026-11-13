@@ -207,4 +207,46 @@
       <div class="dialog-buttons"><button class="dialog-yes" id="btn-save">💾 Записать</button><button class="dialog-no" id="btn-cancel">Отмена</button></div>
     `;
     ov.appendChild(box); document.body.appendChild(ov);
-    document.getElementById("btn-cancel
+    document.getElementById("btn-cancel").onclick = () => ov.remove();
+    document.getElementById("btn-save").onclick = () => {
+      try {
+        const totalCost = UI.num(document.getElementById("inp_total").value);
+        const price = UI.num(document.getElementById("inp_price").value);
+        const wallet = document.getElementById("inp_wallet").value;
+        if (totalCost <= 0 || price <= 0) throw new Error("Заполните сумму и цену");
+        const liters = UI.r2(totalCost / price);
+        FinanceAPI.spend({ wallet, amount: totalCost, category: "Топливо (Скутер)", note: `${liters}л` });
+        State.setFuel([...State.getFuel(), { date: UI.date.local(), liters, price, total: totalCost }]);
+        ov.remove(); render(); Notify.show(`✅ ${liters} л. Списано ${totalCost} лей`);
+      } catch (e) { Notify.error(e.message); }
+    };
+  }
+
+  function openAddMileage() {
+    const scooter = State.getScooter();
+    const ov = document.createElement("div"); ov.className = "dialog-overlay";
+    const box = document.createElement("div"); box.className = "dialog-box";
+    box.innerHTML = `
+      <h3 style="margin-bottom: 16px;">📏 Пробег</h3>
+      <div style="margin-bottom: 10px;"><label>Текущий пробег (км)</label><input type="number" id="inp_km" class="form-control" value="${scooter.currentKm || ""}"></div>
+      <div class="dialog-buttons"><button class="dialog-yes" id="btn-save">💾 Сохранить</button><button class="dialog-no" id="btn-cancel">Отмена</button></div>
+    `;
+    ov.appendChild(box); document.body.appendChild(ov);
+    document.getElementById("btn-cancel").onclick = () => ov.remove();
+    document.getElementById("btn-save").onclick = () => {
+      const km = UI.num(document.getElementById("inp_km").value);
+      if (km < scooter.currentKm) return Notify.error("Пробег не может уменьшаться");
+      State.setMileageLog([...State.getMileageLog(), { date: UI.date.local(), km }]);
+      scooter.currentKm = km;
+      if (scooter.startKm === 0) scooter.startKm = km;
+      State.setScooter(scooter);
+      ov.remove(); render(); Notify.show("✅ Пробег обновлен");
+    };
+  }
+
+  function openAddExpense() { Notify.show("Мойка и прочее ТО добавляются через карточки ниже"); }
+
+  render();
+</script>
+</body>
+</html>
