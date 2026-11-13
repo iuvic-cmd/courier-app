@@ -4,28 +4,35 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>📦 Мой Учёт</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-512.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#007aff">
+
 <link rel="stylesheet" href="css/theme.css">
 <link rel="stylesheet" href="css/components.css">
 <style>
+/* Переменные (остальные из theme.css) */
 :root{--card-bg:rgba(255,255,255,.92);--card-border:rgba(255,255,255,.5);--panel-bg:#fff;--subtle-bg:#f8f8fc;--subtle-bg-2:#f0f0f5;--input-bg:#f8f8fc;--input-border:#e5e5ea;--divider:#e5e5ea;--modal-bg:#fff;--good:#2e7d32;
 --work-bg:#e8f5e9;--work-border:#43a047;--work-text:#2e7d32;--help-bg:#e3f2fd;--help-border:#1e88e5;--help-text:#1565c0;--short-bg:#fff3e0;--short-border:#fb8c00;--short-text:#e65100;--replace-bg:#f3e5f5;--replace-border:#8e24aa;--replace-text:#7b1fa2;--short_replace-bg:#fff8e1;--short_replace-border:#f9a825;--short_replace-text:#f57f17;--weekend-bg:#f5f5f5;--weekend-border:#bdbdbd;--weekend-text:#616161}
 :root[data-theme="dark"]{--card-bg:rgba(28,28,30,.95);--card-border:rgba(255,255,255,.06);--panel-bg:rgba(28,28,30,.95);--subtle-bg:#1c1c1e;--subtle-bg-2:#2c2c2e;--input-bg:#1c1c1e;--input-border:#3a3a3c;--divider:#2c2c2e;--modal-bg:#1c1c1e;--good:#66bb6a;
 --work-bg:#1a2a1a;--work-border:#2e7d32;--work-text:#66bb6a;--help-bg:#1a2a3a;--help-border:#1565c0;--help-text:#42a5f5;--short-bg:#2a1a0a;--short-border:#e65100;--short-text:#ffa726;--replace-bg:#2a1a2a;--replace-border:#7b1fa2;--replace-text:#ab47bc;--short_replace-bg:#2a2a0a;--short_replace-border:#f9a825;--short_replace-text:#ffca28;--weekend-bg:#1c1c1e;--weekend-border:#3a3a3c;--weekend-text:#8e8e93}
+
 *{-webkit-tap-highlight-color:transparent}
 body{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))}
 .container{max-width:480px;margin:0 auto;padding:12px 16px 30px;display:flex;flex-direction:column;gap:12px}
+
 header{background:linear-gradient(135deg,#007aff,#0055b3);border-radius:16px;padding:16px 20px;box-shadow:0 4px 16px rgba(0,122,255,.3)}
 header h1{color:#fff;font-size:22px;font-weight:600;letter-spacing:-.3px;margin:0}
 .header-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:6px}
 .badge{background:rgba(255,255,255,.2);padding:4px 14px;border-radius:20px;font-size:15px;font-weight:500;color:#fff}
 .head-tools{display:flex;align-items:center;gap:8px}
 .gear{display:flex;align-items:center;justify-content:center;width:34px;height:30px;border-radius:30px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.15);text-decoration:none;font-size:16px;color:#fff}
-.theme-switch{position:relative}.theme-switch input{display:none}
-.theme-label{display:flex;align-items:center;justify-content:space-between;width:56px;height:30px;background:rgba(255,255,255,.2);border-radius:30px;padding:0 6px;cursor:pointer;border:1px solid rgba(255,255,255,.15)}
-.theme-label span{font-size:14px;z-index:2;opacity:.5}
-.toggle-ball{position:absolute;top:2px;left:2px;width:24px;height:24px;background:#fff;border-radius:50%;transition:transform .3s;box-shadow:0 2px 8px rgba(0,0,0,.2);z-index:1}
-#theme-toggle:checked+.theme-label .toggle-ball{transform:translateX(26px)}
-#theme-toggle:checked+.theme-label .moon,#theme-toggle:not(:checked)+.theme-label .sun{opacity:1}
+
+/* Календарь */
 .calendar-section{background:var(--card-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:16px 12px 12px;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.06);border:1px solid var(--card-border)}
 .calendar-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:0 4px}
 .calendar-header h2{font-size:17px;font-weight:600;margin:0}
@@ -43,10 +50,12 @@ header h1{color:#fff;font-size:22px;font-weight:600;letter-spacing:-.3px;margin:
 .day.today{border-color:var(--accent)!important;box-shadow:0 0 0 2px #007aff,0 4px 12px rgba(0,122,255,.2)}
 .day.today .day-number{color:var(--accent);font-weight:700}
 .day.work{background:var(--work-bg);border-color:var(--work-border)}.day.help{background:var(--help-bg);border-color:var(--help-border)}.day.short{background:var(--short-bg);border-color:var(--short-border)}.day.replace{background:var(--replace-bg);border-color:var(--replace-border)}.day.short_replace{background:var(--short_replace-bg);border-color:var(--short_replace-border);border-style:dashed}.day.weekend{background:var(--weekend-bg);border-color:var(--weekend-border)}
+
 .type-btn{padding:8px 4px;border:none;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer}
 .type-btn:active{transform:scale(.95)}
 .type-btn.work{background:var(--work-bg);color:var(--work-text)}.type-btn.help{background:var(--help-bg);color:var(--help-text)}.type-btn.short{background:var(--short-bg);color:var(--short-text)}.type-btn.replace{background:var(--replace-bg);color:var(--replace-text)}.type-btn.short_replace{background:var(--short_replace-bg);color:var(--short_replace-text);border:1.5px dashed var(--short_replace-border)}.type-btn.weekend{background:var(--weekend-bg);color:var(--weekend-text)}
 .type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+
 details>summary{list-style:none;cursor:pointer}
 details>summary::-webkit-details-marker{display:none}
 details.menu>summary{width:100%;padding:14px;background:linear-gradient(135deg,#007aff,#0055b3);border-radius:14px;color:#fff;font-size:17px;font-weight:600;display:flex;justify-content:center;align-items:center;gap:8px;box-shadow:0 2px 12px rgba(0,122,255,.3)}
@@ -57,6 +66,7 @@ details.acc>summary{padding:14px 18px;background:var(--panel-bg);color:var(--tex
 details.acc>summary::after{content:"▼";font-size:13px;color:var(--text-dim);transition:transform .3s}
 details[open]>summary::after{transform:rotate(180deg)}
 .acc-body{background:var(--panel-bg);color:var(--text);border-radius:14px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.05);border:1px solid var(--card-border);margin-top:6px}
+
 .pos{color:var(--good)}
 .form-group{margin-bottom:12px}
 .form-group label{display:block;margin-bottom:4px;font-weight:500;font-size:14px}
@@ -64,11 +74,13 @@ details[open]>summary::after{transform:rotate(180deg)}
 textarea.form-control{min-height:0}
 .form-control:focus{outline:none;border-color:var(--accent)}
 select.form-control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238e8e93' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .row{display:flex;gap:8px}
 .btn{width:100%;padding:12px;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:#fff}
 .btn:active{transform:scale(.97)}
 .btn-primary{background:#007aff}.btn-orange{background:#ff9500}.btn-red{background:#ff3b30}.btn-gray{background:#8e8e93}.btn-green{background:#34c759}
+
 .plan-card{background:var(--subtle-bg);padding:14px;border-radius:12px;margin-bottom:10px}
 .plan-card h3{font-size:15px;font-weight:600;margin-bottom:10px}
 .hint{font-size:12px;color:var(--text-dim);margin-bottom:8px}
@@ -85,25 +97,31 @@ details.tree.d>summary{background:var(--subtle-bg);color:var(--accent);font-weig
 .tree-total{font-weight:700;margin-top:6px;background:var(--subtle-bg-2);border-radius:8px;padding:6px!important}
 .log-row{display:flex;justify-content:space-between;align-items:center;gap:6px}
 .log-del{background:#ff3b30;color:#fff;border:none;border-radius:6px;padding:2px 10px;font-size:12px;cursor:pointer;width:auto}
+
 .status-person{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:10px;font-size:13px;font-weight:500;margin-bottom:4px}
 .status-person.work{background:var(--work-bg);color:var(--work-text)}.status-person.short{background:var(--short-bg);color:var(--short-text)}.status-person.help{background:var(--help-bg);color:var(--help-text)}.status-person.weekend{background:var(--weekend-bg);color:var(--weekend-text)}
 .status-person.me{box-shadow:0 0 0 2px #007aff}
 .sp-num{width:26px;height:24px;border-radius:12px;background:rgba(128,128,128,.2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
 .sect-title{padding:6px 8px 4px;font-size:12px;font-weight:700}
+
 #overviewTable table{width:100%;border-collapse:collapse;font-size:12px}
 #overviewTable th{padding:6px 4px;background:#007aff;color:#fff;text-align:center;font-weight:600}
 #overviewTable td{padding:5px 3px;text-align:center;border-bottom:1px solid var(--divider)}
 #overviewTable tr.even{background:var(--subtle-bg)}#overviewTable tr.now{background:var(--help-bg)}
+
 .modal{display:none;position:fixed;z-index:1000;inset:0;background:rgba(0,0,0,.4);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);overflow-y:auto}
 .modal-content{background:var(--modal-bg);color:var(--text);margin:max(env(safe-area-inset-top,0px),12vh) auto 24px;padding:24px 20px 20px;border-radius:20px;width:88%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .modal-content h3{font-size:18px;font-weight:600;margin-bottom:16px;text-align:center}
 .close{float:right;font-size:28px;cursor:pointer;color:var(--text-dim);line-height:1;padding:0 4px}
+
 .dialog-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);z-index:3000;display:flex;align-items:center;justify-content:center}
 .dialog-box{background:var(--modal-bg);color:var(--text);border-radius:20px;padding:24px 20px 20px;width:85%;max-width:340px}
 .dialog-box p{font-size:15px;text-align:center;margin-bottom:20px;line-height:1.5;white-space:pre-line}
 .dialog-buttons{display:flex;gap:8px}
 .dialog-buttons button{flex:1;padding:12px;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer}
 .dialog-yes,.dialog-ok{background:#007aff;color:#fff}.dialog-no{background:var(--subtle-bg-2);color:var(--text)}
+
+/* PIN */
 #pinScreen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;transition:transform .05s}
 #pinScreen.active{display:flex}
 .pin-dots{display:flex;gap:16px;margin-bottom:40px}
@@ -114,6 +132,7 @@ details.tree.d>summary{background:var(--subtle-bg);color:var(--accent);font-weig
 .pin-btn:active{transform:scale(.9);background:var(--subtle-bg-2)}
 .pin-btn.empty{background:transparent;border:none;pointer-events:none}
 .pin-title{font-size:20px;font-weight:600;margin-bottom:30px;color:var(--text)}
+
 @media(max-width:400px){.container{padding:8px 10px 20px}header h1{font-size:18px}.day{min-height:50px;font-size:11px}.day-number{font-size:13px}.day-label{font-size:7px}}
 @media(max-width:360px){.day{min-height:44px}.day-number{font-size:12px}.type-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
@@ -145,10 +164,6 @@ details.tree.d>summary{background:var(--subtle-bg);color:var(--accent);font-weig
     </div>
     <div class="head-tools">
       <a href="settings.html" class="gear" title="Настройки">⚙</a>
-      <div class="theme-switch">
-        <input type="checkbox" id="theme-toggle"/>
-        <label for="theme-toggle" class="theme-label"><span class="sun">☀</span><span class="moon">🌙</span><div class="toggle-ball"></div></label>
-      </div>
     </div>
   </div>
 </header>
@@ -266,12 +281,11 @@ details.tree.d>summary{background:var(--subtle-bg);color:var(--accent);font-weig
 <script>
 try{Theme.init()}catch(e){}
 
-/* Ключи, которых ещё нет в state.js (подмога и лог заказов) */
 if(!State.getHelp){State.getHelp=()=>AppStorage.get("help",null);State.setHelp=v=>AppStorage.set("help",v)}
 if(!State.getOrdersLog){State.getOrdersLog=()=>AppStorage.get("orders_log",null);State.setOrdersLog=v=>AppStorage.set("orders_log",v)}
 
 // ==========================================
-//  БЛОКИРОВКА PIN-КОДОМ
+//  PIN-КОД
 // ==========================================
 const DEFAULT_PIN = "1234";
 let enteredPin = "";
@@ -336,7 +350,7 @@ const getDayTypeIcon=t=>DAY_TYPES[t]?DAY_TYPES[t].icon:"📅";
 const validType=t=>DAY_TYPES[t]?t:"work";
 
 // ==========================================
-//  ДАННЫЕ: все через State
+//  ДАННЫЕ
 // ==========================================
 let DAYS={},shiftConfig=null,helpConfig=null,rosterConfig={A:{},B:{}},ordersLog=[];
 const toRec=(date,r)=>({date,dayType:r.type||"work",nightOrders:r.night||0,apOrders:r.ap||0,total:r.total||0,note:r.note||"",generated:r.generated});
@@ -376,15 +390,6 @@ const showConfirmDialog=(msg,onYes)=>dialog(msg,[["✅ Да","dialog-yes",onYes]
 
 function updateClock(){const el=$("realTimeClock");if(el)el.innerText=new Date().toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})}
 setInterval(updateClock,1000);
-function initThemeToggle(){
-  const t=$("theme-toggle");
-  t.checked=document.documentElement.getAttribute("data-theme")==="dark";
-  t.addEventListener("change",function(){
-    const v=this.checked?"dark":"light";
-    if(typeof Theme.set==="function")Theme.set(v);
-    else{document.documentElement.setAttribute("data-theme",v);try{localStorage.setItem("theme",v)}catch(e){}}
-  });
-}
 function updateMonthCounter(){
   const prefix=currentDate.getFullYear()+"-"+pad(currentDate.getMonth()+1);
   const days=getHistory().filter(d=>d.date.startsWith(prefix));
@@ -395,7 +400,7 @@ function updateMonthCounter(){
 function refreshAll(){renderCal();updateMonthCounter();loadHistory();displayOrdersLog();renderStatusGrid();renderShiftOverview();fillSetupForm()}
 
 // ==========================================
-//  ЛОГИКА ГРАФИКА: короткие дни и подмога
+//  ЛОГИКА ГРАФИКА
 // ==========================================
 const personName=(shift,n)=>{const r=rosterConfig&&rosterConfig[shift==="А"?"A":"B"];return r&&r[n]?String(r[n]).trim():""};
 const personLabel=(shift,n)=>{const nm=personName(shift,n);return nm?`${shift}${n} ${nm}`:`${shift}${n}`};
@@ -469,9 +474,6 @@ function markAutoSchedule(){
   setHistory(h);refreshAll();
 }
 
-// ==========================================
-//  Настройка графика и подмоги
-// ==========================================
 function initSetupForm(){
   $("cfgMy").innerHTML=[1,2,3,4,5,6,7].map(n=>`<option value="${n}">А${n}</option>`).join("");
   $("cfgOff").innerHTML=getRotatingPairs().map((p,i)=>`<option value="${i}">А${p[0]} + А${p[1]}</option>`).join("");
@@ -508,9 +510,6 @@ function saveShiftSetup(){
   Notify.show(`✅ График сгенерирован на ${GEN_FWD} мес.`);
 }
 
-// ==========================================
-//  Календарь
-// ==========================================
 function renderCal(){
   const y=currentDate.getFullYear(),m=currentDate.getMonth();
   const first=(new Date(y,m,1).getDay()+6)%7,last=new Date(y,m+1,0).getDate();
@@ -536,9 +535,6 @@ function renderCal(){
 }
 function changeMonth(dir){currentDate=new Date(currentDate.getFullYear(),currentDate.getMonth()+dir,1);renderCal();updateMonthCounter()}
 
-// ==========================================
-//  Редактирование дня
-// ==========================================
 function editDay(ds){
   $("mainMenu").open=true;$("edit").open=true;
   $("date").value=ds;
@@ -619,9 +615,6 @@ function addOrders(){
   }catch(e){Notify.error(e.message)}
 }
 
-// ==========================================
-//  История и лог заказов
-// ==========================================
 function groupYMD(items,getDate){
   const g={};
   items.forEach(it=>{const ds=getDate(it),y=ds.slice(0,4),m=ds.slice(5,7);((g[y]=g[y]||{})[m]=g[y][m]||[]).push(it)});
@@ -683,9 +676,6 @@ function deleteLogDay(ds){
   });
 }
 
-// ==========================================
-//  График смены и статус дня
-// ==========================================
 function changeStatusDay(dir){statusDayDate=new Date(statusDayDate);statusDayDate.setDate(statusDayDate.getDate()+dir);renderStatusGrid()}
 function pickStatusDay(v){if(v){statusDayDate=new Date(v+"T12:00:00");renderStatusGrid()}}
 function goToStatusToday(){statusDayDate=new Date();renderStatusGrid()}
@@ -753,9 +743,6 @@ function renderStatusGrid(){
   grid.innerHTML=html;
 }
 
-// ==========================================
-//  Запуск
-// ==========================================
 let currentDate=new Date(),statusDayDate=new Date(),overviewMonthDate=new Date();
 
 function reload(){
@@ -769,7 +756,7 @@ function initApp(){
   initSetupForm();
   $("calendar").addEventListener("click",e=>{const c=e.target.closest(".day[data-date]");if(c)editDay(c.dataset.date)});
   $("addOrdersModal").addEventListener("click",e=>{if(e.target.id==="addOrdersModal")closeAddOrdersModal()});
-  initThemeToggle();updateClock();
+  updateClock();
   reload();
 
   window.addEventListener("storage",reload);
@@ -777,6 +764,13 @@ function initApp(){
   document.addEventListener("visibilitychange",()=>{if(!document.hidden)reload()});
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initApp);else initApp();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW:', err));
+    });
+  }
 </script>
 </body>
 </html>
