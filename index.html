@@ -4,123 +4,88 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>📦 Мой Учёт</title>
-  
-  <!-- Стили -->
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/components.css">
-  
   <style>
-    /* Стили конкретно для календаря */
     .container { max-width: 480px; margin: 0 auto; padding: 16px; }
     .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 16px; }
     .day-name { text-align: center; font-size: 12px; color: var(--text-dim); font-weight: 600; margin-bottom: 8px; }
-    .day { 
-      background: var(--panel); border: 1.5px solid var(--border); border-radius: 10px; 
-      padding: 8px 4px; text-align: center; cursor: pointer; min-height: 64px; 
-      display: flex; flex-direction: column; justify-content: space-between; 
-      transition: 0.2s; user-select: none;
-    }
+    .day { background: var(--panel); border: 1.5px solid var(--border); border-radius: 10px; padding: 8px 4px; text-align: center; cursor: pointer; min-height: 64px; display: flex; flex-direction: column; justify-content: space-between; transition: 0.2s; user-select: none; }
     .day:active { transform: scale(0.95); }
     .day.empty { background: transparent; border: none; cursor: default; }
     .day.today { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2); }
-    
     .day.work { background: #e8f5e9; border-color: #43a047; color: #2e7d32; }
     .day.short { background: #fff3e0; border-color: #fb8c00; color: #e65100; }
     .day.weekend { background: var(--bg); border-color: var(--border); color: var(--text-dim); }
-
     :root[data-theme="dark"] .day.work { background: #1a2a1a; border-color: #2e7d32; color: #66bb6a; }
     :root[data-theme="dark"] .day.short { background: #2a1a0a; border-color: #e65100; color: #ffa726; }
-
     .day-num { font-weight: 700; font-size: 14px; }
     .day-info { font-size: 10px; opacity: 0.9; line-height: 1.2; }
     .day-total { font-size: 11px; font-weight: 700; margin-top: 2px; }
-    
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
     .header h1 { font-size: 24px; }
     .total-badge { background: var(--accent); color: white; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 14px; }
-    
     .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
     .input-row > div { flex: 1; }
     .input-row label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
   </style>
 </head>
 <body>
-
 <div class="container">
   <div class="header">
     <h1>📦 Учёт</h1>
     <div class="total-badge" id="monthTotal">0 лей</div>
   </div>
-
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
     <button class="btn btn-primary" style="width: auto; padding: 8px 16px;" onclick="changeMonth(-1)">◀</button>
     <h2 id="currentMonth" style="font-size: 18px;">—</h2>
     <button class="btn btn-primary" style="width: auto; padding: 8px 16px;" onclick="changeMonth(1)">▶</button>
   </div>
-
   <div class="calendar" id="calendar"></div>
 </div>
 
-<!-- Подключаем наши модули -->
 <script src="js/lib/storage.js"></script>
 <script src="js/lib/ui.js"></script>
 <script src="js/lib/dialog.js"></script>
 <script src="js/lib/notify.js"></script>
 <script src="js/lib/guard.js"></script>
 <script src="js/lib/theme.js"></script>
-
-<!-- Домен -->
 <script src="js/domain/state.js"></script>
 <script src="js/domain/tariff.js"></script>
 <script src="js/domain/schedule.js"></script>
 <script src="js/domain/finance-api.js"></script>
 <script src="js/domain/ledger.js"></script>
-
 <script>
-  // Инициализация темы
   Theme.init();
-
   let currentDate = new Date();
 
   function render() {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
-    
     document.getElementById("currentMonth").textContent = `${monthNames[month]} ${year}`;
-
     const startDow = new Date(year, month, 1).getDay() || 7;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const daysData = State.getDays();
     const todayStr = UI.date.local();
-    
     let html = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(d => `<div class="day-name">${d}</div>`).join("");
     for (let i = 1; i < startDow; i++) html += `<div class="day empty"></div>`;
-
     let totalMonth = 0;
-
     for (let d = 1; d <= daysInMonth; d++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const rec = daysData[dateStr];
-        
-        // Здесь используется НАСТОЯЩИЙ график смен
         const type = rec ? rec.type : Schedule.getDefaultDayType(dateStr);
-        
         let cls = "day " + type + (dateStr === todayStr ? " today" : "");
         let info = "", total = 0;
-        
         if (rec && (rec.night > 0 || rec.ap > 0)) {
             info = `<div class="day-info">🌙${rec.night} 📦${rec.ap}</div>`;
             total = rec.total || 0;
             totalMonth += total;
         }
-
         html += `<div class="${cls}" data-date="${dateStr}"><div class="day-num">${d}</div>${info}${total > 0 ? `<div class="day-total">${total}</div>` : ""}</div>`;
     }
-
     document.getElementById("calendar").innerHTML = html;
     document.getElementById("monthTotal").textContent = totalMonth + " лей";
-
     document.querySelectorAll(".day:not(.empty)").forEach(el => {
       el.addEventListener("click", () => openDay(el.dataset.date));
     });
@@ -129,10 +94,8 @@
   function openDay(dateStr) {
     const days = State.getDays();
     const rec = days[dateStr] || { type: Schedule.getDefaultDayType(dateStr), night: 0, ap: 0, note: "" };
-    
     const ov = document.createElement("div"); ov.className = "dialog-overlay";
     const box = document.createElement("div"); box.className = "dialog-box";
-    
     box.innerHTML = `
       <h3 style="margin-bottom: 16px;">📅 ${UI.date.ru(dateStr)}</h3>
       <div class="input-row">
@@ -146,39 +109,20 @@
       </div>
     `;
     ov.appendChild(box); document.body.appendChild(ov);
-
     document.getElementById("btn-cancel").onclick = () => ov.remove();
     document.getElementById("btn-save").onclick = () => {
       if (!guardAction("saveDay")) return;
-
       const night = UI.num(document.getElementById("inp_night").value);
       const ap = UI.num(document.getElementById("inp_ap").value);
       const note = document.getElementById("inp_note").value.trim();
-      
-      // Здесь считается НАСТОЯЩИЙ тариф
       const total = Tariff.calcTotal(dateStr, night, ap);
-      
       const days = State.getDays();
-      days[dateStr] = {
-        type: Schedule.getDefaultDayType(dateStr),
-        night: night,
-        ap: ap,
-        total: total,
-        note: note
-      };
+      days[dateStr] = { type: Schedule.getDefaultDayType(dateStr), night, ap, total, note };
       State.setDays(days);
-      
-      ov.remove();
-      render();
-      Notify.show(`✅ Сохранено: ${total} лей`);
+      ov.remove(); render(); Notify.show(`✅ Сохранено: ${total} лей`);
     };
   }
-
-  function changeMonth(dir) {
-    currentDate.setMonth(currentDate.getMonth() + dir);
-    render();
-  }
-
+  function changeMonth(dir) { currentDate.setMonth(currentDate.getMonth() + dir); render(); }
   render();
 </script>
 </body>
