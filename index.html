@@ -17,8 +17,10 @@
     .day.work { background: #e8f5e9; border-color: #43a047; color: #2e7d32; }
     .day.short { background: #fff3e0; border-color: #fb8c00; color: #e65100; }
     .day.weekend { background: var(--bg); border-color: var(--border); color: var(--text-dim); }
+    .day.help { background: #e3f2fd; border-color: #1e88e5; color: #1565c0; }
     :root[data-theme="dark"] .day.work { background: #1a2a1a; border-color: #2e7d32; color: #66bb6a; }
     :root[data-theme="dark"] .day.short { background: #2a1a0a; border-color: #e65100; color: #ffa726; }
+    :root[data-theme="dark"] .day.help { background: #1a2a3a; border-color: #1565c0; color: #42a5f5; }
     .day-num { font-weight: 700; font-size: 14px; }
     .day-info { font-size: 10px; opacity: 0.9; line-height: 1.2; }
     .day-total { font-size: 11px; font-weight: 700; margin-top: 2px; }
@@ -82,12 +84,10 @@
 <script src="js/domain/ledger.js"></script>
 <script>
   Theme.init();
-  let currentDate = new Date();
-  let activeDateStr = "";
+  let currentDate = new Date(), activeDateStr = "";
 
   function render() {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
+    const year = currentDate.getFullYear(), month = currentDate.getMonth();
     const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
     document.getElementById("currentMonth").textContent = `${monthNames[month]} ${year}`;
     
@@ -103,7 +103,15 @@
     for (let d = 1; d <= daysInMonth; d++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const rec = daysData[dateStr];
-        const type = rec ? rec.type : Schedule.getDefaultDayType(dateStr);
+        let type = rec ? rec.type : "weekend";
+        // Если день не сгенерирован настройками, пробуем взять базовый тип
+        if (!rec && !State.getShift()) type = Schedule.getDefaultDayType(dateStr);
+        else if (!rec && State.getShift()) {
+            // Если день не сгенерирован, но график есть, красим по графику
+            const isWork = Schedule.isWorkDay(dateStr, State.getShift().firstWorkDay);
+            type = isWork ? "work" : "weekend"; 
+        }
+
         let cls = "day " + type + (dateStr === todayStr ? " today" : "");
         let info = "", total = 0;
         if (rec && (rec.night > 0 || rec.ap > 0)) {
@@ -124,8 +132,7 @@
   function openDayForm(dateStr) {
     activeDateStr = dateStr;
     const days = State.getDays();
-    const rec = days[dateStr] || { type: Schedule.getDefaultDayType(dateStr), night: 0, ap: 0, note: "" };
-    
+    const rec = days[dateStr] || { type: "work", night: 0, ap: 0, note: "" };
     document.getElementById("dayFormTitle").innerText = `📅 ${UI.date.ru(dateStr)}`;
     document.getElementById("inp_night").value = rec.night || "";
     document.getElementById("inp_ap").value = rec.ap || "";
@@ -136,9 +143,7 @@
     document.getElementById("dayFormContainer").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function closeDayForm() {
-    document.getElementById("dayFormContainer").style.display = "none";
-  }
+  function closeDayForm() { document.getElementById("dayFormContainer").style.display = "none"; }
 
   function saveDay() {
     if (!guardAction("saveDay")) return;
@@ -148,22 +153,15 @@
       const note = document.getElementById("inp_note").value.trim();
       const total = Tariff.calcTotal(activeDateStr, night, ap);
       const days = State.getDays();
-      days[activeDateStr] = { type: Schedule.getDefaultDayType(activeDateStr), night, ap, total, note };
+      const rec = days[activeDateStr] || {};
+      days[activeDateStr] = { type: rec.type || "work", night, ap, total, note };
       State.setDays(days);
       
-      closeDayForm();
-      render();
-      Notify.show(`✅ Сохранено: ${total} лей`);
-    } catch (e) {
-      Notify.error(e.message);
-    }
+      closeDayForm(); render(); Notify.show(`✅ Сохранено: ${total} лей`);
+    } catch (e) { Notify.error(e.message); }
   }
 
-  // П.4: Исправлено переключение месяцев (всегда 1-е число)
-  function changeMonth(dir) { 
-    currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + dir, 1); 
-    render(); 
-  }
+  function changeMonth(dir) { currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + dir, 1); render(); }
   
   render();
 </script>
