@@ -1,0 +1,84 @@
+/* Кнопки */
+.btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #fff;
+  text-align: center;
+  margin-bottom: 8px;
+  transition: transform 0.1s;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--accent); }
+.btn-green { background: var(--green); }
+.btn-orange { background: var(--orange); }
+.btn-purple { background: var(--purple); }
+
+/* Диалоги (Dialog.js) */
+.dialog-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dialog-box {
+  background: var(--panel);
+  color: var(--text);
+  border-radius: 20px;
+  padding: 24px 20px 20px;
+  width: 85%;
+  max-width: 340px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+.dialog-box p, .dialog-box h3 {
+  font-size: 16px;
+  text-align: center;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+.dialog-buttons { display: flex; gap: 8px; }
+.dialog-buttons button {
+  flex: 1; padding: 12px; border: none; border-radius: 12px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.dialog-ok, .dialog-yes { background: var(--accent); color: #fff; }
+.dialog-no { background: var(--border); color: var(--text); }
+
+/* Поля ввода (для prompt) */
+.form-control {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-size: 16px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Уведомления (Toast в notify.js) */
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: #333;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 30px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 5000;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+.toast.error { background: var(--red); }
