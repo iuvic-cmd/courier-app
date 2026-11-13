@@ -27,6 +27,8 @@
     .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
     .input-row > div { flex: 1; }
     .input-row label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+    .save-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
+    .cancel-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--border); color: var(--text); border: none; font-weight: 700; margin-top: 8px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -35,10 +37,26 @@
     <h1>💼 Финансы</h1>
   </div>
   <div class="wallets-grid" id="walletsGrid"></div>
+  
   <div class="action-buttons">
-    <button class="btn btn-orange" onclick="openAddOp('expense')">➖ Трата</button>
-    <button class="btn btn-green" onclick="openAddOp('income')">➕ Доход</button>
+    <button class="btn btn-orange" onclick="toggleOpForm('expense')">➖ Трата</button>
+    <button class="btn btn-green" onclick="toggleOpForm('income')">➕ Доход</button>
   </div>
+
+  <div id="opFormContainer" style="display: none; margin-bottom: 20px;">
+    <div style="background: var(--panel); border: 2px solid var(--accent); border-radius: 16px; padding: 16px;">
+      <h3 id="opFormTitle" style="margin-bottom: 12px; font-size: 16px;">Новая операция</h3>
+      <div style="margin-bottom: 10px;"><label>Сумма</label><input type="number" id="op_amount" class="form-control" placeholder="0" inputmode="decimal"></div>
+      <div class="input-row">
+        <div><label>Кошелёк</label><select id="op_wallet" class="form-control"></select></div>
+        <div><label>Категория</label><select id="op_cat" class="form-control"></select></div>
+      </div>
+      <div style="margin-bottom: 10px;"><label>Заметка</label><input type="text" id="op_note" class="form-control" placeholder="Детали..."></div>
+      <button class="save-btn" onclick="saveOp()">💾 СОХРАНИТЬ</button>
+      <button class="cancel-btn" onclick="toggleOpForm()">Отмена</button>
+    </div>
+  </div>
+
   <h3 style="margin-bottom: 10px; font-size: 16px;">Последние операции</h3>
   <div class="op-list" id="opsList"></div>
 </div>
@@ -53,17 +71,15 @@
 
 <script src="js/lib/storage.js"></script>
 <script src="js/lib/ui.js"></script>
-<script src="js/lib/dialog.js"></script>
 <script src="js/lib/notify.js"></script>
 <script src="js/lib/guard.js"></script>
 <script src="js/lib/theme.js"></script>
 <script src="js/domain/state.js"></script>
-<script src="js/domain/tariff.js"></script>
-<script src="js/domain/schedule.js"></script>
 <script src="js/domain/finance-api.js"></script>
-<script src="js/domain/ledger.js"></script>
 <script>
   Theme.init();
+  let currentOpType = 'expense';
+
   function render() {
     const wallets = State.getWallets();
     document.getElementById("walletsGrid").innerHTML = Object.keys(wallets).map(name => `
@@ -89,44 +105,52 @@
     }).join("") : `<div style="padding: 16px; text-align: center; color: var(--text-dim);">Нет операций</div>`;
   }
 
-  function openAddOp(type) {
-    const isExpense = type === "expense";
-    const cats = State.getCategories()[isExpense ? "expense" : "income"];
+  function toggleOpForm(type) {
+    const container = document.getElementById("opFormContainer");
+    
+    // Если форма уже открыта и нажали на тот же тип — закрываем
+    if (container.style.display === "block" && currentOpType === type) {
+      container.style.display = "none";
+      return;
+    }
+    
+    currentOpType = type;
+    container.style.display = "block";
+    document.getElementById("opFormTitle").innerText = type === 'expense' ? "➖ Новая трата" : "➕ Новый доход";
+    
     const wallets = Object.keys(State.getWallets());
-    const ov = document.createElement("div"); ov.className = "dialog-overlay";
-    const box = document.createElement("div"); box.className = "dialog-box";
+    document.getElementById("op_wallet").innerHTML = wallets.map(w => `<option value="${w}">${w}</option>`).join("");
     
-    box.innerHTML = `
-      <h3 style="margin-bottom: 16px;">${isExpense ? "➖ Трата" : "➕ Доход"}</h3>
-      <div style="margin-bottom: 10px;"><label>Сумма</label><input type="text" inputmode="decimal" id="inp_amount" class="form-control" placeholder="0"></div>
-      <div class="input-row">
-        <div><label>Кошелёк</label><select id="inp_wallet" class="form-control">${wallets.map(w => `<option value="${w}">${w}</option>`).join("")}</select></div>
-        <div><label>Категория</label><select id="inp_cat" class="form-control">${cats.map(c => `<option value="${c}">${c}</option>`).join("")}</select></div>
-      </div>
-      <div style="margin-bottom: 16px;"><label>Заметка</label><input type="text" id="inp_note" class="form-control" placeholder="Детали..."></div>
-      <div class="dialog-buttons">
-        <button class="dialog-yes" id="btn-save">💾 Сохранить</button>
-        <button class="dialog-no" id="btn-cancel">Отмена</button>
-      </div>
-    `;
-    ov.appendChild(box); document.body.appendChild(ov);
+    const cats = State.getCategories()[type === 'expense' ? "expense" : "income"];
+    document.getElementById("op_cat").innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join("");
     
-    document.getElementById("btn-cancel").onclick = () => ov.remove();
-    document.getElementById("btn-save").onclick = () => {
-      if (!guardAction("saveOp")) return;
-      if (document.activeElement) document.activeElement.blur(); // Скрываем клавиатуру
-      
-      try {
-        const amount = UI.num(document.getElementById("inp_amount").value);
-        const wallet = document.getElementById("inp_wallet").value;
-        const cat = document.getElementById("inp_cat").value;
-        const note = document.getElementById("inp_note").value.trim();
-        if (isExpense) FinanceAPI.spend({ wallet, amount, category: cat, note });
-        else FinanceAPI.receive({ wallet, amount, category: cat, note });
-        ov.remove(); render(); Notify.show(`✅ Записано: ${amount} лей`);
-      } catch (e) { Notify.error(e.message); }
-    };
+    document.getElementById("op_amount").focus();
   }
+
+  function saveOp() {
+    if (!guardAction("saveOp")) return;
+    try {
+      const amount = UI.num(document.getElementById("op_amount").value);
+      const wallet = document.getElementById("op_wallet").value;
+      const cat = document.getElementById("op_cat").value;
+      const note = document.getElementById("op_note").value.trim();
+      
+      if (amount <= 0) throw new Error("Введите сумму больше нуля");
+      
+      if (currentOpType === 'expense') {
+        FinanceAPI.spend({ wallet, amount, category: cat, note });
+      } else {
+        FinanceAPI.receive({ wallet, amount, category: cat, note });
+      }
+      
+      document.getElementById("opFormContainer").style.display = "none";
+      render();
+      Notify.show(`✅ Записано: ${amount} лей`);
+    } catch (e) {
+      Notify.error(e.message);
+    }
+  }
+
   render();
 </script>
 </body>
