@@ -123,3 +123,15 @@
 body {
   padding-bottom: 80px;
 }
+/* Фикс клавиатуры на iOS */
+.dialog-box {
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
+}
+/* Кнопки всегда выше клавиатуры */
+.dialog-buttons {
+  position: sticky;
+  bottom: 0;
+  background: var(--panel);
+  padding-top: 10px;
+  margin-bottom: -10px;
+}
