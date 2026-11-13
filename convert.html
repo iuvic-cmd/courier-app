@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Конвертер данных</title>
+  <style>
+    body { font-family: sans-serif; padding: 16px; background: #f2f2f7; color: #1c1c1e; }
+    textarea { width: 100%; height: 200px; font-family: monospace; font-size: 12px; margin-bottom: 10px; padding: 10px; }
+    button { padding: 12px; font-size: 16px; width: 100%; background: #007aff; color: #fff; border: none; border-radius: 10px; margin-bottom: 20px; cursor: pointer; }
+    h3 { margin-top: 20px; }
+    .hidden { display: none; }
+    .pin-screen { text-align: center; padding: 50px 20px; }
+    .pin-input { font-size: 24px; padding: 10px; width: 150px; text-align: center; border-radius: 10px; border: 1px solid #ccc; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+  <!-- Экран с PIN -->
+  <div id="pinScreen" class="pin-screen">
+    <h2>🔒 Введите PIN</h2>
+    <input type="password" id="pinInput" class="pin-input" maxlength="4" inputmode="numeric" placeholder="****">
+    <br>
+    <button onclick="checkPin()" style="width: auto; padding: 10px 20px;">Войти</button>
+    <p id="pinError" style="color: red; display: none;">Неверный PIN</p>
+  </div>
+
+  <!-- Сам конвертер -->
+  <div id="converter" class="hidden">
+    <h3>1. Вставь старый JSON</h3>
+    <textarea id="input" placeholder="Сюда вставь содержимое старого backup-....json"></textarea>
+
+    <button onclick="convert()">🔄 Конвертировать</button>
+
+    <h3>2. Результат (скопируй)</h3>
+    <textarea id="output" readonly></textarea>
+    <button onclick="copyOutput()">📋 Скопировать результат</button>
+  </div>
+
+<script>
+// PIN для доступа к конвертеру (можешь поменять)
+const PIN = "1234";
+
+function checkPin() {
+  const input = document.getElementById("pinInput").value;
+  if (input === PIN) {
+    document.getElementById("pinScreen").classList.add("hidden");
+    document.getElementById("converter").classList.remove("hidden");
+  } else {
+    document.getElementById("pinError").style.display = "block";
+  }
+}
+
+function convert() {
+  const input = document.getElementById("input").value.trim();
+  if (!input) return alert("Вставь JSON");
+  
+  let old;
+  try { old = JSON.parse(input); } catch(e) { return alert("Ошибка JSON: " + e.message); }
+  
+  const result = {};
+
+  // 1. Дни (courierData -> uchot.v2.days)
+  if (old.courierData && Array.isArray(old.courierData)) {
+    const days = {};
+    old.courierData.forEach(d => {
+      days[d.date] = {
+        type: d.dayType || "work",
+        night: d.nightOrders || 0,
+        ap: d.apOrders || 0,
+        total: d.total || 0,
+        note: d.note || "",
+        generated: d.generated !== false
+      };
+    });
+    result["uchot.v2.days"] = days;
+  }
+
+  // 2. Лог заказов (ordersLog -> uchot.v2.orders_log)
+  if (old.ordersLog && Array.isArray(old.ordersLog)) {
+    result["uchot.v2.orders_log"] = old.ordersLog.map(o => ({
+      id: o.id,
+      date: o.date,
+      time: o.time,
+      addedNight: o.addedNight || 0,
+      addedAp: o.addedAp || 0
+    }));
+  }
+
+  // 3. Смены (shiftConfig -> uchot.v2.shift)
+  if (old.shiftConfig) {
+    result["uchot.v2.shift"] = old.shiftConfig;
+  }
+
+  // 4. Подмога (helpConfig -> uchot.v2.help)
+  if (old.helpConfig) {
+    result["uchot.v2.help"] = {
+      lastMyHelpDate: old.helpConfig.lastMyHelpDate || "",
+      lastOtherHelpDate: old.helpConfig.lastOtherHelpDate || ""
+    };
+  }
+
+  // 5. Кошельки и операции (fin -> uchot.v2.wallets + uchot.v2.ops + uchot.v2.categories)
+  if (old.fin) {
+    if (old.fin.kohelki) {
+      result["uchot.v2.wallets"] = old.fin.kohelki;
+    }
+    result["uchot.v2.categories"] = {
+      expense: old.fin.kat_trat || ["Прочее"],
+      income: old.fin.kat_dohodov || ["Прочее"]
+    };
+    if (old.fin.istorija && Array.isArray(old.fin.istorija)) {
+      const ops = [];
+      old.fin.istorija.forEach((z, idx) => {
+        let kind = "expense";
+        let amount = z.summa;
+        let cat = z.kat || "Без категории";
+        
+        if (z.tip === "Доход") kind = "income";
+        else if (z.tip === "Трата") { kind = "expense"; amount = -Math.abs(z.summa); }
+        else if (z.tip === "Корректировка") { kind = "expense"; amount = -Math.abs(z.summa); cat = "Корректировка"; }
+        else if (z.tip === "Перевод") { kind = "transfer"; cat = "Перевод"; }
+        else if (z.tip === "Кредитка") { kind = "expense"; amount = -Math.abs(z.summa); cat = "Кредитка"; }
+        else if (z.tip === "Кредит") { kind = "expense"; amount = -Math.abs(z.summa); cat = "Кредит"; }
+        else if (z.tip === "Долг") { kind = z.napr === "взял" ? "income" : "expense"; amount = z.napr === "взял" ? Math.abs(z.summa) : -Math.abs(z.summa); cat = "Долг: " + (z.kat || ""); }
+        else if (z.tip === "Ломбард") { kind = "expense"; amount = -Math.abs(z.summa); cat = "Ломбард"; }
+        else if (z.tip === "Цель") { kind = "expense"; amount = -Math.abs(z.summa); cat = "Цель: " + (z.kat || ""); }
+        else { kind = z.summa > 0 ? "income" : "expense"; amount = z.summa; }
+
+        ops.push({
+          id: z.id || (idx + 1),
+          date: z.data ? z.data.slice(0, 10) : "2026-01-01",
+          kind: kind,
+          amount: amount,
+          wallet: z.koshel || "Наличные",
+          cat: cat,
+          note: z.zametka || "",
+          timestamp: z.data || ""
+        });
+      });
+      result["uchot.v2.ops"] = ops;
+    }
+  }
+
+  // 6. Финансовые данные (долги, кредиты, цели, ломбард, карты и т.д.)
+  if (old.fin) {
+    if (old.fin.dolgi) result["uchot.v2.debts"] = old.fin.dolgi;
+    if (old.fin.celi) result["uchot.v2.goals"] = old.fin.celi;
+    if (old.fin.kredity) result["uchot.v2.credits"] = old.fin.kredity;
+    if (old.fin.kartki) result["uchot.v2.cards"] = old.fin.kartki;
+    if (old.fin.lombard) result["uchot.v2.lombard"] = old.fin.lombard;
+    if (old.fin.lombard_info) result["uchot.v2.lombard_info"] = old.fin.lombard_info;
+    if (old.fin.aktivy) result["uchot.v2.assets"] = old.fin.aktivy;
+    if (old.fin.byudzhety) result["uchot.v2.budgets"] = old.fin.byudzhety;
+    if (old.fin.regulyarnye) result["uchot.v2.regulars"] = old.fin.regulyarnye;
+    if (old.fin.valyuty) result["uchot.v2.currencies"] = old.fin.valyuty;
+    if (old.fin.kursy) result["uchot.v2.rates"] = old.fin.kursy;
+  }
+
+  // 7. Скутер
+  if (old.mileageData) {
+    result["uchot.v2.scooter"] = {
+      currentKm: old.mileageData.currentKm || 0,
+      startKm: old.mileageData.startKm || 0
+    };
+  }
+  if (old.fuelLog) result["uchot.v2.scooter_fuel"] = old.fuelLog;
+  if (old.dailyKmLog) result["uchot.v2.mileage_log"] = old.dailyKmLog;
+  if (old.oilData) result["uchot.v2.comp_oil"] = { lastKm: old.oilData.mileage || 0, lastDate: old.oilData.date || "", intervalKm: old.oilData.interval || 0, history: [] };
+  if (old.filterData) result["uchot.v2.comp_air_filter"] = { lastKm: old.filterData.mileage || 0, lastDate: old.filterData.date || "", intervalKm: old.filterData.interval || 0, history: [] };
+  if (old.otherParts) {
+    if (old.otherParts.belt) result["uchot.v2.comp_belt"] = { lastKm: 0, lastDate: "", intervalKm: old.otherParts.belt, history: [] };
+    if (old.otherParts.pads) result["uchot.v2.comp_brakes"] = { lastKm: 0, lastDate: "", intervalKm: old.otherParts.pads, history: [] };
+  }
+
+  // 8. Тариф
+  if (old.tariffHistory && Array.isArray(old.tariffHistory)) {
+    result["uchot.v2.tariff"] = old.tariffHistory;
+  }
+
+  document.getElementById("output").value = JSON.stringify(result, null, 2);
+}
+
+function copyOutput() {
+  const out = document.getElementById("output");
+  if (!out.value) return alert("Сначала нажми «Конвертировать»");
+  out.select();
+  document.execCommand("copy");
+  alert("Скопировано в буфер обмена");
+}
+</script>
+</body>
+</html>
