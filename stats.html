@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/components.css">
   <style>
-    .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-bottom: 80px; }
+    .container { max-width: 480px; margin: 0 auto; padding: 16px; }
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .header h1 { font-size: 24px; }
     
@@ -35,14 +35,11 @@
     .list-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
     .list-row:last-child { border-bottom: none; }
     
-    /* График */
     .chart-container { position: relative; height: 160px; display: flex; align-items: flex-end; gap: 4px; padding-top: 20px; overflow-x: auto; }
     .chart-bar-wrap { flex: 1; min-width: 20px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
     .chart-bar { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; transition: height 0.3s; min-height: 2px; position: relative; }
-    .chart-bar:hover { opacity: 0.8; }
     .chart-label { font-size: 10px; color: var(--text-dim); margin-top: 4px; text-align: center; }
     
-    /* Топ дней */
     .top-day-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; border-bottom: 1px solid var(--border); }
     .top-day-row:last-child { border-bottom: none; }
     .top-day-rank { font-weight: 700; color: var(--accent); margin-right: 8px; }
@@ -54,10 +51,8 @@
     <h1>📈 Отчёты</h1>
   </div>
 
-  <!-- Выбор месяца -->
   <div class="scroller" id="monthScroller"></div>
 
-  <!-- Итоги месяца -->
   <div class="card">
     <h3>💰 Финансовый итог</h3>
     <div class="stat-grid">
@@ -76,7 +71,6 @@
     </div>
   </div>
 
-  <!-- Эффективность и заказы -->
   <div class="card">
     <h3>📦 Заказы и эффективность</h3>
     <div class="stat-grid">
@@ -99,19 +93,16 @@
     </div>
   </div>
 
-  <!-- График по дням -->
   <div class="card">
     <h3>📊 Заработок по дням</h3>
     <div class="chart-container" id="chartContainer"></div>
   </div>
 
-  <!-- Топ дней -->
   <div class="card">
     <h3>🏆 Лучшие дни месяца</h3>
     <div id="topDaysList"></div>
   </div>
 
-  <!-- Детали по скутеру -->
   <div class="card">
     <h3>🛵 Скутер за месяц</h3>
     <div class="stat-grid">
@@ -126,7 +117,6 @@
     </div>
   </div>
 
-  <!-- Расходы по категориям -->
   <div class="card">
     <h3>🗂 Расходы по категориям</h3>
     <div id="categoryList"></div>
@@ -150,7 +140,7 @@
 <script src="js/domain/ledger.js"></script>
 <script>
   Theme.init();
-  let activeMonth = UI.date.month(); // "2026-11"
+  let activeMonth = UI.date.month(); 
 
   function renderMonths() {
     const months = new Set([UI.date.month()]);
@@ -176,10 +166,9 @@
   function render() {
     renderMonths();
 
-    // 1. Сбор данных
     const days = State.getDays();
     let salary = 0, totalOrders = 0, workDays = 0;
-    let dailyData = []; // Для графика
+    let dailyData = [];
     
     for (let k in days) {
       if (k.startsWith(activeMonth)) {
@@ -194,55 +183,40 @@
         dailyData.push({ date: k, day: parseInt(k.split("-")[2]), salary: dSalary });
       }
     }
-
-    // Сортируем график по дням
     dailyData.sort((a, b) => a.day - b.day);
 
-    // 2. Операции из журнала
     const ops = State.getOps().filter(o => o.date.startsWith(activeMonth));
     const expenses = ops.filter(o => o.kind === "expense").reduce((s, o) => s + Math.abs(o.amount), 0);
     
-    // 3. Топливо и ТО
+    // П.3: Исправлен расчет. Топливо - это всё, где есть "Топливо". ТО - это только "Скутер: ..."
     const fuelCost = ops.filter(o => o.kind === "expense" && o.cat.includes("Топливо")).reduce((s, o) => s + Math.abs(o.amount), 0);
-    const maintCost = ops.filter(o => o.kind === "expense" && o.cat.includes("Скутер")).reduce((s, o) => s + Math.abs(o.amount), 0);
+    const maintCost = ops.filter(o => o.kind === "expense" && (o.cat || "").startsWith("Скутер:")).reduce((s, o) => s + Math.abs(o.amount), 0);
 
-    // 4. Расчёт показателей
     const net = salary - expenses;
     const avgDay = workDays ? salary / workDays : 0;
     const avgOrder = totalOrders ? salary / totalOrders : 0;
 
-    // Вывод
     document.getElementById("statSalary").textContent = UI.fmt(salary);
     document.getElementById("statExpenses").textContent = UI.fmt(expenses);
     document.getElementById("statNet").textContent = UI.fmt(net);
-    
     document.getElementById("statOrders").textContent = totalOrders;
     document.getElementById("statWorkDays").textContent = workDays;
     document.getElementById("statAvgDay").textContent = UI.fmt(avgDay);
     document.getElementById("statAvgOrder").textContent = UI.fmt(avgOrder);
-
     document.getElementById("statFuelCost").textContent = UI.fmt(fuelCost);
     document.getElementById("statMaintCost").textContent = UI.fmt(maintCost);
 
-    // 5. График
     const maxSalary = Math.max(...dailyData.map(d => d.salary), 1);
     document.getElementById("chartContainer").innerHTML = dailyData.map(d => {
       const height = (d.salary / maxSalary) * 100;
-      return `
-        <div class="chart-bar-wrap">
-          <div class="chart-bar" style="height: ${height}%;" title="${d.salary} лей"></div>
-          <div class="chart-label">${d.day}</div>
-        </div>
-      `;
+      return `<div class="chart-bar-wrap"><div class="chart-bar" style="height: ${height}%;" title="${d.salary} лей"></div><div class="chart-label">${d.day}</div></div>`;
     }).join("") || `<div style="color:var(--text-dim); text-align:center; width:100%;">Нет данных</div>`;
 
-    // 6. Топ дней
     const topDays = dailyData.filter(d => d.salary > 0).sort((a, b) => b.salary - a.salary).slice(0, 5);
     document.getElementById("topDaysList").innerHTML = topDays.length 
       ? topDays.map((d, i) => `<div class="top-day-row"><span><span class="top-day-rank">${i+1}.</span>${UI.date.ru(d.date)}</span><b>${UI.fmt(d.salary)} лей</b></div>`).join("")
       : `<div class="list-row" style="color:var(--text-dim)">Нет данных</div>`;
 
-    // 7. По категориям
     const cats = {};
     ops.filter(o => o.kind === "expense").forEach(o => {
       cats[o.cat] = (cats[o.cat] || 0) + Math.abs(o.amount);
