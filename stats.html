@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>📊 Статистика</title>
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/components.css">
+  <style>
+    .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-bottom: 80px; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .header h1 { font-size: 24px; }
+    
+    .card { background: var(--panel); border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--border); }
+    .card h3 { font-size: 15px; margin-bottom: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-item { background: var(--bg); padding: 12px; border-radius: 12px; text-align: center; }
+    .stat-label { font-size: 12px; color: var(--text-dim); margin-bottom: 4px; display: block; }
+    .stat-val { font-size: 18px; font-weight: 700; }
+    
+    .stat-item.green { background: var(--green-bg); color: var(--green-fg); }
+    .stat-item.green .stat-label { color: var(--green-fg); opacity: 0.8; }
+    .stat-item.red { background: var(--red-bg); color: var(--red-fg); }
+    .stat-item.red .stat-label { color: var(--red-fg); opacity: 0.8; }
+    .stat-item.accent { background: var(--blue-bg); color: var(--blue-fg); }
+    .stat-item.accent .stat-label { color: var(--blue-fg); opacity: 0.8; }
+
+    .scroller { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 16px; }
+    .month-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border); background: var(--panel); color: var(--text); font-weight: 600; white-space: nowrap; cursor: pointer; }
+    .month-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    
+    .list-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .list-row:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>📊 Статистика</h1>
+  </div>
+
+  <!-- Выбор месяца -->
+  <div class="scroller" id="monthScroller"></div>
+
+  <!-- Итоги месяца -->
+  <div class="card">
+    <h3>Итоги за месяц</h3>
+    <div class="stat-grid">
+      <div class="stat-item green">
+        <span class="stat-label">💼 Заработано (зарплата)</span>
+        <span class="stat-val" id="statSalary">0</span>
+      </div>
+      <div class="stat-item red">
+        <span class="stat-label">💸 Потрачено (всего)</span>
+        <span class="stat-val" id="statExpenses">0</span>
+      </div>
+      <div class="stat-item accent" style="grid-column: 1 / -1;">
+        <span class="stat-label">💰 Чистый доход (зарплата - расходы)</span>
+        <span class="stat-val" id="statNet" style="font-size: 24px;">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Детали по скутеру -->
+  <div class="card">
+    <h3>🛵 Скутер за месяц</h3>
+    <div class="stat-grid">
+      <div class="stat-item">
+        <span class="stat-label">⛽ Топливо (лей)</span>
+        <span class="stat-val" id="statFuelCost">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">🧼 Мойка / ТО (лей)</span>
+        <span class="stat-val" id="statMaintCost">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Расходы по категориям -->
+  <div class="card">
+    <h3>Расходы по категориям</h3>
+    <div id="categoryList"></div>
+  </div>
+</div>
+
+<nav class="tabbar">
+  <div class="in">
+    <a href="index.html"><span>📦</span>Учёт</a>
+    <a href="fin.html"><span>💼</span>Финансы</a>
+    <a href="cash.html"><span>🛵</span>Скутер</a>
+    <a href="stats.html" class="active"><span>📊</span>Стата</a>
+    <a href="settings.html"><span>⚙</span>Настройки</a>
+  </div>
+</nav>
+
+<script src="js/lib/storage.js"></script>
+<script src="js/lib/ui.js"></script>
+<script src="js/lib/notify.js"></script>
+<script src="js/lib/guard.js"></script>
+<script src="js/lib/theme.js"></script>
+<script src="js/domain/state.js"></script>
+<script src="js/domain/tariff.js"></script>
+<script src="js/domain/schedule.js"></script>
+<script src="js/domain/finance-api.js"></script>
+<script src="js/domain/ledger.js"></script>
+<script>
+  Theme.init();
+  let activeMonth = UI.date.month(); // "2026-11"
+
+  function renderMonths() {
+    // Собираем все месяцы, где есть данные
+    const months = new Set([UI.date.month()]);
+    const days = State.getDays();
+    for (let k in days) months.add(k.slice(0, 7));
+    State.getOps().forEach(o => months.add(o.date.slice(0, 7)));
+    
+    const sorted = Array.from(months).sort().reverse();
+    const names = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
+    
+    document.getElementById("monthScroller").innerHTML = sorted.map(m => {
+      const [y, mm] = m.split("-");
+      const label = `${names[+mm - 1]} ${y}`;
+      return `<button class="month-btn ${m === activeMonth ? 'active' : ''}" onclick="setMonth('${m}')">${label}</button>`;
+    }).join("");
+  }
+
+  function setMonth(m) {
+    activeMonth = m;
+    render();
+  }
+
+  function render() {
+    renderMonths();
+
+    // 1. Зарплата по дням
+    const days = State.getDays();
+    let salary = 0;
+    for (let k in days) {
+      if (k.startsWith(activeMonth)) salary += (+days[k].total || 0);
+    }
+
+    // 2. Операции из журнала
+    const ops = State.getOps().filter(o => o.date.startsWith(activeMonth));
+    const expenses = ops.filter(o => o.kind === "expense").reduce((s, o) => s + Math.abs(o.amount), 0);
+    
+    // 3. Топливо и ТО
+    const fuelCost = ops.filter(o => o.kind === "expense" && o.cat.includes("Топливо")).reduce((s, o) => s + Math.abs(o.amount), 0);
+    const maintCost = ops.filter(o => o.kind === "expense" && o.cat.includes("Скутер")).reduce((s, o) => s + Math.abs(o.amount), 0);
+
+    // 4. Чистый доход
+    const net = salary - expenses;
+
+    // Вывод
+    document.getElementById("statSalary").textContent = UI.fmt(salary);
+    document.getElementById("statExpenses").textContent = UI.fmt(expenses);
+    document.getElementById("statNet").textContent = UI.fmt(net);
+    document.getElementById("statFuelCost").textContent = UI.fmt(fuelCost);
+    document.getElementById("statMaintCost").textContent = UI.fmt(maintCost);
+
+    // 5. По категориям
+    const cats = {};
+    ops.filter(o => o.kind === "expense").forEach(o => {
+      cats[o.cat] = (cats[o.cat] || 0) + Math.abs(o.amount);
+    });
+    const sortedCats = Object.entries(cats).sort((a, b) => b[1] - a[1]);
+    document.getElementById("categoryList").innerHTML = sortedCats.length 
+      ? sortedCats.map(([c, v]) => `<div class="list-row"><span>${UI.esc(c)}</span><b>${UI.fmt(v)} лей</b></div>`).join("")
+      : `<div class="list-row" style="color:var(--text-dim)">Нет трат в этом месяце</div>`;
+  }
+
+  render();
+</script>
+</body>
+</html>
