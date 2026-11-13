@@ -23,7 +23,6 @@
     .tabs div.on { background: var(--panel); color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,.08); }
     
     .bt, input, select, textarea { width: 100%; font: inherit; font-size: 15px; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 11px; margin: 4px 0; }
-    textarea { min-height: 100px; font-size: 13px; }
     .bt { background: var(--panel); text-align: center; cursor: pointer; font-weight: 600; }
     .bt.pri { background: var(--accent); color: #fff; border-color: var(--accent); }
     label { font-size: 12px; color: var(--text-dim); display: block; margin-top: 6px; }
@@ -38,6 +37,7 @@
     .seg button { flex: 1; padding: 9px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font: inherit; cursor: pointer; }
     .seg button.on { background: var(--accent); color: #fff; }
     .err { color: var(--red); font-size: 14px; min-height: 18px; }
+    
     .bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 6px; }
     .bar i { display: block; height: 100%; background: var(--green); }
   </style>
@@ -67,165 +67,213 @@
 <script src="js/domain/finance-api.js"></script>
 <script>
   Theme.init();
-
-  // Мы используем State для доступа к данным, но локально разворачиваем объект для удобства
-  let S = { 
-    get kohelki() { return State.getWallets(); },
-    set kohelki(v) { State.setWallets(v); },
-    get istorija() { return State.getOps(); },
-    set istorija(v) { State.setOps(v); },
-    get kat_trat() { return State.getCategories().expense; },
-    get kat_dohodov() { return State.getCategories().income; },
-    get traty() { return AppStorage.get("traty", {}); },
-    set traty(v) { AppStorage.set("traty", v); },
-    get dohody() { return AppStorage.get("dohody", {}); },
-    set dohody(v) { AppStorage.set("dohody", v); },
-    get byudzhety() { return AppStorage.get("byudzhety", {}); },
-    set byudzhety(v) { AppStorage.set("byudzhety", v); },
-    get celi() { return AppStorage.get("celi", {}); },
-    set celi(v) { AppStorage.set("celi", v); },
-    get dolgi() { return AppStorage.get("dolgi", []); },
-    set dolgi(v) { AppStorage.set("dolgi", v); },
-    get kredity() { return AppStorage.get("kredity", []); },
-    set kredity(v) { AppStorage.set("kredity", v); },
-    get kartki() { return AppStorage.get("kartki", []); },
-    set kartki(v) { AppStorage.set("kartki", v); },
-    get aktivy() { return AppStorage.get("aktivy", []); },
-    set aktivy(v) { AppStorage.set("aktivy", v); },
-    get kursy() { return AppStorage.get("kursy", {}); },
-    set kursy(v) { AppStorage.set("kursy", v); },
-    get valyuty() { return AppStorage.get("valyuty", {}); },
-    set valyuty(v) { AppStorage.set("valyuty", v); },
-    get regulyarnye() { return AppStorage.get("regulyarnye", []); },
-    set regulyarnye(v) { AppStorage.set("regulyarnye", v); },
-    get lombard() { return AppStorage.get("lombard", []); },
-    set lombard(v) { AppStorage.set("lombard", v); },
-    get lombard_info() { return AppStorage.get("lombard_info", {stavka:3,den:25,koshel:"Наличные",proc_ym:"",proc_sum:0}); },
-    set lombard_info(v) { AppStorage.set("lombard_info", v); }
-  };
-
   const $ = id => document.getElementById(id);
   const esc = UI.esc;
-  const SY = { MDL: "лей", USD: "$", EUR: "€" };
-  const cur = w => S.valyuty[w] || "MDL";
-  const sym = w => SY[cur(w)] || cur(w);
-  const kurs = c => c === "MDL" ? 1 : (+S.kursy[c] || 0);
   const fmt = UI.fmt;
   const r2 = UI.r2;
   const num = UI.num;
   const pos = x => { x = r2(num(x)); if (!(x > 0)) throw "Сумма должна быть больше нуля"; return x; };
   const nowS = () => { const d = new Date(), p = n => String(n).padStart(2, "0"); return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes()); };
-  const ops = () => S.istorija.filter(z => z && typeof z === "object");
-  const nid = () => Math.max(0, ...ops().map(z => z.id || 0)) + 1;
+  const nid = () => Math.max(0, ...State.getOps().map(z => z.id || 0)) + 1;
   const mid = a => Math.max(0, ...a.map(x => x.id || 0)) + 1;
   const opt = (a, s) => a.map(x => `<option${x === s ? " selected" : ""}>${esc(x)}</option>`).join("");
-  const W = () => Object.keys(S.kohelki);
-  const WM = () => W().filter(w => cur(w) === "MDL");
-
-  let tab = "home", q = "", lim = 40, RP = "m", MF = null, MM = [];
+  const W = () => Object.keys(State.getWallets());
+  
+  let tab = "home", MF = null, MM = [];
 
   function toast(t) { Notify.show(t); }
   const err = e => Notify.error(typeof e === "string" ? e : e.message);
 
-  // --- Инициализация ---
-  if (!S.kohelki || Object.keys(S.kohelki).length === 0) {
-    State.setWallets({ "Наличные": 0, "Карта": 0 });
-  }
-  render();
-
-  // --- Основная логика ---
-  function rec(tip, s, w, o) {
-    const z = Object.assign({ id: nid(), data: nowS(), tip, summa: s, koshel: w }, o);
-    if (w && cur(w) !== "MDL" && ["Трата", "Доход", "Корректировка"].includes(tip)) z.baz = r2(s * kurs(cur(w)));
-    Object.keys(z).forEach(k => { if (z[k] === "" || z[k] == null) delete z[k]; });
-    S.istorija.push(z); AppStorage.set("ops", S.istorija);
-  }
-
-  function addOp(tip, w, kat, s, note) {
-    s = r2(s); if (!(s > 0)) throw "Сумма должна быть больше нуля"; kat = (kat || "").trim(); if (!kat) throw "Выбери категорию";
-    if (tip === "Трата") {
-      if (S.kohelki[w] < s) throw `Недостаточно средств: на «${w}» только ${fmt(S.kohelki[w])}`;
-      S.kohelki[w] = r2(S.kohelki[w] - s);
-      let tr = S.traty; tr[kat] = r2((tr[kat] || 0) + s); S.traty = tr;
-    } else {
-      S.kohelki[w] = r2(S.kohelki[w] + s);
-      let dh = S.dohody; dh[kat] = r2((dh[kat] || 0) + s); S.dohody = dh;
-    }
-    rec(tip, s, w, { kat, zametka: note });
+  function sheet(tip) {
+    const w = W();
+    let h = `<div class="seg">${["Трата","Доход"].map(t => `<button class="${t===tip?"on":""}" onclick="sheet('${t}')">${t}</button>`).join("")}</div>`;
+    h += `<input id="f_s" inputmode="decimal" placeholder="Сумма">
+          <label>Кошелёк</label><select id="f_w">${opt(w)}</select>
+          <label>Категория</label><select id="f_k">${opt(tip==="Трата"?State.getCategories().expense:State.getCategories().income)}</select>
+          <input id="f_n" placeholder="Заметка">
+          <div class="err" id="f_e"></div>
+          <button class="bt pri" onclick="submit('${tip}')">Сохранить</button>
+          <button class="bt" onclick="closeSheet()">Отмена</button>`;
+    $("sh").innerHTML = h; $("ov").classList.add("on");
   }
 
-  // --- Рендер вкладок ---
-  const TABS = [["home","💰 Кошельки"],["hist","🕘 История"],["goal","🎯 Цели"],["debt","🤝 Долги"],["more","⚙️ Ещё"]];
-  function nav() { const on = ["bud","reg","cat","rep","cred","cards","asset"].includes(tab) ? "more" : tab; return `<div class="tabs">${TABS.map(([k,l]) => `<div class="${on===k?"on":""}" onclick="go('${k}')">${l}</div>`).join("")}</div>`; }
-  function go(t) { tab = t; render(); }
-  const back = t => `<button class="bt" onclick="go('more')">← Назад</button><h2>${t}</h2>`;
-
-  function home() {
-    const ws = W(), tot = ws.reduce((a,w) => a + S.kohelki[w] * kurs(cur(w)), 0), ym = nowS().slice(0,7);
-    let sp = 0, inc = 0;
-    ops().forEach(z => { if ((z.data||"").startsWith(ym)) { const v = z.baz ?? z.summa; if (z.tip==="Трата" || (z.tip==="Кредитка" && (z.napr==="покупка"||z.napr==="проценты"))) sp += v; if (z.tip==="Доход") inc += v; } });
-    
-    return `<div class="card"><div class="mut">Всего в кошельках</div><h1>${fmt(tot)} лей</h1><div class="two"><div><div class="mut">Доходы за месяц</div><b class="g">+${fmt(inc)}</b></div><div><div class="mut">Траты за месяц</div><b class="r">-${fmt(sp)}</b></div></div></div>
-    <div class="card"><h2>Кошельки</h2>${ws.map((w,i)=>`<div class="row" onclick="walMenu(${i})"><span>✎ ${esc(w)} <span class="mut">${esc(cur(w))}</span></span><b>${fmt(S.kohelki[w])} ${esc(sym(w))}</b></div>`).join("")}</div>
-    <div class="card"><h2>Последние операции</h2>${ops().slice(-5).reverse().map(row).join("")||'<div class="mut">Пока нет операций</div>'}</div>`;
-  }
-
-  function row(z) {
-    const ic = {"Трата":"➖","Доход":"➕","Перевод":"🔄","Конвертация":"🔄","Кредитка":"💳","Долг":"🤝","Кредит":"🏛","Ломбард":"🥇","Цель":"🎯"}[z.tip]||"•";
-    const kp = z.tip==="Кредитка" && (z.napr==="покупка"||z.napr==="проценты"), neg = z.tip==="Трата"||kp;
-    const sg = neg?"-":z.tip==="Доход"?"+":"", c = neg?"r":z.tip==="Доход"?"g":"", w = z.koshel||"", ttl = z.kat||(z.kuda?w+" → "+z.kuda:z.tip);
-    return `<div class="row" onclick="opMenu(${z.id})"><div>${ic} ${esc(ttl)}<div class="mut">${esc((z.data||"").slice(0,16))} · ${esc(w)}${z.zametka?" · "+esc(z.zametka):""}</div></div><b class="${c}">${sg}${fmt(z.summa)} ${esc(SY[cur(w)]||"")}</b></div>`;
-  }
-
-  // --- Операции ---
-  function opMenu(id) { const z = ops().find(x => x.id === id); if (!z) return; MM = []; 
-    if (z.tip === "Трата" || z.tip === "Доход") MM.push(["✏️ Изменить", () => editOp(id)]);
-    if (["Трата","Доход","Перевод","Корректировка"].includes(z.tip)) MM.push(["↩️ Отменить операцию", () => ask("Отменить?", () => undo(id))]);
-    if (z.tip === "Кредитка") MM.push(["↩️ Отменить операцию", () => ask("Отменить?", () => undoCard(id))]);
-    mm(esc(z.tip)+" · "+fmt(z.summa), MM); 
-  }
-
-  function undo(id) {
-    const z = ops().find(x => x.id === id); if (!z) return;
+  function submit(tip) {
     try {
-      const t = z.tip, w = z.koshel, s = z.summa;
-      if (!["Трата","Доход","Перевод","Корректировка"].includes(t)) throw "Нельзя отменить";
-      if (!(w in S.kohelki)) throw "Кошелёк удалён";
-      if (t === "Трата") { S.kohelki[w] = r2(S.kohelki[w] + s); let tr = S.traty; tr[z.kat] = Math.max(0, r2((tr[z.kat]||0) - s)); S.traty = tr; }
-      else if (t === "Доход") { S.kohelki[w] = r2(S.kohelki[w] - s); let dh = S.dohody; dh[z.kat] = Math.max(0, r2((dh[z.kat]||0) - s)); S.dohody = dh; }
-      S.istorija.splice(S.istorija.indexOf(z), 1); AppStorage.set("ops", S.istorija);
-      render(); toast("Отменено");
-    } catch (e) { err(e); }
+      const s = num($("f_s").value), n = $("f_n").value.trim();
+      if (s <= 0) throw "Введите сумму";
+      const w = $("f_w").value;
+      const cat = $("f_k").value;
+      
+      if (tip === "Трата") FinanceAPI.spend({ wallet: w, amount: s, category: cat, note: n });
+      else FinanceAPI.receive({ wallet: w, amount: s, category: cat, note: n });
+      
+      closeSheet(); render(); toast("Сохранено");
+    } catch (e) { $("f_e").textContent = e.message || e; }
   }
 
-  function editOp(id) {
-    const z = ops().find(x => x.id === id), L = z.tip === "Трата" ? S.kat_trat : S.kat_dohodov;
-    mini("Изменить", [["k","Категория", L.includes(z.kat)?L:L.concat(z.kat), z.kat], ["s","Сумма", null, z.summa, 1], ["w","Кошелёк", W(), z.koshel], ["n","Заметка", null, z.zametka||""]], v => {
-      const s = pos(v.s), sg = z.tip === "Трата" ? -1 : 1, B = Object.assign({}, S.kohelki);
-      B[z.koshel] = r2(B[z.koshel] - sg * z.summa); B[v.w] = r2(B[v.w] + sg * s);
-      if (B[z.koshel] < 0 || B[v.w] < 0) throw "Не хватит денег";
-      S.kohelki = B;
-      Object.assign(z, { kat: v.k, summa: s, koshel: v.w, zametka: v.n });
-      if (!z.zametka) delete z.zametka;
-      AppStorage.set("ops", S.istorija);
-    });
-  }
+  function closeSheet() { $("ov").classList.remove("on"); }
+  $("ov").addEventListener("click", e => { if (e.target.id === "ov") closeSheet(); });
 
-  // --- Вспомогательные окна ---
   function mm(t, it) { $("sh").innerHTML = `<h2>${t}</h2>` + it.map((x,i) => `<button class="bt${i?"":" pri"}" onclick="MM[${i}]()">${x[0]}</button>`).join("") + `<button class="bt" onclick="closeSheet()">Закрыть</button>`; MM = it.map(x => x[1]); $("ov").classList.add("on"); }
   function mini(t, fs, ok, hint) { MF = { fs, ok }; $("sh").innerHTML = `<h2>${t}</h2>${hint?`<div class="mut">${hint}</div>`:""}` + fs.map(f => f[2] ? `<label>${f[1]}</label><select id="m_${f[0]}">${opt(f[2], f[3])}</select>` : `<input id="m_${f[0]}" placeholder="${f[1]}" value="${esc(f[3]??"")}"${f[4]?' inputmode="decimal"':""}>`).join("") + `<div class="err" id="m_e"></div><button class="bt pri" onclick="miniOk()">Готово</button><button class="bt" onclick="closeSheet()">Отмена</button>`; $("ov").classList.add("on"); }
   function miniOk() { const v = {}; MF.fs.forEach(f => v[f[0]] = $("m_" + f[0]).value.trim()); try { MF.ok(v); closeSheet(); render(); toast("Сохранено"); } catch (e) { $("m_e").textContent = typeof e === "string" ? e : e.message; } }
   function ask(t, yes) { $("sh").innerHTML = `<p>${esc(t)}</p><button class="bt pri" onclick="closeSheet();(${yes})()">Да</button><button class="bt" onclick="closeSheet()">Нет</button>`; $("ov").classList.add("on"); }
-  function closeSheet() { $("ov").classList.remove("on"); }
-  $("ov").addEventListener("click", e => { if (e.target.id === "ov") closeSheet(); });
 
-  // --- Остальные разделы (Цели, Долги, Бюджеты и т.д.) ---
-  // Для экономии места я включил только базовые, но структура готова принять любые функции из старого кода.
-
-  function render() {
-    const map = { home, hist, goal: () => back("Цели") + "<p>В разработке</p>", debt: () => back("Долги") + "<p>В разработке</p>", more };
-    $("app").innerHTML = nav() + (map[tab] || home)();
+  // ================= ЦЕЛИ =================
+  function renderGoals() {
+    const goals = State.getGoals();
+    let html = `<div class="card"><h2>🎯 Мои цели</h2>`;
+    if (goals.length) {
+      html += goals.map((g, i) => {
+        const percent = g.target > 0 ? Math.min(100, Math.round(g.saved / g.target * 100)) : 0;
+        return `<div class="row" style="display:block" onclick="goalMenu(${i})">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <b>${esc(g.name)}</b>
+            <span>${fmt(g.saved)} / ${fmt(g.target)}</span>
+          </div>
+          <div class="bar"><i style="width:${percent}%"></i></div>
+          <div class="mut" style="margin-top:4px;text-align:right">${percent}%</div>
+        </div>`;
+      }).join("");
+    } else {
+      html += `<div class="mut">Пока нет целей</div>`;
+    }
+    html += `</div><button class="bt pri" onclick="newGoal()">➕ Новая цель</button>`;
+    return html;
   }
+
+  function newGoal() {
+    mini("Новая цель", [["n","Название"],["s","Сумма",null,"",1]], v => {
+      if (!v.n) throw "Введите название";
+      const goals = State.getGoals();
+      goals.push({ id: Date.now().toString(), name: v.n, target: pos(v.s), saved: 0 });
+      State.setGoals(goals);
+    });
+  }
+
+  function goalMenu(i) {
+    const goals = State.getGoals();
+    const g = goals[i];
+    mm(esc(g.name), [
+      ["➕ Пополнить", () => addToGoal(i)],
+      ["➖ Снять", () => removeFromGoal(i)],
+      ["🗑 Удалить", () => {
+        if (g.saved > 0) return toast("Сначала снимите деньги с цели");
+        goals.splice(i, 1); State.setGoals(goals); render(); toast("Удалено");
+      }]
+    ]);
+  }
+
+  function addToGoal(i) {
+    const goals = State.getGoals();
+    const g = goals[i];
+    mini("Пополнить", [["w","Кошелёк",W()],["s","Сумма",null,"",1]], v => {
+      const s = pos(v.s);
+      FinanceAPI.spend({ wallet: v.w, amount: s, category: "Цель", note: g.name });
+      g.saved += s; State.setGoals(goals);
+    });
+  }
+
+  function removeFromGoal(i) {
+    const goals = State.getGoals();
+    const g = goals[i];
+    mini("Снять", [["w","Кошелёк",W()],["s","Сумма",null,"",1]], v => {
+      const s = pos(v.s);
+      if (s > g.saved) throw "В цели меньше денег";
+      FinanceAPI.receive({ wallet: v.w, amount: s, category: "Цель", note: g.name });
+      g.saved -= s; State.setGoals(goals);
+    });
+  }
+
+  // ================= ДОЛГИ =================
+  function renderDebts() {
+    const debts = State.getDebts();
+    let html = `<div class="card"><h2>🤝 Долги</h2>`;
+    if (debts.length) {
+      html += debts.map(d => `
+        <div class="row" onclick="debtMenu('${d.id}')">
+          <div>${d.type === 'i_owe' ? '🔴' : '🟢'} ${esc(d.name)}
+            <div class="mut">${d.type === 'i_owe' ? 'Я должен' : 'Мне должны'}</div>
+          </div>
+          <b>${fmt(d.amount)} лей</b>
+        </div>
+      `).join("");
+    } else {
+      html += `<div class="mut">Нет активных долгов</div>`;
+    }
+    html += `</div><button class="bt pri" onclick="newDebt()">➕ Новый долг</button>`;
+    return html;
+  }
+
+  function newDebt() {
+    mini("Новый долг", [
+      ["t","Тип",["Я должен","Мне должны"]],
+      ["n","Кому/Кто"],
+      ["s","Сумма",null,"",1]
+    ], v => {
+      if (!v.n) throw "Введите имя";
+      const debts = State.getDebts();
+      debts.push({ id: Date.now().toString(), type: v.t === "Я должен" ? "i_owe" : "owe_me", name: v.n, amount: pos(v.s) });
+      State.setDebts(debts);
+    });
+  }
+
+  function debtMenu(id) {
+    const debts = State.getDebts();
+    const d = debts.find(x => x.id === id);
+    mm(esc(d.name), [
+      ["✅ Погасить", () => payDebt(id)],
+      ["🗑 Удалить", () => {
+        State.setDebts(debts.filter(x => x.id !== id));
+        render(); toast("Удалено");
+      }]
+    ]);
+  }
+
+  function payDebt(id) {
+    const debts = State.getDebts();
+    const d = debts.find(x => x.id === id);
+    mini("Погашение", [["w","Кошелёк",W()],["s","Сумма",null,d.amount,1]], v => {
+      const s = pos(v.s);
+      if (s > d.amount) throw "Больше остатка долга";
+      if (d.type === 'i_owe') {
+        FinanceAPI.spend({ wallet: v.w, amount: s, category: "Долг", note: "Погашение" });
+      } else {
+        FinanceAPI.receive({ wallet: v.w, amount: s, category: "Долг", note: "Возврат" });
+      }
+      d.amount -= s;
+      if (d.amount <= 0) State.setDebts(debts.filter(x => x.id !== id));
+      else State.setDebts(debts);
+    });
+  }
+
+  // ================= РЕНДЕР =================
+  function render() {
+    const tabs = [["home","💰 Кошельки"],["goals","🎯 Цели"],["debts","🤝 Долги"],["more","⚙️ Ещё"]];
+    let html = `<div class="tabs">${tabs.map(([k,l]) => `<div class="${tab===k?"on":""}" onclick="tab='${k}';render()">${l}</div>`).join("")}</div>`;
+
+    if (tab === "home") {
+      const wallets = State.getWallets();
+      const ops = State.getOps().slice().reverse().slice(0, 5);
+      html += `<div class="card"><h2>Кошельки</h2>${Object.keys(wallets).map(w => `<div class="row" style="cursor:default"><span>${esc(w)}</span><b>${fmt(wallets[w])} лей</b></div>`).join("")}</div>`;
+      html += `<div class="card"><h2>Последние операции</h2>${ops.length ? ops.map(o => `
+        <div class="row" style="cursor:default">
+          <div>${o.kind === 'expense' ? '➖' : '➕'} ${esc(o.cat)}<div class="mut">${o.date}</div></div>
+          <b class="${o.kind === 'expense' ? 'r' : 'g'}">${o.amount > 0 ? '+' : ''}${fmt(o.amount)}</b>
+        </div>
+      `).join("") : '<div class="mut">Нет операций</div>'}</div>`;
+    } else if (tab === "goals") {
+      html += renderGoals();
+    } else if (tab === "debts") {
+      html += renderDebts();
+    } else if (tab === "more") {
+      html += `<div class="card"><h2>Разделы</h2><div class="mut" style="padding:10px">Бюджеты, Кредиты, Активы и Отчёты скоро появятся.</div></div>`;
+    }
+
+    $("app").innerHTML = html;
+  }
+
+  render();
 </script>
 </body>
 </html>
