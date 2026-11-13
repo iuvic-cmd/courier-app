@@ -33,7 +33,24 @@
     .history-item:last-child { border-bottom: none; }
 
     /* ФИКС ДЛЯ КЛАВИАТУРЫ */
-    .dialog-box { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important; }
+    .dialog-overlay { align-items: flex-start; padding-top: 10vh; }
+    .dialog-box { 
+      max-height: 80vh; 
+      overflow-y: auto; 
+      padding-bottom: 0 !important; 
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-actions {
+      position: sticky;
+      bottom: 0;
+      background: var(--panel);
+      padding: 16px 0 calc(16px + env(safe-area-inset-bottom, 0px));
+      margin: 0 -20px;
+      padding-left: 20px;
+      padding-right: 20px;
+      box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+    }
   </style>
 </head>
 <body>
@@ -142,29 +159,28 @@
     document.getElementById("fuelHistory").innerHTML = fuels.slice().reverse().slice(0, 5).map(f => `<div class="history-item"><div><b>${f.date}</b> <span style="font-size:12px;color:var(--text-dim)">${f.liters.toFixed(2)} л</span></div><b style="color:var(--orange)">${f.total} лей</b></div>`).join("") || `<div class="history-item">Нет заправок</div>`;
   }
 
-  // ОБЕРТКА ДЛЯ ФОРМЫ
+  // ОБЕРТКА ДЛЯ ФОРМЫ С ФИКСИРОВАННЫМИ КНОПКАМИ
   function showFormModal(title, innerHtml, onSave) {
     const ov = document.createElement("div"); ov.className = "dialog-overlay";
     const box = document.createElement("div"); box.className = "dialog-box";
     
     box.innerHTML = `
-      <form id="modal-form" novalidate>
+      <form id="modal-form" novalidate style="display:flex; flex-direction:column; flex:1;">
         <h3 style="margin-bottom: 16px;">${title}</h3>
-        ${innerHtml}
-        <div class="dialog-buttons" style="margin-top: 20px;">
-          <button type="submit" class="dialog-yes" id="btn-save">💾 Сохранить</button>
-          <button type="button" class="dialog-no" id="btn-cancel">Отмена</button>
+        <div style="flex:1;">
+          ${innerHtml}
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="dialog-yes" style="width: 100%; font-size: 16px; padding: 14px;">💾 СОХРАНИТЬ</button>
+          <button type="button" class="dialog-no" style="width: 100%; font-size: 16px; padding: 14px; margin-top: 8px;" onclick="this.closest('.dialog-overlay').remove()">Отмена</button>
         </div>
       </form>
     `;
     ov.appendChild(box); document.body.appendChild(ov);
 
-    document.getElementById("btn-cancel").onclick = () => ov.remove();
-    
     document.getElementById("modal-form").onsubmit = function(e) {
       e.preventDefault();
       if (document.activeElement) document.activeElement.blur();
-      
       if (!guardAction("saveForm")) return;
       
       try {
@@ -186,10 +202,10 @@
 
     const formHtml = `
       <div class="input-row">
-        <div><label>Пробег (км)</label><input type="number" pattern="[0-9]*" inputmode="numeric" id="inp_km" class="form-control" value="${scooter.currentKm}" autocomplete="off" autocorrect="off"></div>
-        <div><label>Интервал (км)</label><input type="number" pattern="[0-9]*" inputmode="numeric" id="inp_int" class="form-control" value="${data.intervalKm || defaultInterval}" autocomplete="off" autocorrect="off"></div>
+        <div><label>Пробег (км)</label><input type="number" id="inp_km" class="form-control" value="${scooter.currentKm}"></div>
+        <div><label>Интервал (км)</label><input type="number" id="inp_int" class="form-control" value="${data.intervalKm || defaultInterval}"></div>
       </div>
-      <div style="margin-bottom: 10px;"><label>Стоимость (лей)</label><input type="number" pattern="[0-9]*" inputmode="decimal" id="inp_cost" class="form-control" placeholder="0" autocomplete="off" autocorrect="off"></div>
+      <div style="margin-bottom: 10px;"><label>Стоимость (лей)</label><input type="number" id="inp_cost" class="form-control" placeholder="0"></div>
       <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="inp_wallet" class="form-control">${walletSelectHtml()}</select></div>
       ${historyHtml}
     `;
@@ -213,7 +229,7 @@
     const formHtml = `
       <div style="margin-bottom: 10px;"><label>Дата прохождения</label><input type="date" id="inp_date" class="form-control" value="${UI.date.local()}"></div>
       <div style="margin-bottom: 10px;"><label>Действует до</label><input type="date" id="inp_next" class="form-control" value="${data.nextDate || ""}"></div>
-      <div style="margin-bottom: 10px;"><label>Стоимость (лей)</label><input type="number" pattern="[0-9]*" inputmode="decimal" id="inp_cost" class="form-control" placeholder="0" autocomplete="off" autocorrect="off"></div>
+      <div style="margin-bottom: 10px;"><label>Стоимость (лей)</label><input type="number" id="inp_cost" class="form-control" placeholder="0"></div>
       <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="inp_wallet" class="form-control">${walletSelectHtml()}</select></div>
     `;
     showFormModal(title, formHtml, () => {
@@ -233,8 +249,8 @@
   function openAddFuel() {
     const formHtml = `
       <div class="input-row">
-        <div><label>Сумма по чеку</label><input type="number" pattern="[0-9]*" inputmode="decimal" id="inp_total" class="form-control" placeholder="0" autocomplete="off" autocorrect="off"></div>
-        <div><label>Цена за литр</label><input type="number" pattern="[0-9]*" inputmode="decimal" id="inp_price" class="form-control" placeholder="0" autocomplete="off" autocorrect="off"></div>
+        <div><label>Сумма по чеку</label><input type="number" id="inp_total" class="form-control" placeholder="0"></div>
+        <div><label>Цена за литр</label><input type="number" id="inp_price" class="form-control" placeholder="0"></div>
       </div>
       <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="inp_wallet" class="form-control">${walletSelectHtml()}</select></div>
     `;
@@ -254,7 +270,7 @@
   function openAddMileage() {
     const scooter = State.getScooter();
     const formHtml = `
-      <div style="margin-bottom: 10px;"><label>Текущий пробег (км)</label><input type="number" pattern="[0-9]*" inputmode="numeric" id="inp_km" class="form-control" value="${scooter.currentKm || ""}" autocomplete="off" autocorrect="off"></div>
+      <div style="margin-bottom: 10px;"><label>Текущий пробег (км)</label><input type="number" id="inp_km" class="form-control" value="${scooter.currentKm || ""}"></div>
     `;
     showFormModal("📏 Пробег", formHtml, () => {
       const km = UI.num(document.getElementById("inp_km").value);
