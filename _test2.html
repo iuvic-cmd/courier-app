@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="UTF-8"><title>Тест Этапа 2</title></head>
+<body style="padding: 20px; font-family: sans-serif;">
+  <h2>Тест Домена</h2>
+  <button onclick="runTest()" style="padding: 10px; font-size: 16px; background: #007aff; color: white; border: none; border-radius: 8px;">Запустить тест списания</button>
+  <pre id="out" style="margin-top: 20px; font-size: 12px; background: #eee; padding: 10px; white-space: pre-wrap;"></pre>
+
+  <script>
+    // --- LIB ---
+    const AppStorage = { _mem:{}, get:(k,d)=>JSON.parse(localStorage.getItem("test."+k)||"null")??d, set:(k,v)=>localStorage.setItem("test."+k,JSON.stringify(v)) };
+    const UI = { num:v=>+v||0, r2:x=>Math.round(x*100)/100, fmt:x=>(+x).toFixed(2), date:{ local:()=>new Date().toISOString().split("T")[0], month:()=>new Date().toISOString().slice(0,7) } };
+
+    // --- STATE ---
+    const State = {
+        getWallets: () => AppStorage.get("wallets", { "Наличные": 0, "Карта": 0 }),
+        setWallets: (w) => AppStorage.set("wallets", w),
+        getOps: () => AppStorage.get("ops", []),
+        setOps: (o) => AppStorage.set("ops", o),
+        getTariff: () => AppStorage.get("tariff", [{ from: "2024-01-01", night: 74, ap: 54 }]),
+        getShift: () => AppStorage.get("shift", null),
+        getDays: () => AppStorage.get("days", {})
+    };
+
+    // --- TARIFF ---
+    const Tariff = {
+        getForDate: (ds) => {
+            const hist = State.getTariff().sort((a,b)=>a.from.localeCompare(b.from));
+            let act = { night: 74, ap: 54 };
+            hist.forEach(t => { if (ds >= t.from) act = t; });
+            return act;
+        }
+    };
+
+    // --- FINANCE API ---
+    const FinanceAPI = {
+        _addOp(op) { const ops = State.getOps(); op.id = "op_"+Date.now(); ops.push(op); State.setOps(ops); return op.id; },
+        spend({ date, wallet, amount, category, note }) {
+            amount = UI.num(amount);
+            if (amount <= 0) throw new Error("Сумма > 0");
+            const w = State.getWallets();
+            if (w[wallet] === undefined) throw new Error("Нет кошелька");
+            if (w[wallet] < amount) throw new Error(`Мало денег на ${wallet}. Есть ${w[wallet]}`);
+            w[wallet] = UI.r2(w[wallet] - amount);
+            State.setWallets(w);
+            return this._addOp({ date: date || UI.date.local(), kind: "expense", amount: -amount, wallet, cat: category, note: note||"" });
+        }
+    };
+
+    // --- LEDGER ---
+    const Ledger = {
+        forMonth: (m) => State.getOps().filter(o => o.date.startsWith(m)),
+        totalExpenses: (ops) => ops.filter(o => o.kind === "expense").reduce((s,o)=>s+Math.abs(o.amount), 0),
+        totalIncome: (ops) => ops.filter(o => o.kind === "income").reduce((s,o)=>s+o.amount, 0),
+        getMonthlyNet: function(m) {
+            let sal = 0; const days = State.getDays();
+            for (const d in days) if (d.startsWith(m)) sal += (+days[d].total || 0);
+            const ops = this.forMonth(m);
+            return { salary: sal, extraIncome: this.totalIncome(ops), expenses: this.totalExpenses(ops), net: UI.r2(sal + this.totalIncome(ops) - this.totalExpenses(ops)) };
+        }
+    };
+
+    // --- TEST ---
+    function runTest() {
+      const out = document.getElementById("out");
+      try {
+        State.setWallets({ "Наличные": 500, "Карта": 1000 });
+        State.setOps([]);
+        out.innerText = "Старт: " + JSON.stringify(State.getWallets()) + "\n\n";
+        FinanceAPI.spend({ wallet: "Наличные", amount: 150, category: "Продукты", note: "Тест" });
+        out.innerText += "Списание 150: " + JSON.stringify(State.getWallets()) + "\n\n";
+        out.innerText += "Журнал: " + JSON.stringify(State.getOps()[0], null, 2) + "\n\n";
+        out.innerText += "Месяц: " + JSON.stringify(Ledger.getMonthlyNet(UI.date.month()), null, 2);
+      } catch (e) { out.innerText = "❌ ОШИБКА: " + e.message; }
+    }
+  </script>
+</body>
+</html>
