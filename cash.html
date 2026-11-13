@@ -16,35 +16,22 @@
     .stat-label { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; display: block; }
     .stat-value { font-size: 18px; font-weight: 700; }
     
-    .action-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 24px; }
-    .action-grid .btn { padding: 10px 4px; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-    .action-grid .btn span { font-size: 18px; }
+    .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 24px; }
+    .action-grid .btn { padding: 14px; font-size: 14px; }
 
-    /* Аккордеоны (как в старом коде) */
     details.acc { margin-bottom: 12px; }
     details.acc > summary {
-      list-style: none;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 16px;
-      cursor: pointer;
-      font-weight: 600;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      list-style: none; background: var(--panel); border: 1px solid var(--border);
+      border-radius: 16px; padding: 16px; cursor: pointer; font-weight: 600;
+      display: flex; justify-content: space-between; align-items: center;
     }
     details.acc > summary::-webkit-details-marker { display: none; }
     details.acc > summary::after { content: "▼"; font-size: 12px; color: var(--text-dim); }
     details.acc[open] > summary::after { content: "▲"; }
     
     .acc-body {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-top: none;
-      border-radius: 0 0 16px 16px;
-      padding: 16px;
-      margin-top: -4px;
+      background: var(--panel); border: 1px solid var(--border); border-top: none;
+      border-radius: 0 0 16px 16px; padding: 16px; margin-top: -4px;
     }
     
     .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
@@ -53,8 +40,10 @@
     
     .history-list { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
     .history-item { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; color: var(--text-dim); }
-
-    .section-title { font-size: 14px; font-weight: 700; margin: 24px 0 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+    .section-title { font-size: 14px; font-weight: 700; margin: 24px 0 10px; color: var(--text-dim); text-transform: uppercase; }
+    
+    .save-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
+    .cancel-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--border); color: var(--text); border: none; font-weight: 700; margin-top: 8px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -76,8 +65,30 @@
   </div>
 
   <div class="action-grid">
-    <button class="btn btn-primary" onclick="openFuelForm()"><span>⛽</span>Заправка</button>
-    <button class="btn btn-green" onclick="openMileageForm()"><span>📏</span>Пробег</button>
+    <button class="btn btn-primary" onclick="toggleFuelForm()"><span>⛽</span> Заправка</button>
+    <button class="btn btn-green" onclick="toggleMileageForm()"><span>📏</span> Пробег</button>
+  </div>
+
+  <div id="fuelFormContainer" style="display: none; margin-bottom: 20px;">
+    <div style="background: var(--panel); border: 2px solid var(--accent); border-radius: 16px; padding: 16px;">
+      <h3 style="margin-bottom: 12px; font-size: 16px;">⛽ Новая заправка</h3>
+      <div class="input-row">
+        <div><label>Сумма по чеку</label><input type="number" id="f_total" class="form-control" placeholder="0" inputmode="decimal"></div>
+        <div><label>Цена за литр</label><input type="number" id="f_price" class="form-control" placeholder="0" inputmode="decimal"></div>
+      </div>
+      <div style="margin-bottom: 12px;"><label>Кошелёк</label><select id="f_wall" class="form-control" onfocus="this.blur()">${walletSelectHtml()}</select></div>
+      <button class="save-btn" onclick="saveFuel()">💾 СОХРАНИТЬ</button>
+      <button class="cancel-btn" onclick="toggleFuelForm()">Отмена</button>
+    </div>
+  </div>
+
+  <div id="mileageFormContainer" style="display: none; margin-bottom: 20px;">
+    <div style="background: var(--panel); border: 2px solid var(--green); border-radius: 16px; padding: 16px;">
+      <h3 style="margin-bottom: 12px; font-size: 16px;">📏 Обновить пробег</h3>
+      <div style="margin-bottom: 12px;"><label>Текущий пробег (км)</label><input type="number" id="m_km" class="form-control" value="" inputmode="numeric"></div>
+      <button class="save-btn" onclick="saveMileage()">💾 СОХРАНИТЬ</button>
+      <button class="cancel-btn" onclick="toggleMileageForm()">Отмена</button>
+    </div>
   </div>
 
   <div class="section-title">ТО и Расходники</div>
@@ -88,7 +99,6 @@
 
   <div class="section-title">История</div>
   <div class="history-list" id="globalHistory" style="background: var(--panel); padding: 0 16px; border-radius: 16px; border: 1px solid var(--border);"></div>
-
 </div>
 
 <nav class="tabbar">
@@ -101,7 +111,6 @@
 
 <script src="js/lib/storage.js"></script>
 <script src="js/lib/ui.js"></script>
-<script src="js/lib/dialog.js"></script>
 <script src="js/lib/notify.js"></script>
 <script src="js/lib/guard.js"></script>
 <script src="js/lib/theme.js"></script>
@@ -121,7 +130,7 @@
     { id: 'insurance', title: '🛡 Страховка' }
   ];
 
-  function walletSelectHtml(id = "inp_wallet") {
+  function walletSelectHtml() {
     const wallets = State.getWallets();
     return Object.keys(wallets).map(w => `<option value="${w}">${w} (${wallets[w]} лей)</option>`).join("");
   }
@@ -138,7 +147,6 @@
     const totalLiters = fuels.reduce((s, f) => s + f.liters, 0);
     document.getElementById("statConsumption").innerText = (totalKm > 0 ? (totalLiters / totalKm * 100) : 0).toFixed(2) + " л/100км";
 
-    // Расходники (аккордеоны)
     document.getElementById("componentsList").innerHTML = COMPONENTS.map(c => {
       const data = State.getComponent(c.id);
       const nextKm = data.lastKm ? data.lastKm + data.intervalKm : 0;
@@ -161,13 +169,12 @@
           </div>
           <div style="margin-bottom: 10px;"><label>Стоимость (лей)</label><input type="number" id="c_cost_${c.id}" class="form-control" placeholder="0"></div>
           <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="c_wall_${c.id}" class="form-control">${walletSelectHtml()}</select></div>
-          <button class="btn btn-primary" onclick="saveComponent('${c.id}', '${c.title}')">💾 Записать замену</button>
+          <button class="save-btn" onclick="saveComponent('${c.id}', '${c.title}')">💾 ЗАПИСАТЬ ЗАМЕНУ</button>
           ${hist}
         </div>
       </details>`;
     }).join("");
 
-    // Официальные документы (аккордеоны)
     document.getElementById("officialList").innerHTML = OFFICIALS.map(o => {
       const data = State.getOfficial(o.id);
       let status = data.nextDate ? `Действует до: ${data.nextDate} (${data.cost} лей)` : "Нет данных";
@@ -182,41 +189,27 @@
           <div style="margin-bottom: 10px;"><label>Действует до</label><input type="date" id="o_next_${o.id}" class="form-control" value="${data.nextDate || ""}"></div>
           <div style="margin-bottom: 10px;"><label>Стоимость (лей)</label><input type="number" id="o_cost_${o.id}" class="form-control" placeholder="0"></div>
           <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="o_wall_${o.id}" class="form-control">${walletSelectHtml()}</select></div>
-          <button class="btn btn-primary" onclick="saveOfficial('${o.id}', '${o.title}')">💾 Сохранить</button>
+          <button class="save-btn" onclick="saveOfficial('${o.id}', '${o.title}')">💾 СОХРАНИТЬ</button>
           ${hist}
         </div>
       </details>`;
     }).join("");
 
-    // Общая история
     let historyHtml = "";
     State.getMileageLog().slice().reverse().slice(0, 5).forEach(m => historyHtml += `<div class="history-item"><span>📏 Пробег</span><span>${m.date}: <b>${m.km} км</b></span></div>`);
     fuels.slice().reverse().slice(0, 5).forEach(f => historyHtml += `<div class="history-item"><span>⛽ Заправка</span><span>${f.date}: <b>${f.total} лей</b> (${f.liters.toFixed(2)} л)</span></div>`);
     document.getElementById("globalHistory").innerHTML = historyHtml || `<div class="history-item">Нет записей</div>`;
   }
 
-  // --- ФОРМА ЗАПРАВКИ (без модальных окон) ---
-  function openFuelForm() {
-    // Создаем блок и вставляем его прямо в поток документа
-    const div = document.createElement("div");
-    div.innerHTML = `
-      <details class="acc" open style="margin-bottom: 24px; border: 2px solid var(--accent);">
-        <summary style="background: #e3f2fd;">⛽ Новая заправка</summary>
-        <div class="acc-body">
-          <div class="input-row">
-            <div><label>Сумма по чеку</label><input type="number" id="f_total" class="form-control" placeholder="0"></div>
-            <div><label>Цена за литр</label><input type="number" id="f_price" class="form-control" placeholder="0"></div>
-          </div>
-          <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="f_wall" class="form-control">${walletSelectHtml()}</select></div>
-          <button class="btn btn-primary" onclick="saveFuel()">💾 Записать</button>
-          <button class="btn btn-orange" style="margin-top:8px" onclick="this.closest('details').remove()">Отмена</button>
-        </div>
-      </details>
-    `;
-    const container = document.querySelector('.action-grid');
-    container.parentNode.insertBefore(div.firstElementChild, container.nextSibling);
-    // Фокусируемся на первом поле
-    setTimeout(() => document.getElementById("f_total").focus(), 100);
+  function toggleFuelForm() {
+    const c = document.getElementById("fuelFormContainer");
+    c.style.display = c.style.display === "none" ? "block" : "none";
+    if (c.style.display === "block") document.getElementById("f_total").focus();
+  }
+  function toggleMileageForm() {
+    const c = document.getElementById("mileageFormContainer");
+    c.style.display = c.style.display === "none" ? "block" : "none";
+    if (c.style.display === "block") document.getElementById("m_km").focus();
   }
 
   function saveFuel() {
@@ -230,31 +223,10 @@
       
       FinanceAPI.spend({ wallet, amount: totalCost, category: "Топливо (Скутер)", note: `${liters}л` });
       State.setFuel([...State.getFuel(), { date: UI.date.local(), liters, price, total: totalCost }]);
+      toggleFuelForm();
       render();
       Notify.show(`✅ ${liters} л. Списано ${totalCost} лей`);
-      // Находим открытую форму и удаляем её
-      const openForms = document.querySelectorAll('details[open]');
-      openForms.forEach(f => { if(f.querySelector('#f_total')) f.remove(); });
     } catch (e) { Notify.error(e.message); }
-  }
-
-  // --- ФОРМА ПРОБЕГА ---
-  function openMileageForm() {
-    const scooter = State.getScooter();
-    const div = document.createElement("div");
-    div.innerHTML = `
-      <details class="acc" open style="margin-bottom: 24px; border: 2px solid var(--accent);">
-        <summary style="background: #e8f5e9;">📏 Обновить пробег</summary>
-        <div class="acc-body">
-          <div style="margin-bottom: 10px;"><label>Текущий пробег на одометре (км)</label><input type="number" id="m_km" class="form-control" value="${scooter.currentKm || ""}"></div>
-          <button class="btn btn-primary" onclick="saveMileage()">💾 Сохранить</button>
-          <button class="btn btn-orange" style="margin-top:8px" onclick="this.closest('details').remove()">Отмена</button>
-        </div>
-      </details>
-    `;
-    const container = document.querySelector('.action-grid');
-    container.parentNode.insertBefore(div.firstElementChild, container.nextSibling);
-    setTimeout(() => document.getElementById("m_km").focus(), 100);
   }
 
   function saveMileage() {
@@ -268,14 +240,12 @@
       scooter.currentKm = km;
       if (scooter.startKm === 0) scooter.startKm = km;
       State.setScooter(scooter);
+      toggleMileageForm();
       render();
       Notify.show("✅ Пробег обновлен");
-      const openForms = document.querySelectorAll('details[open]');
-      openForms.forEach(f => { if(f.querySelector('#m_km')) f.remove(); });
     } catch (e) { Notify.error(e.message); }
   }
 
-  // --- СОХРАНЕНИЕ КОМПОНЕНТОВ (Масло и т.д.) ---
   function saveComponent(id, title) {
     if (!guardAction("saveComp")) return;
     try {
@@ -295,7 +265,6 @@
     } catch (err) { Notify.error(err.message); }
   }
 
-  // --- СОХРАНЕНИЕ ДОКУМЕНТОВ ---
   function saveOfficial(id, title) {
     if (!guardAction("saveOff")) return;
     try {
