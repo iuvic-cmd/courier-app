@@ -40,7 +40,33 @@
         setDebts(d) { AppStorage.set("debts", d); },
         
         getGoals() { return AppStorage.get("goals", []); },
-        setGoals(g) { AppStorage.set("goals", g); }
+        setGoals(g) { AppStorage.set("goals", g); },
+
+        // --- Скутер ---
+        
+        // Пробег (текущий и начальный)
+        getScooter() { return AppStorage.get("scooter", { currentKm: 0, startKm: 0 }); },
+        setScooter(s) { AppStorage.set("scooter", s); },
+        
+        // История обновлений пробега
+        getMileageLog() { return AppStorage.get("mileage_log", []); },
+        setMileageLog(l) { AppStorage.set("mileage_log", l); },
+        
+        // Заправки скутера
+        getFuel() { return AppStorage.get("scooter_fuel", []); },
+        setFuel(f) { AppStorage.set("scooter_fuel", f); },
+        
+        // Общие расходы на мойку/сервис (если понадобятся)
+        getScooterExpenses() { return AppStorage.get("scooter_expenses", []); },
+        setScooterExpenses(e) { AppStorage.set("scooter_expenses", e); },
+        
+        // Компоненты ТО (масло, фильтр и т.д.)
+        getComponent(id) { return AppStorage.get("comp_" + id, { lastKm: 0, lastDate: "", intervalKm: 0, history: [] }); },
+        setComponent(id, data) { AppStorage.set("comp_" + id, data); },
+        
+        // Официальные документы (техосмотр, налоги, страховка)
+        getOfficial(id) { return AppStorage.get("official_" + id, { lastDate: "", nextDate: "", cost: 0, history: [] }); },
+        setOfficial(id, data) { AppStorage.set("official_" + id, data); }
     };
 
     global.State = State;
