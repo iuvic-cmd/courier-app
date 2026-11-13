@@ -10,24 +10,16 @@
     .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-bottom: 90px; }
     .header { margin-bottom: 20px; }
     .header h1 { font-size: 24px; }
-    
     .card { background: var(--panel); border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--border); }
     .card h3 { font-size: 16px; margin-bottom: 12px; color: var(--accent); }
-    
     .form-group { margin-bottom: 12px; }
     .form-group label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 4px; }
     .form-control { width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--text); font-size: 16px; }
-    
     .btn-save { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
     .btn-danger { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; background: var(--red); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
-    
     .hint { font-size: 12px; color: var(--text-dim); margin-top: 4px; line-height: 1.4; }
-    .pair-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--bg); border-radius: 8px; font-size: 13px; margin-bottom: 4px; }
-    .pair-row.mine { background: var(--help-bg); border-left: 3px solid var(--accent); }
-    .pair-num { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
     .partner-btn { padding: 8px 14px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--panel); color: var(--text); font-weight: 600; font-size: 13px; cursor: pointer; }
     .partner-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-    
     .roster-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
     .roster-item { display: flex; align-items: center; gap: 6px; }
     .roster-label { font-weight: 700; font-size: 12px; width: 24px; color: var(--text-dim); }
@@ -40,7 +32,6 @@
     <h1>⚙ Настройки</h1>
   </div>
 
-  <!-- График смен -->
   <div class="card">
     <h3>⚡ Короткие дни (2/2)</h3>
     <p class="hint">Скользящие пары: (1,2)→(3,4)→(5,6)→(7,1)→(2,3)→(4,5)→(6,7)</p>
@@ -60,12 +51,10 @@
     
     <div id="myPairsInfo" style="display:none">
       <div class="hint" id="pairInfoBox" style="background:var(--bg); padding:10px; border-radius:8px; margin-bottom:10px;"></div>
-      
       <div class="form-group" style="margin-top:8px">
-        <label>📅 Дата короткого дня</label>
+        <label>📅 Дата короткого дня (напарник)</label>
         <input type="date" id="refShortDate" class="form-control">
       </div>
-      
       <div class="form-group">
         <label>Напарник в этот день</label>
         <div style="display:flex; gap:8px; flex-wrap:wrap" id="partnerBtns"></div>
@@ -75,7 +64,6 @@
     <button class="btn-save" onclick="applyShiftSchedule()">✅ Применить график</button>
   </div>
 
-  <!-- Подмога -->
   <div class="card">
     <h3>🤝 Подмога</h3>
     <p class="hint">Укажи дату последней подмоги, чтобы приложение считало очередь.</p>
@@ -91,7 +79,6 @@
     <button class="btn-save" onclick="applyHelpSchedule()">✅ Применить подмогу</button>
   </div>
 
-  <!-- Список смен -->
   <div class="card">
     <h3>👥 Список смен</h3>
     <div class="roster-grid" id="rosterA"></div>
@@ -99,7 +86,6 @@
     <button class="btn-save" onclick="saveRoster()">💾 Сохранить</button>
   </div>
 
-  <!-- Опасная зона -->
   <div class="card" style="border-color: var(--red);">
     <h3 style="color: var(--red);">⚠️ Опасная зона</h3>
     <p class="hint">Это действие удалит ВСЕ данные: историю дней, финансы, заправки и настройки. Приложение вернется в исходное состояние.</p>
@@ -132,6 +118,7 @@
 
   const PAIRS = [[1,2],[3,4],[5,6],[7,1],[2,3],[4,5],[6,7]];
   const dayDiff = (a, b) => Math.round((new Date(b + "T12:00:00") - new Date(a + "T12:00:00")) / 86400000);
+  const isWeekendStr = ds => { const w = new Date(ds + "T12:00:00").getDay(); return w === 0 || w === 6; };
   
   function getWorkDayIndex(ds, first) {
     const diff = dayDiff(first, ds), pos = ((diff % 4) + 4) % 4;
@@ -140,27 +127,18 @@
   }
   const getPairForWorkDay = (wdi, offset) => { const idx = (((wdi + offset) % 7) + 7) % 7; return PAIRS[idx]; };
   const findPairsForNumber = n => PAIRS.map((pair, index) => ({ index, pair, partner: pair[0] === n ? pair[1] : pair[0] })).filter(p => p.pair.includes(n));
+  const isWorkDay = (ds, first) => { const p = ((dayDiff(first, ds) % 4) + 4) % 4; return p === 0 || p === 1; };
 
   function onMyNumberChange() {
     const n = parseInt(document.getElementById("myNumber").value) || 0;
     if (!n) { document.getElementById("myPairsInfo").style.display = "none"; return; }
     document.getElementById("myPairsInfo").style.display = "block";
-    
     const mine = findPairsForNumber(n);
-    document.getElementById("pairInfoBox").innerHTML = `Вы <b>№${n}</b> — в <b>2 парах</b>:<br>` + 
-      mine.map(p => `• Пара ${p.index + 1}: <b>(${p.pair[0]}, ${p.pair[1]})</b> — напарник <b>№${p.partner}</b>`).join("<br>");
-    
-    const btns = document.getElementById("partnerBtns"); 
-    btns.innerHTML = "";
+    document.getElementById("pairInfoBox").innerHTML = `Вы <b>№${n}</b> — в <b>2 парах</b>:<br>` + mine.map(p => `• Пара ${p.index + 1}: <b>(${p.pair[0]}, ${p.pair[1]})</b> — напарник <b>№${p.partner}</b>`).join("<br>");
+    const btns = document.getElementById("partnerBtns"); btns.innerHTML = "";
     mine.forEach(p => {
-      const b = document.createElement("button"); 
-      b.className = "partner-btn"; 
-      b.textContent = `№${p.partner}`;
-      b.onclick = () => { 
-        btns.querySelectorAll(".partner-btn").forEach(x => x.classList.remove("active")); 
-        b.classList.add("active"); 
-        selectedRefPartner = p.partner; 
-      };
+      const b = document.createElement("button"); b.className = "partner-btn"; b.textContent = `№${p.partner}`;
+      b.onclick = () => { btns.querySelectorAll(".partner-btn").forEach(x => x.classList.remove("active")); b.classList.add("active"); selectedRefPartner = p.partner; };
       btns.appendChild(b);
     });
     selectedRefPartner = null; 
@@ -170,21 +148,15 @@
     const first = document.getElementById("shiftFirstDay").value;
     const myNum = parseInt(document.getElementById("myNumber").value) || 0;
     const ref = document.getElementById("refShortDate").value;
-    
     if (!first || !myNum || !ref) { Notify.error("Заполните все поля."); return; }
     if (!selectedRefPartner) { Notify.error("Выберите напарника."); return; }
-    
     const wdi = getWorkDayIndex(ref, first);
     if (wdi === null) { Notify.error("Дата — НЕ рабочий день!"); return; }
-    
     const refPair = findPairsForNumber(myNum).find(p => p.partner === selectedRefPartner);
     if (!refPair) { Notify.error("Пара не найдена."); return; }
-    
     const offset = ((refPair.index - wdi) % 7 + 7) % 7;
-    const shiftConfig = { firstWorkDay: first, myNumber: myNum, offset, refPartner: selectedRefPartner };
-    State.setShift(shiftConfig);
-    
-    generateCalendarDays();
+    State.setShift({ firstWorkDay: first, myNumber: myNum, offset, refPartner: selectedRefPartner });
+    recalculateCalendarTypes();
     Notify.show("✅ График применен!");
   }
 
@@ -195,42 +167,52 @@
     const helpConfig = { lastMyHelpDate: mine };
     if (other) helpConfig.lastOtherHelpDate = other;
     AppStorage.set("help", helpConfig);
-    generateCalendarDays();
+    recalculateCalendarTypes();
     Notify.show("✅ Подмога применена!");
   }
 
-  function generateCalendarDays() {
-    const shift = State.getShift();
-    const help = AppStorage.get("help", {});
+  function recalculateCalendarTypes() {
+    const shift = State.getShift(), help = AppStorage.get("help", {});
     if (!shift || !shift.firstWorkDay) return;
+    const days = State.getDays(), now = new Date();
     
-    const days = State.getDays();
-    const now = new Date();
-    
+    const getHelpPosition = (ds) => {
+        if (!help.lastMyHelpDate || ds < help.lastMyHelpDate) return null;
+        if (ds === help.lastMyHelpDate) return shift.myNumber;
+        let count = 0;
+        const d = new Date(help.lastMyHelpDate + "T12:00:00");
+        const target = new Date(ds + "T12:00:00");
+        while (d < target) {
+            d.setDate(d.getDate() + 1);
+            const dStr = d.toISOString().split("T")[0];
+            if (!isWeekendStr(dStr) && !isWorkDay(dStr, shift.firstWorkDay)) count++;
+        }
+        return ((shift.myNumber - 1 + count) % 7) + 1;
+    };
+
     for (let mo = -1; mo <= 3; mo++) {
       const dt = new Date(now.getFullYear(), now.getMonth() + mo, 1);
-      const year = dt.getFullYear(), month = dt.getMonth();
-      const last = new Date(year, month + 1, 0).getDate();
-      
+      const year = dt.getFullYear(), month = dt.getMonth(), last = new Date(year, month + 1, 0).getDate();
       for (let d = 1; d <= last; d++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         if (days[dateStr] && days[dateStr].generated === false) continue; 
         
-        const isWork = (() => {
-          const p = ((dayDiff(shift.firstWorkDay, dateStr) % 4) + 4) % 4;
-          return p === 0 || p === 1;
-        })();
-        
+        days[dateStr] = days[dateStr] || {};
+        const isWork = isWorkDay(dateStr, shift.firstWorkDay);
         const wdi = getWorkDayIndex(dateStr, shift.firstWorkDay);
         const isShort = wdi !== null && getPairForWorkDay(wdi, shift.offset).includes(shift.myNumber);
-        
-        days[dateStr] = days[dateStr] || {};
-        days[dateStr].type = isWork ? (isShort ? "short" : "work") : "weekend";
+        const isWknd = isWeekendStr(dateStr);
+        const helpPos = (!isWork && !isWknd) ? getHelpPosition(dateStr) : null;
+        const isMyHelp = helpPos === shift.myNumber;
+
+        if (isWork) days[dateStr].type = isShort ? "short" : "work";
+        else if (isMyHelp) days[dateStr].type = "help";
+        else days[dateStr].type = "weekend";
+
         days[dateStr].generated = true;
         days[dateStr].night = days[dateStr].night || 0;
         days[dateStr].ap = days[dateStr].ap || 0;
         days[dateStr].total = days[dateStr].total || 0;
-        days[dateStr].note = days[dateStr].note || "";
       }
     }
     State.setDays(days);
@@ -249,19 +231,14 @@
 
   function saveRoster() {
     const next = { A: {}, B: {} };
-    document.querySelectorAll(".roster-input").forEach(i => { 
-      const v = i.value.trim(); 
-      if (v) next[i.dataset.shift][i.dataset.num] = v; 
-    });
+    document.querySelectorAll(".roster-input").forEach(i => { const v = i.value.trim(); if (v) next[i.dataset.shift][i.dataset.num] = v; });
     AppStorage.set("roster", next);
     Notify.show("✅ Список сохранён");
   }
 
   function resetAllData() {
-    if (!confirm("ВНИМАНИЕ! Вы уверены, что хотите удалить ВСЕ данные приложения? Это действие необратимо.")) return;
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith("uchot.v2.")) localStorage.removeItem(key);
-    });
+    if (!confirm("ВНИМАНИЕ! Вы уверены, что хотите удалить ВСЕ данные?")) return;
+    Object.keys(localStorage).forEach(key => { if (key.startsWith("uchot.v2.")) localStorage.removeItem(key); });
     alert("Все данные удалены. Приложение перезагрузится.");
     location.reload();
   }
@@ -275,19 +252,15 @@
         onMyNumberChange();
         if (shift.refPartner) {
           selectedRefPartner = shift.refPartner;
-          document.querySelectorAll(".partner-btn").forEach(b => {
-            if (b.textContent === `№${shift.refPartner}`) b.classList.add("active");
-          });
+          document.querySelectorAll(".partner-btn").forEach(b => { if (b.textContent === `№${shift.refPartner}`) b.classList.add("active"); });
         }
       }
     }
     const help = AppStorage.get("help", {});
     if (help.lastMyHelpDate) document.getElementById("helpStartDate").value = help.lastMyHelpDate;
     if (help.lastOtherHelpDate) document.getElementById("helpOtherStartDate").value = help.lastOtherHelpDate;
-    
     renderRosterInputs();
   }
-
   loadSettings();
 </script>
 </body>
