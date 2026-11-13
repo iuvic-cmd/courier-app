@@ -10,22 +10,19 @@
     .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-bottom: 90px; }
     .header { margin-bottom: 20px; }
     .header h1 { font-size: 24px; }
-    
     .card { background: var(--panel); border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--border); }
     .card h3 { font-size: 16px; margin-bottom: 12px; color: var(--accent); }
-    
     .form-group { margin-bottom: 12px; }
     .form-group label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 4px; }
     .form-control { width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--text); font-size: 16px; }
-    
     .btn-save { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
     .btn-danger { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; background: var(--red); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
-    .btn-warn { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; background: var(--orange); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
-    
+    .btn-warn { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; background: var(--orange); color: white; border: none; font-weight: 700; margin-top: 8px; cursor: pointer; }
     .hint { font-size: 13px; color: var(--text-dim); margin-bottom: 16px; line-height: 1.5; }
-    textarea { width: 100%; min-height: 100px; font-family: monospace; font-size: 12px; padding: 10px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); color: var(--text); margin-top: 8px; }
-    
-    .tariff-history { font-size: 12px; color: var(--text-dim); margin-top: 10px; padding: 10px; background: var(--bg); border-radius: 10px; line-height: 1.6; }
+    .file-input { display: none; }
+    .file-label { display: block; padding: 14px; background: var(--accent); color: #fff; text-align: center; border-radius: 12px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+    .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .btn-sm-reset { padding: 12px; font-size: 13px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; color: #fff; }
   </style>
 </head>
 <body>
@@ -34,62 +31,46 @@
     <h1>⚙ Настройки</h1>
   </div>
 
+  <!-- Импорт -->
+  <div class="card">
+    <h3>📥 Импорт данных</h3>
+    <p class="hint">Выбери файл `import-data.json` для восстановления данных.</p>
+    <label for="fileInput" class="file-label">📂 Выбрать файл</label>
+    <input type="file" id="fileInput" class="file-input" accept=".json" onchange="handleFile(this)">
+    <div id="importStatus" class="hint" style="margin-top:10px;"></div>
+  </div>
+
   <!-- Тариф -->
   <div class="card">
     <h3>💰 Настройка тарифа</h3>
-    <p class="hint">Укажи новые цены и дату, с которой они действуют. Старые дни сохранят свою цену.</p>
-    
     <div class="form-group">
       <label>🌙 Ночной заказ (лей)</label>
-      <input type="number" inputmode="numeric" id="tariffNight" class="form-control" placeholder="74">
+      <input type="number" id="tariffNight" class="form-control" placeholder="73">
     </div>
     <div class="form-group">
       <label>📦 Единый заказ (лей)</label>
-      <input type="number" inputmode="numeric" id="tariffAp" class="form-control" placeholder="54">
+      <input type="number" id="tariffAp" class="form-control" placeholder="54">
     </div>
     <div class="form-group">
       <label>📅 Действует с</label>
       <input type="date" id="tariffDate" class="form-control">
     </div>
-    
     <button class="btn-save" onclick="saveTariff()">💾 Применить тариф</button>
-    <button class="btn-warn" onclick="recalcHistory()">🔄 Пересчитать всю историю</button>
-    
-    <div id="tariffHistoryBox" class="tariff-history"></div>
   </div>
 
-  <!-- PIN -->
-  <div class="card">
-    <h3>🔐 PIN-код</h3>
-    <p class="hint">По умолчанию код — <b>1234</b>. Если забудешь новый, поменяй <code>DEFAULT_PIN</code> в <code>index.html</code>.</p>
-    <div class="form-group">
-      <label>Новый PIN (4 цифры)</label>
-      <input type="text" id="newPin" maxlength="4" inputmode="numeric" class="form-control" placeholder="0000">
-    </div>
-    <button class="btn-save" onclick="savePin()">💾 Сменить PIN</button>
-  </div>
-
-  <!-- Экспорт/Импорт -->
-  <div class="card">
-    <h3>📤 Экспорт данных</h3>
-    <p class="hint">Сохрани текст, чтобы не потерять данные при сбросе или переносе.</p>
-    <button class="btn-save" onclick="exportData()">📋 Сгенерировать JSON</button>
-    <textarea id="exportBox" readonly style="display:none"></textarea>
-    <button class="btn-save" id="copyBtn" style="display:none" onclick="copyExport()">Скопировать</button>
-  </div>
-
-  <div class="card">
-    <h3>📥 Импорт данных</h3>
-    <p class="hint">Вставь ранее сохраненный JSON и нажми «Импортировать».</p>
-    <textarea id="importBox" placeholder="Вставь JSON сюда"></textarea>
-    <button class="btn-save" onclick="importData()">📥 Импортировать</button>
-  </div>
-
-  <!-- Опасная зона -->
+  <!-- Сброс по разделам -->
   <div class="card" style="border-color: var(--red);">
-    <h3 style="color: var(--red);">⚠️ Опасная зона</h3>
-    <p class="hint">Это действие удалит <b>ВСЕ</b> данные приложения.</p>
-    <button class="btn-danger" onclick="resetAllData()">🗑 Сбросить все данные</button>
+    <h3 style="color: var(--red);">⚠️ Сброс данных</h3>
+    <p class="hint">Выбери, что именно удалить. Действие необратимо.</p>
+    
+    <div class="btn-grid">
+      <button class="btn-sm-reset" style="background: var(--orange);" onclick="resetSection('days')">📦 Дни и учёт</button>
+      <button class="btn-sm-reset" style="background: var(--accent);" onclick="resetSection('fin')">💼 Финансы</button>
+      <button class="btn-sm-reset" style="background: var(--purple);" onclick="resetSection('cash')">🛵 Скутер</button>
+      <button class="btn-sm-reset" style="background: var(--text-dim);" onclick="resetSection('settings')">⚙ Настройки</button>
+    </div>
+
+    <button class="btn-danger" onclick="resetAllData()" style="margin-top:20px;">🗑 Сбросить ВСЁ</button>
   </div>
 </div>
 
@@ -112,23 +93,31 @@
 <script>
   Theme.init();
 
-  // --- Тариф ---
-  function renderTariff() {
-    const rates = Tariff.getForDate(UI.date.local());
-    document.getElementById("tariffNight").value = rates.night;
-    document.getElementById("tariffAp").value = rates.ap;
-    document.getElementById("tariffDate").value = UI.date.local();
-    
-    const hist = State.getTariff();
-    const box = document.getElementById("tariffHistoryBox");
-    if (hist && hist.length > 0) {
-      box.innerHTML = "<b>История тарифов:</b><br>" + hist.slice().sort((a,b) => a.from.localeCompare(b.from))
-        .map(t => `с ${t.from}: 🌙${t.night} / 📦${t.ap}`).join("<br>");
-    } else {
-      box.innerHTML = "Тарифы по умолчанию.";
-    }
+  // --- Импорт ---
+  function handleFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        let count = 0;
+        for (const key in data) {
+          if (key.startsWith("uchot.v2.")) {
+            localStorage.setItem(key, JSON.stringify(data[key]));
+            count++;
+          }
+        }
+        document.getElementById("importStatus").innerHTML = `<span style="color: green">✅ Импортировано ключей: ${count}. Перезагрузка...</span>`;
+        setTimeout(() => location.reload(), 1500);
+      } catch (err) {
+        document.getElementById("importStatus").innerHTML = `<span style="color: red">❌ Ошибка: ${err.message}</span>`;
+      }
+    };
+    reader.readAsText(file);
   }
 
+  // --- Тариф ---
   function saveTariff() {
     const night = parseInt(document.getElementById("tariffNight").value);
     const ap = parseInt(document.getElementById("tariffAp").value);
@@ -136,85 +125,51 @@
     if (!(night > 0) || !(ap > 0)) return Notify.error("Введите цены");
     if (!date) return Notify.error("Укажите дату");
     Tariff.setNewRate(date, night, ap);
-    renderTariff();
     Notify.show(`✅ Тариф с ${date}: 🌙${night} / 📦${ap}`);
   }
 
-  function recalcHistory() {
-    if (!confirm("Пересчитать ВСЮ историю по текущему тарифу?\nЭто изменит суммы в прошлых днях!")) return;
-    
-    const days = State.getDays();
-    const today = UI.date.local();
-    Object.keys(days).forEach(ds => {
-      if (days[ds].night !== undefined || days[ds].ap !== undefined) {
-        const rates = Tariff.getForDate(ds);
-        days[ds].total = (days[ds].night || 0) * rates.night + (days[ds].ap || 0) * rates.ap;
-      }
-    });
-    State.setDays(days);
-    Notify.show("✅ История пересчитана по тарифам на дату дня");
-  }
+  // --- Сброс по разделам ---
+  function resetSection(section) {
+    const names = {
+      days: "Дни учёта (календарь, заказы, лог)",
+      fin: "Финансы (кошельки, операции, долги, кредиты)",
+      cash: "Скутер (пробег, заправки, ТО)",
+      settings: "Настройки смен, подмоги, тариф"
+    };
+    if (!confirm(`Удалить раздел «${names[section]}»? Это действие необратимо.`)) return;
 
-  // --- PIN ---
-  function savePin() {
-    const pin = document.getElementById("newPin").value.trim();
-    if (!/^\d{4}$/.test(pin)) return Notify.error("PIN должен быть 4 цифры");
-    AppStorage.set("pin", pin);
-    document.getElementById("newPin").value = "";
-    Notify.show("✅ PIN успешно изменен");
-  }
+    const keysToRemove = [];
 
-  // --- Экспорт / Импорт ---
-  function exportData() {
-    const data = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key.startsWith("uchot.v2.")) {
-        data[key] = JSON.parse(localStorage.getItem(key));
-      }
+    if (section === "days") {
+      keysToRemove.push("days", "orders_log");
+    } else if (section === "fin") {
+      keysToRemove.push("wallets", "ops", "debts", "goals", "credits", "cards", "lombard", "lombard_info", "assets", "budgets", "regulars", "categories", "currencies", "rates");
+    } else if (section === "cash") {
+      keysToRemove.push("scooter", "scooter_fuel", "mileage_log", "comp_oil", "comp_air_filter", "comp_belt", "comp_brakes", "scooter_expenses");
+    } else if (section === "settings") {
+      keysToRemove.push("shift", "help", "roster", "tariff", "pin");
     }
-    const json = JSON.stringify(data, null, 2);
-    const box = document.getElementById("exportBox");
-    box.value = json;
-    box.style.display = "block";
-    document.getElementById("copyBtn").style.display = "block";
-  }
-  function copyExport() {
-    const box = document.getElementById("exportBox");
-    box.select();
-    document.execCommand("copy");
-    Notify.show("📋 Скопировано в буфер");
-  }
-  function importData() {
-    const text = document.getElementById("importBox").value.trim();
-    if (!text) return Notify.error("Вставь JSON");
-    try {
-      const data = JSON.parse(text);
-      if (typeof data !== "object") throw new Error("Неверный формат");
-      for (const key in data) {
-        if (key.startsWith("uchot.v2.")) {
-          localStorage.setItem(key, JSON.stringify(data[key]));
-        }
-      }
-      Notify.show("✅ Данные импортированы. Перезагрузка...");
-      setTimeout(() => location.reload(), 1000);
-    } catch (e) {
-      Notify.error("Ошибка JSON: " + e.message);
-    }
+
+    keysToRemove.forEach(k => localStorage.removeItem("uchot.v2." + k));
+    Notify.show(`✅ Раздел «${names[section]}» удален`);
+    setTimeout(() => location.reload(), 800);
   }
 
-  // --- Сброс ---
+  // --- Полный сброс ---
   function resetAllData() {
-    if (!confirm("ВНИМАНИЕ! Вы уверены, что хотите удалить ВСЕ данные?")) return;
+    if (!confirm("ВНИМАНИЕ! Удалить ВСЕ данные приложения? Это необратимо.")) return;
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith("uchot.v2.")) localStorage.removeItem(key);
     });
-    alert("Все данные удалены. Приложение перезагрузится.");
+    alert("Все данные удалены. Перезагрузка.");
     location.reload();
   }
 
-  // Инициализация
-  renderTariff();
+  // Инициализация тарифа
+  const rates = Tariff.getForDate(UI.date.local());
+  document.getElementById("tariffNight").value = rates.night;
+  document.getElementById("tariffAp").value = rates.ap;
+  document.getElementById("tariffDate").value = UI.date.local();
 </script>
 </body>
 </html>
