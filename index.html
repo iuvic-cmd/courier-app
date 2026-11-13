@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>📦 Мой Учёт</title>
+  <!-- Подключаем стили -->
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/components.css">
+  <style>
+    /* Дополнительные стили для календаря */
+    .container { max-width: 480px; margin: 0 auto; padding: 16px; }
+    .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 16px; }
+    .day-name { text-align: center; font-size: 12px; color: var(--text-dim); font-weight: 600; margin-bottom: 8px; }
+    .day { 
+      background: var(--panel); border: 1.5px solid var(--border); border-radius: 10px; 
+      padding: 8px 4px; text-align: center; cursor: pointer; min-height: 64px; 
+      display: flex; flex-direction: column; justify-content: space-between; 
+      transition: 0.2s; user-select: none;
+    }
+    .day:active { transform: scale(0.95); }
+    .day.empty { background: transparent; border: none; cursor: default; }
+    .day.today { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2); }
+    
+    /* Типы дней */
+    .day.work { background: #e8f5e9; border-color: #43a047; color: #2e7d32; }
+    .day.short { background: #fff3e0; border-color: #fb8c00; color: #e65100; }
+    .day.weekend { background: var(--bg); border-color: var(--border); color: var(--text-dim); }
+
+    :root[data-theme="dark"] .day.work { background: #1a2a1a; border-color: #2e7d32; color: #66bb6a; }
+    :root[data-theme="dark"] .day.short { background: #2a1a0a; border-color: #e65100; color: #ffa726; }
+
+    .day-num { font-weight: 700; font-size: 14px; }
+    .day-info { font-size: 10px; opacity: 0.9; line-height: 1.2; }
+    .day-total { font-size: 11px; font-weight: 700; margin-top: 2px; }
+    
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .header h1 { font-size: 24px; }
+    .total-badge { background: var(--accent); color: white; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 14px; }
+    
+    /* Модалка ввода */
+    .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
+    .input-row > div { flex: 1; }
+    .input-row label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>📦 Учёт</h1>
+    <div class="total-badge" id="monthTotal">0 лей</div>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    <button class="btn btn-primary" style="width: auto; padding: 8px 16px;" onclick="changeMonth(-1)">◀</button>
+    <h2 id="currentMonth" style="font-size: 18px;">—</h2>
+    <button class="btn btn-primary" style="width: auto; padding: 8px 16px;" onclick="changeMonth(1)">▶</button>
+  </div>
+
+  <!-- Сетка календаря -->
+  <div class="calendar" id="calendar">
+    <!-- Заполняется через JS -->
+  </div>
+</div>
+
+<!-- Подключение модулей (как в тесте) -->
+<script src="js/lib/storage.js"></script>
+<script src="js/lib/ui.js"></script>
+<script src="js/lib/dialog.js"></script>
+<script src="js/lib/notify.js"></script>
+<script src="js/lib/guard.js"></script>
+<script src="js/lib/theme.js"></script>
+
+<!-- Домен -->
+<script src="js/domain/state.js"></script>
+<script src="js/domain/tariff.js"></script>
+<script src="js/domain/schedule.js"></script>
+<script src="js/domain/finance-api.js"></script>
+<script src="js/domain/ledger.js"></script>
+
+<script>
+  // Инициализация темы
+  Theme.init();
+
+  let currentDate = new Date();
+
+  // Отрисовка календаря
+  function render() {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+    
+    document.getElementById("currentMonth").textContent = `${monthNames[month]} ${year}`;
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    
+    // День недели первого дня (0 - Вс, 1 - Пн, ...)
+    let startDow = firstDay.getDay();
+    if (startDow === 0) startDow = 7; // Делаем Пн первым
+
+    const daysData = State.getDays();
+    const todayStr = UI.date.local();
+    const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
+    
+    let html = "";
+    // Дни недели
+    ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].forEach(d => html += `<div class="day-name">${d}</div>`);
+    
+    // Пустые ячейки до первого дня
+    for (let i = 1; i < startDow; i++) {
+        html += `<div class="day empty"></div>`;
+    }
+
+    let totalMonth = 0;
+
+    // Дни месяца
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const rec = daysData[dateStr];
+        const type = rec ? rec.type : Schedule.getDefaultDayType(dateStr);
+        
+        let cls = "day " + type;
+        if (dateStr === todayStr) cls += " today";
+        
+        let info = "";
+        let total = 0;
+        if (rec && (rec.night > 0 || rec.ap > 0)) {
+            info = `<div class="day-info">🌙${rec.night} 📦${rec.ap}</div>`;
+            total = rec.total || 0;
+            totalMonth += total;
+        }
+
+        html += `
+            <div class="${cls}" onclick="openDay('${dateStr}')">
+                <div class="day-num">${d}</div>
+                ${info}
+                ${total > 0 ? `<div class="day-total">${total}</div>` : ""}
+            </div>
+        `;
+    }
+
+    document.getElementById("calendar").innerHTML = html;
+    document.getElementById("monthTotal").textContent = totalMonth + " лей";
+  }
+
+  // Открытие модалки дня
+  function openDay(dateStr) {
+    const days = State.getDays();
+    const rec = days[dateStr] || { type: Schedule.getDefaultDayType(dateStr), night: 0, ap: 0, note: "" };
+    
+    const ov = document.createElement("div");
+    ov.className = "dialog-overlay";
+    const box = document.createElement("div");
+    box.className = "dialog-box";
+    
+    box.innerHTML = `
+      <h3 style="margin-bottom: 16px;">📅 ${UI.date.ru(dateStr)}</h3>
+      <div class="input-row">
+        <div>
+          <label>🌙 Ночной</label>
+          <input type="number" id="inp_night" class="form-control" value="${rec.night || ""}" placeholder="0">
+        </div>
+        <div>
+          <label>📦 Единый</label>
+          <input type="number" id="inp_ap" class="form-control" value="${rec.ap || ""}" placeholder="0">
+        </div>
+      </div>
+      <div style="margin-bottom: 16px;">
+        <label>📝 Заметка</label>
+        <input type="text" id="inp_note" class="form-control" value="${UI.esc(rec.note || "")}" placeholder="Кого заменил...">
+      </div>
+      <div class="dialog-buttons">
+        <button class="dialog-yes" onclick="saveDay('${dateStr}')">💾 Сохранить</button>
+        <button class="dialog-no" onclick="this.closest('.dialog-overlay').remove()">Отмена</button>
+      </div>
+    `;
+    ov.appendChild(box);
+    document.body.appendChild(ov);
+  }
+
+  // Сохранение дня
+  function saveDay(dateStr) {
+    if (!guardAction("saveDay")) return;
+
+    const night = UI.num(document.getElementById("inp_night").value);
+    const ap = UI.num(document.getElementById("inp_ap").value);
+    const note = document.getElementById("inp_note").value.trim();
+    
+    // Считаем деньги
+    const total = Tariff.calcTotal(dateStr, night, ap);
+    
+    const days = State.getDays();
+    days[dateStr] = {
+        type: Schedule.getDefaultDayType(dateStr),
+        night: night,
+        ap: ap,
+        total: total,
+        note: note
+    };
+    State.setDays(days);
+    
+    document.querySelector(".dialog-overlay").remove();
+    render();
+    Notify.show(`✅ Сохранено: ${total} лей`);
+  }
+
+  function changeMonth(dir) {
+    currentDate.setMonth(currentDate.getMonth() + dir);
+    render();
+  }
+
+  // Запуск
+  render();
+</script>
+</body>
+</html>
