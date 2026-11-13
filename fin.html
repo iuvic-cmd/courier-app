@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>💼 Финансы</title>
+  
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/components.css">
+  
+  <style>
+    /* Дополнительные стили для этой страницы */
+    .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-bottom: 80px; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .wallets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .wallet-card { background: var(--panel); padding: 16px; border-radius: 16px; text-align: center; border: 1px solid var(--border); }
+    .wallet-name { font-size: 13px; color: var(--text-dim); margin-bottom: 4px; }
+    .wallet-balance { font-size: 20px; font-weight: 700; color: var(--accent); }
+    
+    .action-buttons { display: flex; gap: 8px; margin-bottom: 24px; }
+    .action-buttons .btn { flex: 1; }
+    
+    .op-list { background: var(--panel); border-radius: 16px; padding: 0 16px; border: 1px solid var(--border); }
+    .op-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .op-item:last-child { border-bottom: none; }
+    .op-info { display: flex; flex-direction: column; }
+    .op-cat { font-weight: 600; font-size: 15px; }
+    .op-details { font-size: 12px; color: var(--text-dim); }
+    .op-amount { font-weight: 700; font-size: 16px; }
+    .op-expense { color: var(--red); }
+    .op-income { color: var(--green); }
+    
+    .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
+    .input-row > div { flex: 1; }
+    .input-row label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>💼 Финансы</h1>
+  </div>
+
+  <div class="wallets-grid" id="walletsGrid"></div>
+
+  <div class="action-buttons">
+    <button class="btn btn-orange" onclick="openAddOp('expense')">➖ Трата</button>
+    <button class="btn btn-green" onclick="openAddOp('income')">➕ Доход</button>
+  </div>
+
+  <h3 style="margin-bottom: 10px; font-size: 16px;">Последние операции</h3>
+  <div class="op-list" id="opsList"></div>
+</div>
+
+<!-- Подключение модулей -->
+<script src="js/lib/storage.js"></script>
+<script src="js/lib/ui.js"></script>
+<script src="js/lib/dialog.js"></script>
+<script src="js/lib/notify.js"></script>
+<script src="js/lib/guard.js"></script>
+<script src="js/lib/theme.js"></script>
+
+<!-- Домен -->
+<script src="js/domain/state.js"></script>
+<script src="js/domain/tariff.js"></script>
+<script src="js/domain/schedule.js"></script>
+<script src="js/domain/finance-api.js"></script>
+<script src="js/domain/ledger.js"></script>
+
+<script>
+  // Инициализация темы
+  Theme.init();
+
+  function render() {
+    // Кошельки
+    const wallets = State.getWallets();
+    document.getElementById("walletsGrid").innerHTML = Object.keys(wallets).map(name => `
+      <div class="wallet-card">
+        <div class="wallet-name">${name}</div>
+        <div class="wallet-balance">${UI.fmt(wallets[name])} лей</div>
+      </div>
+    `).join("");
+
+    // Операции (последние 10)
+    const ops = State.getOps().reverse().slice(0, 10);
+    document.getElementById("opsList").innerHTML = ops.length ? ops.map(op => {
+      let sign = op.amount < 0 ? "−" : "+";
+      let cls = op.kind === "expense" ? "op-expense" : "op-income";
+      let cat = op.cat || (op.kind === "transfer" ? "Перевод" : "Без категории");
+      
+      return `
+        <div class="op-item">
+          <div class="op-info">
+            <span class="op-cat">${UI.esc(cat)}</span>
+            <span class="op-details">${op.date} · ${op.wallet}${op.note ? " · " + UI.esc(op.note) : ""}</span>
+          </div>
+          <div class="op-amount ${cls}">${sign}${Math.abs(op.amount)}</div>
+        </div>
+      `;
+    }).join("") : `<div style="padding: 16px; text-align: center; color: var(--text-dim);">Нет операций</div>`;
+  }
+
+  function openAddOp(type) {
+    const isExpense = type === "expense";
+    const cats = State.getCategories()[isExpense ? "expense" : "income"];
+    const wallets = Object.keys(State.getWallets());
+
+    const ov = document.createElement("div"); ov.className = "dialog-overlay";
+    const box = document.createElement("div"); box.className = "dialog-box";
+    
+    box.innerHTML = `
+      <h3 style="margin-bottom: 16px;">${isExpense ? "➖ Трата" : "➕ Доход"}</h3>
+      <div style="margin-bottom: 10px;">
+        <label style="font-size:12px;color:var(--text-dim)">Сумма</label>
+        <input type="number" id="inp_amount" class="form-control" placeholder="0">
+      </div>
+      <div class="input-row">
+        <div>
+          <label>Кошелёк</label>
+          <select id="inp_wallet" class="form-control">${wallets.map(w => `<option value="${w}">${w}</option>`).join("")}</select>
+        </div>
+        <div>
+          <label>Категория</label>
+          <select id="inp_cat" class="form-control">${cats.map(c => `<option value="${c}">${c}</option>`).join("")}</select>
+        </div>
+      </div>
+      <div style="margin-bottom: 16px;">
+        <label style="font-size:12px;color:var(--text-dim)">Заметка (необязательно)</label>
+        <input type="text" id="inp_note" class="form-control" placeholder="На что потратил...">
+      </div>
+      <div class="dialog-buttons">
+        <button class="dialog-yes" id="btn-save">💾 Сохранить</button>
+        <button class="dialog-no" id="btn-cancel">Отмена</button>
+      </div>
+    `;
+    ov.appendChild(box); document.body.appendChild(ov);
+
+    document.getElementById("btn-cancel").onclick = () => ov.remove();
+    document.getElementById("btn-save").onclick = () => {
+      if (!guardAction("saveOp")) return;
+      try {
+        const amount = UI.num(document.getElementById("inp_amount").value);
+        const wallet = document.getElementById("inp_wallet").value;
+        const cat = document.getElementById("inp_cat").value;
+        const note = document.getElementById("inp_note").value.trim();
+
+        if (isExpense) {
+          FinanceAPI.spend({ wallet, amount, category: cat, note });
+        } else {
+          FinanceAPI.receive({ wallet, amount, category: cat, note });
+        }
+        
+        ov.remove();
+        render();
+        Notify.show(`✅ Записано: ${amount} лей`);
+      } catch (e) {
+        Notify.error(e.message);
+      }
+    };
+  }
+
+  render();
+</script>
+</body>
+</html>
