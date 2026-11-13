@@ -1,3 +1,6 @@
+body {
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+}
 /* --- Кнопки --- */
 .btn {
   width: 100%;
