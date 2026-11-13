@@ -4,41 +4,44 @@
  */
 (function (global) {
     const PREFIX = "uchot.v2.";
-    const memFallback = {}; // Запасник на случай Private Mode
+    const memFallback = {}; // Запасник на случай Private Mode или ошибки записи
 
     const Storage = {
-        // Получить значение (с авто-парсингом JSON)
         get(key, defaultValue = null) {
             const fullKey = PREFIX + key;
+            
+            // Сначала проверяем память (если localStorage упал при записи)
+            if (memFallback[fullKey] !== undefined) {
+                return memFallback[fullKey];
+            }
+            
             try {
                 const raw = localStorage.getItem(fullKey);
                 if (raw === null) return defaultValue;
                 return JSON.parse(raw);
             } catch (e) {
-                return memFallback[fullKey] !== undefined ? memFallback[fullKey] : defaultValue;
+                return defaultValue;
             }
         },
 
-        // Записать значение
         set(key, value) {
             const fullKey = PREFIX + key;
             const serialized = JSON.stringify(value);
             try {
                 localStorage.setItem(fullKey, serialized);
             } catch (e) {
+                // Если места нет или Safari в приватном режиме — пишем в память
                 memFallback[fullKey] = value;
                 console.warn("Storage: использован fallback (память).", e);
             }
         },
 
-        // Удалить ключ
         remove(key) {
             const fullKey = PREFIX + key;
             try { localStorage.removeItem(fullKey); } catch (e) {}
             delete memFallback[fullKey];
         },
 
-        // Проверить наличие
         has(key) {
             return this.get(key, null) !== null;
         }
