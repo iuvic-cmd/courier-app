@@ -11,7 +11,27 @@
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .header h1 { font-size: 24px; }
 
-    /* Календарь (как в учёте) */
+    .card { background: var(--panel); border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--border); }
+    .card h3 { font-size: 14px; margin-bottom: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-item { background: var(--bg); padding: 12px; border-radius: 12px; text-align: center; }
+    .stat-label { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; display: block; }
+    .stat-val { font-size: 18px; font-weight: 700; }
+    
+    .stat-item.green { background: #e8f5e9; color: #2e7d32; }
+    .stat-item.red { background: #ffebee; color: #c62828; }
+    .stat-item.blue { background: #e3f2fd; color: #1565c0; }
+    .stat-item.orange { background: #fff3e0; color: #e65100; }
+    :root[data-theme="dark"] .stat-item.green { background: #1a2a1a; color: #66bb6a; }
+    :root[data-theme="dark"] .stat-item.red { background: #2a1414; color: #ef9a9a; }
+    :root[data-theme="dark"] .stat-item.blue { background: #1a2a3a; color: #90caf9; }
+    :root[data-theme="dark"] .stat-item.orange { background: #2a1a0a; color: #ffa726; }
+
+    .list-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .list-row:last-child { border-bottom: none; }
+    
+    /* Календарь */
     .calendar-section { background: var(--panel); border-radius: 16px; padding: 16px 12px 12px; margin-bottom: 16px; border: 1px solid var(--border); }
     .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px; }
     .calendar-header h2 { font-size: 17px; font-weight: 600; margin: 0; }
@@ -40,27 +60,16 @@
     :root[data-theme="dark"] .day.help { background: #1a2a3a; border-color: #1565c0; color: #42a5f5; }
     :root[data-theme="dark"] .day.weekend { background: #1c1c1e; border-color: #3a3a3c; color: #8e8e93; }
 
-    /* Карточки статистики */
-    .card { background: var(--panel); border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--border); }
-    .card h3 { font-size: 14px; margin-bottom: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
-    
-    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .stat-item { background: var(--bg); padding: 12px; border-radius: 12px; text-align: center; }
-    .stat-label { font-size: 12px; color: var(--text-dim); margin-bottom: 4px; display: block; }
-    .stat-val { font-size: 18px; font-weight: 700; }
-    
-    .stat-item.green { background: #e8f5e9; color: #2e7d32; }
-    .stat-item.red { background: #ffebee; color: #c62828; }
-    .stat-item.blue { background: #e3f2fd; color: #1565c0; }
-    :root[data-theme="dark"] .stat-item.green { background: #1a2a1a; color: #66bb6a; }
-    :root[data-theme="dark"] .stat-item.red { background: #2a1414; color: #ef9a9a; }
-    :root[data-theme="dark"] .stat-item.blue { background: #1a2a3a; color: #90caf9; }
+    /* Графики */
+    .chart-container { position: relative; height: 160px; display: flex; align-items: flex-end; gap: 4px; padding-top: 20px; overflow-x: auto; }
+    .chart-bar-wrap { flex: 1; min-width: 20px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+    .chart-bar { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; transition: height 0.3s; min-height: 2px; position: relative; }
+    .chart-label { font-size: 10px; color: var(--text-dim); margin-top: 4px; text-align: center; }
+    .pie-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; font-size: 12px; }
+    .pie-legend span { display: flex; align-items: center; gap: 4px; }
+    .pie-legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 
-    .list-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
-    .list-row:last-child { border-bottom: none; }
-    
-    /* Скрытый блок для статистики дня */
-    #dayStatsContainer { display: none; }
+    .btn-close { width: 100%; padding: 12px; border-radius: 12px; background: var(--border); color: var(--text); border: none; font-weight: 600; margin-top: 10px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -69,7 +78,7 @@
     <h1>📈 Отчёты</h1>
   </div>
 
-  <!-- КАЛЕНДАРЬ -->
+  <!-- Календарь -->
   <div class="calendar-section">
     <div class="calendar-header">
       <button class="nav-btn" onclick="changeMonth(-1)">◀</button>
@@ -79,74 +88,103 @@
     <div id="calendar" class="calendar"></div>
   </div>
 
-  <!-- СТАТИСТИКА ЗА ВЫБРАННЫЙ ДЕНЬ (скрыта по умолчанию) -->
-  <div id="dayStatsContainer">
+  <!-- Статистика за день -->
+  <div id="dayStatsContainer" style="display: none;">
     <div class="card" style="border: 2px solid var(--accent);">
       <h3 id="dayStatsTitle" style="color: var(--accent);">Статистика за день</h3>
       <div class="stat-grid" style="margin-bottom: 12px;">
-        <div class="stat-item green">
-          <span class="stat-label">💼 Заработано</span>
-          <span class="stat-val" id="daySalary">0</span>
-        </div>
-        <div class="stat-item red">
-          <span class="stat-label">💸 Потрачено</span>
-          <span class="stat-val" id="dayExpenses">0</span>
-        </div>
-        <div class="stat-item blue" style="grid-column: 1 / -1;">
-          <span class="stat-label">Чистый доход</span>
-          <span class="stat-val" id="dayNet" style="font-size: 22px;">0</span>
-        </div>
+        <div class="stat-item green"><span class="stat-label">💼 Заработано</span><span class="stat-val" id="daySalary">0</span></div>
+        <div class="stat-item red"><span class="stat-label">💸 Потрачено</span><span class="stat-val" id="dayExpenses">0</span></div>
+        <div class="stat-item blue" style="grid-column: 1 / -1;"><span class="stat-label">Чистый доход</span><span class="stat-val" id="dayNet" style="font-size: 22px;">0</span></div>
       </div>
       <div class="stat-grid">
-        <div class="stat-item">
-          <span class="stat-label">🌙 Ночной</span>
-          <span class="stat-val" id="dayNight">0</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">📦 Единый</span>
-          <span class="stat-val" id="dayAp">0</span>
-        </div>
+        <div class="stat-item"><span class="stat-label">🌙 Ночной</span><span class="stat-val" id="dayNight">0</span></div>
+        <div class="stat-item"><span class="stat-label">📦 Единый</span><span class="stat-val" id="dayAp">0</span></div>
       </div>
       <div style="margin-top: 12px;" id="dayOpsList"></div>
-      <button class="btn btn-gray" style="margin-top: 10px;" onclick="closeDayStats()">Закрыть</button>
+      <button class="btn-close" onclick="closeDayStats()">Закрыть</button>
     </div>
   </div>
 
-  <!-- ИТОГИ МЕСЯЦА -->
+  <!-- Итоги месяца -->
   <div class="card">
     <h3>💰 Итоги за месяц</h3>
     <div class="stat-grid">
-      <div class="stat-item green">
-        <span class="stat-label">💼 Заработано</span>
-        <span class="stat-val" id="statSalary">0</span>
-      </div>
-      <div class="stat-item red">
-        <span class="stat-label">💸 Потрачено</span>
-        <span class="stat-val" id="statExpenses">0</span>
-      </div>
-      <div class="stat-item blue" style="grid-column: 1 / -1;">
-        <span class="stat-label">Чистый доход</span>
-        <span class="stat-val" id="statNet" style="font-size: 22px;">0</span>
-      </div>
+      <div class="stat-item green"><span class="stat-label">💼 Заработано</span><span class="stat-val" id="statSalary">0</span></div>
+      <div class="stat-item red"><span class="stat-label">💸 Потрачено</span><span class="stat-val" id="statExpenses">0</span></div>
+      <div class="stat-item blue" style="grid-column: 1 / -1;"><span class="stat-label">Чистый доход</span><span class="stat-val" id="statNet" style="font-size: 22px;">0</span></div>
     </div>
   </div>
 
-  <!-- СКУТЕР -->
+  <!-- Заказы и эффективность -->
+  <div class="card">
+    <h3>📦 Заказы и эффективность</h3>
+    <div class="stat-grid">
+      <div class="stat-item"><span class="stat-label">Всего заказов</span><span class="stat-val" id="statOrders">0</span></div>
+      <div class="stat-item"><span class="stat-label">Рабочих дней</span><span class="stat-val" id="statWorkDays">0</span></div>
+      <div class="stat-item"><span class="stat-label">Ср. доход в день</span><span class="stat-val" id="statAvgDay">0</span></div>
+      <div class="stat-item"><span class="stat-label">Доход за заказ</span><span class="stat-val" id="statAvgOrder">0</span></div>
+    </div>
+  </div>
+
+  <!-- Экономика заказа -->
+  <div class="card">
+    <h3>📊 Экономика заказа</h3>
+    <div class="stat-grid">
+      <div class="stat-item green"><span class="stat-label">📊 КПД</span><span class="stat-val" id="ecoKpd">0%</span></div>
+      <div class="stat-item blue"><span class="stat-label">💰 Прибыль</span><span class="stat-val" id="ecoProfit">0</span></div>
+      <div class="stat-item"><span class="stat-label">📦 Доход на заказ</span><span class="stat-val" id="ecoIncPerOrder">0</span></div>
+      <div class="stat-item orange"><span class="stat-label">⛽ Топливо на заказ</span><span class="stat-val" id="ecoFuelPerOrder">0</span></div>
+      <div class="stat-item red"><span class="stat-label">💰 Расход на заказ</span><span class="stat-val" id="ecoExpPerOrder">0</span></div>
+      <div class="stat-item blue"><span class="stat-label">💎 Чистый на заказ</span><span class="stat-val" id="ecoNetPerOrder">0</span></div>
+      <div class="stat-item"><span class="stat-label">📅 Доход в день</span><span class="stat-val" id="ecoIncPerDay">0</span></div>
+      <div class="stat-item"><span class="stat-label">📅 Чистый в день</span><span class="stat-val" id="ecoNetPerDay">0</span></div>
+    </div>
+    <div class="list-row" style="margin-top:10px"><span>Состав заказов</span><span id="ecoMix" style="font-weight:600">—</span></div>
+    <div class="list-row"><span>Рекомендации</span><span id="ecoTips" style="font-size:12px;color:var(--text-dim)">—</span></div>
+  </div>
+
+  <!-- Скутер -->
   <div class="card">
     <h3>🛵 Скутер за месяц</h3>
     <div class="stat-grid">
-      <div class="stat-item">
-        <span class="stat-label">⛽ Топливо (лей)</span>
-        <span class="stat-val" id="statFuelCost">0</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">🧼 Мойка / ТО (лей)</span>
-        <span class="stat-val" id="statMaintCost">0</span>
-      </div>
+      <div class="stat-item"><span class="stat-label">⛽ Топливо (лей)</span><span class="stat-val" id="statFuelCost">0</span></div>
+      <div class="stat-item"><span class="stat-label">🧼 Мойка / ТО (лей)</span><span class="stat-val" id="statMaintCost">0</span></div>
+      <div class="stat-item"><span class="stat-label">⛽ Цена литра (ср.)</span><span class="stat-val" id="statPrice">0</span></div>
+      <div class="stat-item"><span class="stat-label">🛵 Пробег</span><span class="stat-val" id="statKm">0</span></div>
+      <div class="stat-item"><span class="stat-label">⛽ Расход</span><span class="stat-val" id="statCons">0</span></div>
+      <div class="stat-item"><span class="stat-label">💰 Стоимость 1 км</span><span class="stat-val" id="statCostKm">0</span></div>
     </div>
   </div>
 
-  <!-- РАСХОДЫ -->
+  <!-- Графики -->
+  <div class="card">
+    <h3>📊 Графики</h3>
+    <div style="margin-bottom: 10px; font-weight: 600; font-size: 13px;">Доход по месяцам</div>
+    <div class="chart-container" id="chartMonths"></div>
+    
+    <div style="margin-bottom: 10px; font-weight: 600; font-size: 13px; margin-top: 20px;">🌙 vs 📦 (по дням)</div>
+    <div class="chart-container" id="chartNightAp"></div>
+    
+    <div style="margin-bottom: 10px; font-weight: 600; font-size: 13px; margin-top: 20px;">Типы дней</div>
+    <div id="pieTypes"></div>
+    
+    <div style="margin-bottom: 10px; font-weight: 600; font-size: 13px; margin-top: 20px;">🏆 Топ-5 дней</div>
+    <div id="topDaysList"></div>
+  </div>
+
+  <!-- Прогноз -->
+  <div class="card">
+    <h3>🔮 Прогноз на месяц</h3>
+    <div class="stat-grid">
+      <div class="stat-item"><span class="stat-label">💼 Зарплата</span><span class="stat-val" id="forecastSalary">0</span></div>
+      <div class="stat-item"><span class="stat-label">📅 Дней</span><span class="stat-val" id="forecastDays">0/0</span></div>
+      <div class="stat-item blue"><span class="stat-label">📈 По типам</span><span class="stat-val" id="forecastByType">0</span></div>
+      <div class="stat-item blue"><span class="stat-label">📊 По среднему</span><span class="stat-val" id="forecastByAvg">0</span></div>
+    </div>
+  </div>
+
+  <!-- Категории расходов -->
   <div class="card">
     <h3>🗂 Расходы по категориям</h3>
     <div id="categoryList"></div>
@@ -175,16 +213,11 @@
   let selectedDate = null;
 
   const MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
-  const DAY_TYPES = { work: "🏢 Рабочий", help: "🤝 Подмога", short: "⚡ Короткий", replace: "🔄 Замена", short_replace: "⚡🔄 Кор.замена", weekend: "🏖 Выходной" };
+  const MONTHS_SHORT = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
+  const DAY_TYPES = { work: "🏢", help: "🤝", short: "⚡", replace: "🔄", short_replace: "⚡🔄", weekend: "🏖" };
 
   function getDayLabel(t) {
-    if (t === "work") return "Рабочий";
-    if (t === "help") return "Подмога";
-    if (t === "short") return "Короткий";
-    if (t === "replace") return "Замена";
-    if (t === "short_replace") return "Кор.замена";
-    if (t === "weekend") return "Выходной";
-    return "";
+    return { work: "Рабочий", help: "Подмога", short: "Короткий", replace: "Замена", short_replace: "Кор.замена", weekend: "Выходной" }[t] || "";
   }
 
   function changeMonth(dir) {
@@ -195,13 +228,13 @@
   function closeDayStats() {
     document.getElementById("dayStatsContainer").style.display = "none";
     selectedDate = null;
-    render(); // перерисовываем, чтобы снять выделение
+    render();
   }
 
   function selectDay(ds) {
     selectedDate = ds;
     const days = State.getDays();
-    const rec = days[ds] || { type: "weekend", night: 0, ap: 0, total: 0, note: "" };
+    const rec = days[ds] || { type: "weekend", night: 0, ap: 0, total: 0 };
     const ops = State.getOps().filter(o => o.date === ds && o.kind === "expense");
     const expenses = ops.reduce((s, o) => s + Math.abs(o.amount), 0);
     const salary = rec.total || 0;
@@ -214,47 +247,84 @@
     document.getElementById("dayNight").innerText = rec.night || 0;
     document.getElementById("dayAp").innerText = rec.ap || 0;
     
-    // Список операций за день
     const opsList = document.getElementById("dayOpsList");
-    if (ops.length) {
-      opsList.innerHTML = `<b>Расходы дня:</b>` + ops.map(o => `
-        <div class="list-row" style="font-size: 13px;">
-          <span>${o.cat}</span>
-          <b style="color: var(--red);">${o.amount} лей</b>
-        </div>
-      `).join("");
-    } else {
-      opsList.innerHTML = `<div class="list-row" style="color: var(--text-dim); font-size: 13px;">Нет трат в этот день</div>`;
-    }
+    opsList.innerHTML = ops.length 
+      ? `<b>Траты дня:</b>` + ops.map(o => `<div class="list-row"><span>${o.cat}</span><b style="color:var(--red)">${Math.abs(o.amount)} лей</b></div>`).join("")
+      : `<div class="list-row" style="color:var(--text-dim)">Нет трат</div>`;
 
     document.getElementById("dayStatsContainer").style.display = "block";
-    render(); // перерисовываем календарь, чтобы выделить выбранный день
+    render();
+  }
+
+  function drawBarChart(id, labels, values, color = "var(--accent)") {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const max = Math.max(1, ...values);
+    el.innerHTML = labels.map((l, i) => {
+      const h = (values[i] / max) * 100;
+      return `<div class="chart-bar-wrap"><div class="chart-bar" style="height:${h}%; background:${color}" title="${values[i]}"></div><div class="chart-label">${l}</div></div>`;
+    }).join("");
+  }
+
+  function drawGroupedChart(id, labels, s1, s2) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const max = Math.max(1, ...s1, ...s2);
+    el.innerHTML = labels.map((l, i) => {
+      const h1 = (s1[i] / max) * 100, h2 = (s2[i] / max) * 100;
+      return `<div class="chart-bar-wrap">
+        <div style="display:flex; gap:2px; width:100%; height:100%; align-items:flex-end">
+          <div class="chart-bar" style="height:${h1}%; background:#007aff"></div>
+          <div class="chart-bar" style="height:${h2}%; background:#ff9500"></div>
+        </div>
+        <div class="chart-label">${l}</div>
+      </div>`;
+    }).join("");
+  }
+
+  function drawPie(id, data) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const total = data.reduce((s, d) => s + d.value, 0);
+    if (total === 0) { el.innerHTML = `<div style="color:var(--text-dim); text-align:center; padding:20px">Нет данных</div>`; return; }
+    
+    let conic = [], angle = 0;
+    data.forEach(d => {
+      const deg = (d.value / total) * 360;
+      conic.push(`${d.color} ${angle}deg ${angle + deg}deg`);
+      angle += deg;
+    });
+
+    el.innerHTML = `
+      <div style="width:150px; height:150px; border-radius:50%; background:conic-gradient(${conic.join(",")}); margin:0 auto;"></div>
+      <div class="pie-legend">
+        ${data.map(d => `<span><i style="background:${d.color}"></i> ${d.label}: ${d.value}</span>`).join("")}
+      </div>
+    `;
   }
 
   function render() {
-    // 1. Календарь
     const y = currentDate.getFullYear(), m = currentDate.getMonth();
+    const prefix = `${y}-${String(m + 1).padStart(2, '0')}`;
+    
+    // === 1. Календарь ===
     const first = (new Date(y, m, 1).getDay() + 6) % 7, last = new Date(y, m + 1, 0).getDate();
     document.getElementById("currentMonth").textContent = `${MONTHS[m]} ${y}`;
-    
-    const hist = new Map(Object.keys(State.getDays()).map(d => [d, State.getDays()[d]]));
+    const hist = State.getDays();
     const today = UI.date.local();
     
     let html = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(n => `<div class="day-name">${n}</div>`).join("") + '<div class="day empty"></div>'.repeat(first);
-    
     for (let d = 1; d <= last; d++) {
       const ds = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const rec = hist.get(ds);
+      const rec = hist[ds];
       const dow = new Date(y, m, d).getDay();
       let cls = "day", label = "", info = "";
-      
       if (ds === today) cls += " today";
       if (ds === selectedDate) cls += " selected";
       
       if (rec) {
-        const t = rec.type || "work";
-        cls += " " + t;
-        label = getDayLabel(t);
+        cls += " " + (rec.type || "work");
+        label = getDayLabel(rec.type);
         const parts = [];
         if (rec.night > 0) parts.push("🌙" + rec.night);
         if (rec.ap > 0) parts.push("📦" + rec.ap);
@@ -262,27 +332,23 @@
       } else if (dow === 0 || dow === 6) {
         cls += " weekend"; label = "Выходной";
       }
-      
       html += `<div class="${cls}" data-date="${ds}"><div class="day-number">${d}</div>${label ? `<div class="day-label">${label}</div>` : ""}${info}</div>`;
     }
     document.getElementById("calendar").innerHTML = html;
-
-    // Обработчики кликов
     document.querySelectorAll(".day:not(.empty)").forEach(el => {
       el.addEventListener("click", () => selectDay(el.dataset.date));
     });
 
-    // 2. Статистика за месяц
-    const prefix = `${y}-${String(m + 1).padStart(2, '0')}`;
-    const monthDays = Object.values(State.getDays()).filter((_, i) => Object.keys(State.getDays())[i].startsWith(prefix));
-    const monthKeys = Object.keys(State.getDays()).filter(k => k.startsWith(prefix));
-    
+    // === 2. Итоги месяца ===
+    const days = State.getDays();
+    const monthKeys = Object.keys(days).filter(k => k.startsWith(prefix));
     let salary = 0, totalOrders = 0, workDays = 0;
     monthKeys.forEach(k => {
-      const rec = State.getDays()[k];
-      salary += rec.total || 0;
-      totalOrders += (rec.night || 0) + (rec.ap || 0);
-      if ((rec.night || 0) + (rec.ap || 0) > 0 || (rec.total || 0) > 0) workDays++;
+      const r = days[k];
+      salary += r.total || 0;
+      const o = (r.night || 0) + (r.ap || 0);
+      totalOrders += o;
+      if (o > 0 || r.total > 0) workDays++;
     });
     
     const monthOps = State.getOps().filter(o => o.date.startsWith(prefix));
@@ -296,16 +362,104 @@
     document.getElementById("statNet").textContent = UI.fmt(net);
     document.getElementById("statFuelCost").textContent = UI.fmt(fuelCost);
     document.getElementById("statMaintCost").textContent = UI.fmt(maintCost);
+
+    // === 3. Эффективность ===
+    const avgDay = workDays ? salary / workDays : 0;
+    const avgOrder = totalOrders ? salary / totalOrders : 0;
+    document.getElementById("statOrders").textContent = totalOrders;
+    document.getElementById("statWorkDays").textContent = workDays;
+    document.getElementById("statAvgDay").textContent = UI.fmt(avgDay);
+    document.getElementById("statAvgOrder").textContent = UI.fmt(avgOrder);
+
+    // === 4. Экономика заказа ===
+    const kpd = salary > 0 ? ((salary - expenses) / salary * 100) : 0;
+    const profit = salary - expenses;
+    const incPerOrder = totalOrders ? salary / totalOrders : 0;
+    const fuelPerOrder = totalOrders ? fuelCost / totalOrders : 0;
+    const expPerOrder = totalOrders ? expenses / totalOrders : 0;
+    const netPerOrder = totalOrders ? (salary - expenses) / totalOrders : 0;
+    const incPerDay = workDays ? salary / workDays : 0;
+    const netPerDay = workDays ? (salary - expenses) / workDays : 0;
     
-    // 3. Расходы по категориям
+    document.getElementById("ecoKpd").textContent = kpd.toFixed(1) + "%";
+    document.getElementById("ecoProfit").textContent = UI.fmt(profit);
+    document.getElementById("ecoIncPerOrder").textContent = UI.fmt(incPerOrder);
+    document.getElementById("ecoFuelPerOrder").textContent = UI.fmt(fuelPerOrder);
+    document.getElementById("ecoExpPerOrder").textContent = UI.fmt(expPerOrder);
+    document.getElementById("ecoNetPerOrder").textContent = UI.fmt(netPerOrder);
+    document.getElementById("ecoIncPerDay").textContent = UI.fmt(incPerDay);
+    document.getElementById("ecoNetPerDay").textContent = UI.fmt(netPerDay);
+    
+    let tips = [];
+    if (kpd < 40) tips.push("⚠ Низкий КПД, проверь расходы");
+    if (kpd >= 60) tips.push("✅ Отличный КПД!");
+    document.getElementById("ecoTips").textContent = tips.join(" • ") || "Держите курс!";
+
+    // === 5. Скутер ===
+    const fuels = State.getFuel().filter(f => f.date.startsWith(prefix));
+    const totalLiters = fuels.reduce((s, f) => s + (f.liters || 0), 0);
+    const price = totalLiters > 0 ? fuelCost / totalLiters : 0;
+    const scooterData = State.getScooter();
+    const currentKm = scooterData.currentKm || 0;
+    const startKm = scooterData.startKm || 0;
+    const totalKm = Math.max(currentKm - startKm, 0);
+    const cons = totalKm > 0 ? (totalLiters / totalKm * 100) : 0;
+    const costKm = totalKm > 0 ? fuelCost / totalKm : 0;
+    
+    document.getElementById("statPrice").textContent = UI.fmt(price);
+    document.getElementById("statKm").textContent = totalKm;
+    document.getElementById("statCons").textContent = cons.toFixed(2) + " л/100км";
+    document.getElementById("statCostKm").textContent = UI.fmt(costKm);
+
+    // === 6. Графики ===
+    const byMonth = {};
+    Object.keys(days).forEach(k => {
+      const mKey = k.slice(0, 7);
+      byMonth[mKey] = (byMonth[mKey] || 0) + (days[k].total || 0);
+    });
+    const sortedM = Object.keys(byMonth).sort().slice(-6);
+    drawBarChart("chartMonths", sortedM.map(k => MONTHS_SHORT[+k.slice(5,7)-1]), sortedM.map(k => byMonth[k]));
+
+    const dayLabels = monthKeys.map(k => k.slice(8, 10)).sort((a,b) => a-b);
+    const nights = monthKeys.map(k => days[k].night || 0);
+    const aps = monthKeys.map(k => days[k].ap || 0);
+    drawGroupedChart("chartNightAp", dayLabels, nights, aps);
+
+    const typeCnt = { work: 0, help: 0, short: 0, replace: 0, short_replace: 0, weekend: 0 };
+    monthKeys.forEach(k => { if (days[k].total > 0 || (days[k].night || 0) + (days[k].ap || 0) > 0) typeCnt[days[k].type] = (typeCnt[days[k].type] || 0) + 1; });
+    drawPie("pieTypes", [
+      { label: "Рабочий", value: typeCnt.work, color: "#34c759" },
+      { label: "Короткий", value: typeCnt.short, color: "#ff9500" },
+      { label: "Подмога", value: typeCnt.help, color: "#007aff" },
+      { label: "Замена", value: typeCnt.replace, color: "#af52de" },
+      { label: "Выходной", value: typeCnt.weekend, color: "#8e8e93" }
+    ]);
+
+    const top = monthKeys.map(k => ({ date: k, total: days[k].total || 0 })).filter(d => d.total > 0).sort((a,b) => b.total - a.total).slice(0, 5);
+    document.getElementById("topDaysList").innerHTML = top.map((d, i) => `<div class="list-row"><span>${i+1}. ${d.date.split("-").reverse().join(".")}</span><b>${d.total} лей</b></div>`).join("") || `<div class="list-row" style="color:var(--text-dim)">Нет данных</div>`;
+
+    // === 7. Прогноз ===
+    const now = new Date();
+    const dim = new Date(y, m + 1, 0).getDate();
+    const passedDays = (y === now.getFullYear() && m === now.getMonth()) ? now.getDate() : dim;
+    const remain = dim - passedDays;
+    const avg = passedDays > 0 ? salary / passedDays : 0;
+    const forecast = salary + (avg * remain);
+    
+    document.getElementById("forecastSalary").textContent = UI.fmt(salary);
+    document.getElementById("forecastDays").textContent = `${passedDays}/${dim}`;
+    document.getElementById("forecastByType").textContent = UI.fmt(forecast);
+    document.getElementById("forecastByAvg").textContent = UI.fmt(forecast);
+
+    // === 8. Категории ===
     const cats = {};
     monthOps.filter(o => o.kind === "expense").forEach(o => {
       cats[o.cat] = (cats[o.cat] || 0) + Math.abs(o.amount);
     });
-    const sortedCats = Object.entries(cats).sort((a, b) => b[1] - a[1]);
-    document.getElementById("categoryList").innerHTML = sortedCats.length 
-      ? sortedCats.map(([c, v]) => `<div class="list-row"><span>${UI.esc(c)}</span><b>${UI.fmt(v)} лей</b></div>`).join("")
-      : `<div class="list-row" style="color:var(--text-dim)">Нет трат в этом месяце</div>`;
+    const sortedC = Object.entries(cats).sort((a,b) => b[1]-a[1]);
+    document.getElementById("categoryList").innerHTML = sortedC.length
+      ? sortedC.map(([c, v]) => `<div class="list-row"><span>${UI.esc(c)}</span><b>${UI.fmt(v)} лей</b></div>`).join("")
+      : `<div class="list-row" style="color:var(--text-dim)">Нет расходов</div>`;
   }
 
   render();
