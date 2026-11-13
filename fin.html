@@ -1,279 +1,389 @@
 <!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>💼 Финансы</title>
-  <link rel="stylesheet" href="css/theme.css">
-  <link rel="stylesheet" href="css/components.css">
-  <style>
-    .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-bottom: 90px; }
-    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 12px; }
-    h1 { font-size: 28px; margin: 4px 0 8px; }
-    h2 { font-size: 15px; margin: 2px 0 8px; color: var(--text-dim); font-weight: 600; }
-    .mut { color: var(--text-dim); font-size: 12px; }
-    .g { color: var(--green); } .r { color: var(--red); }
-    .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px solid var(--border); cursor: pointer; }
-    .card > .row:first-of-type, .card > h2 + .row { border-top: 0; }
-    .row b { white-space: nowrap; }
-    
-    .tabs { display: flex; gap: 4px; background: var(--bg); padding: 4px; border-radius: 12px; margin-bottom: 14px; position: sticky; top: 0; z-index: 5; overflow-x: auto; }
-    .tabs div { flex: 1; text-align: center; padding: 9px 2px; font-size: 12px; font-weight: 600; border-radius: 10px; cursor: pointer; color: var(--text-dim); white-space: nowrap; }
-    .tabs div.on { background: var(--panel); color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,.08); }
-    
-    .bt, input, select { width: 100%; font: inherit; font-size: 15px; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 11px; margin: 4px 0; }
-    .bt { background: var(--panel); text-align: center; cursor: pointer; font-weight: 600; }
-    .bt.pri { background: var(--accent); color: #fff; border-color: var(--accent); }
-    label { font-size: 12px; color: var(--text-dim); display: block; margin-top: 6px; }
-    
-    .fab { position: fixed; right: 16px; bottom: calc(80px + env(safe-area-inset-bottom,0px)); width: 56px; height: 56px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-size: 30px; box-shadow: 0 4px 14px #0005; z-index: 9; }
-    
-    #ov { display: none; position: fixed; inset: 0; background: #0007; align-items: flex-end; z-index: 50; }
-    #ov.on { display: flex; }
-    #sh { background: var(--panel); width: 100%; max-width: 480px; margin: 0 auto; border-radius: 18px 18px 0 0; padding: 14px 14px calc(14px + env(safe-area-inset-bottom,0px)); max-height: 90%; overflow: auto; }
-    
-    .seg { display: flex; gap: 6px; margin-bottom: 8px; }
-    .seg button { flex: 1; padding: 9px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font: inherit; cursor: pointer; }
-    .seg button.on { background: var(--accent); color: #fff; }
-    .err { color: var(--red); font-size: 14px; min-height: 18px; }
-    
-    .bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 6px; }
-    .bar i { display: block; height: 100%; background: var(--green); }
-    
-    .menu-btn { display: block; width: 100%; text-align: left; padding: 14px; font-size: 16px; background: var(--panel); border: none; border-bottom: 1px solid var(--border); color: var(--text); cursor: pointer; font-weight: 500;}
-    .menu-btn:last-child { border-bottom: none; border-radius: 0 0 16px 16px; }
-    .menu-btn:first-child { border-radius: 16px 16px 0 0; }
-  </style>
-</head>
-<body>
+<html lang="ru"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>💼 Финансы</title>
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/components.css">
+<style>
+.container{max-width:480px;margin:0 auto;padding:16px 16px 150px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px}
+h1{font-size:28px;margin:4px 0 8px}h2{font-size:15px;margin:2px 0 8px;color:var(--text-dim);font-weight:600}
+.mut{color:var(--text-dim);font-size:12px}.g{color:var(--green)}.r{color:var(--red)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--border);cursor:pointer}
+.card>.row:first-of-type,.card>h2+.row{border-top:0}.row b{white-space:nowrap}
+.two{display:flex;gap:10px}.two>div{flex:1}
+.tabs{display:flex;gap:4px;background:var(--bg);padding:4px;border-radius:12px;margin-bottom:14px;position:sticky;top:0;z-index:5}
+.tabs div{flex:1;text-align:center;padding:9px 2px;font-size:12px;font-weight:600;border-radius:10px;cursor:pointer;color:var(--text-dim)}
+.tabs div.on{background:var(--panel);color:var(--accent);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.bt,input,select,textarea{width:100%;font:inherit;font-size:15px;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px;margin:4px 0}
+textarea{min-height:120px;font-size:13px}
+.bt{background:var(--panel);text-align:center;cursor:pointer;font-weight:600}.bt.pri{background:var(--accent);color:#fff;border-color:var(--accent)}
+label{font-size:12px;color:var(--text-dim);display:block;margin-top:6px}
+.fab{position:fixed;right:16px;bottom:calc(80px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;border:0;background:var(--accent);color:#fff;font-size:30px;box-shadow:0 4px 14px #0005;z-index:9}
+#ov{display:none;position:fixed;inset:0;background:#0007;align-items:flex-end;z-index:50}#ov.on{display:flex}
+#sh{background:var(--panel);width:100%;max-width:480px;margin:0 auto;border-radius:18px 18px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px));max-height:90%;overflow:auto}
+.seg{display:flex;gap:6px;margin-bottom:8px}.seg button{flex:1;padding:9px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font:inherit;cursor:pointer}.seg button.on{background:var(--accent);color:#fff}
+.err{color:var(--red);font-size:14px;min-height:18px}
+.bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:var(--green)}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(150px + env(safe-area-inset-bottom,0px));background:#222;color:#fff;padding:9px 14px;border-radius:20px;font-size:14px;display:none;z-index:60}
+.warn{background:#fff3cd;color:#8a5a00;border-left:4px solid #ffb800;padding:12px;border-radius:12px;margin-bottom:12px;font-size:14px}
+.warn button{width:auto;display:inline-block;padding:6px 12px;font-size:13px}
+</style></head><body>
 <div class="container" id="app"></div>
 <button class="fab" onclick="sheet('Трата')">＋</button>
-
-<nav class="tabbar">
-  <div class="in">
-    <a href="index.html"><span>📦</span>Учёт</a>
-    <a href="fin.html" class="active"><span>💼</span>Финансы</a>
-    <a href="cash.html"><span>🛵</span>Скутер</a>
-    <a href="stats.html"><span>📈</span>Отчёты</a>
-    <a href="settings.html"><span>⚙</span>Настройки</a>
-  </div>
-</nav>
-
-<div id="ov"><div id="sh"></div></div>
-
-<script src="js/lib/storage.js"></script>
-<script src="js/lib/ui.js"></script>
-<script src="js/lib/notify.js"></script>
-<script src="js/lib/guard.js"></script>
+<nav class="tabbar"><div class="in">
+<a href="index.html"><span>📦</span>Учёт</a>
+<a href="fin.html" class="active"><span>💼</span>Финансы</a>
+<a href="cash.html"><span>🛵</span>Скутер</a>
+<a href="stats.html"><span>📈</span>Отчёты</a>
+<a href="settings.html"><span>⚙</span>Настройки</a>
+</div></nav>
+<div id="ov"><div id="sh"></div></div><div id="toast"></div>
 <script src="js/lib/theme.js"></script>
-<script src="js/domain/state.js"></script>
-<script src="js/domain/finance-api.js"></script>
 <script>
-  Theme.init();
-  const $ = id => document.getElementById(id);
-  const esc = UI.esc;
-  const fmt = UI.fmt;
-  const r2 = UI.r2;
-  const num = UI.num;
-  const pos = x => { x = r2(num(x)); if (!(x > 0)) throw "Сумма должна быть больше нуля"; return x; };
-  const nowS = () => { const d = new Date(), p = n => String(n).padStart(2, "0"); return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes()); };
-  const opt = (a, s) => a.map(x => `<option${x === s ? " selected" : ""}>${esc(x)}</option>`).join("");
-  const W = () => Object.keys(State.getWallets());
-  
-  let tab = "home", MF = null, MM = [];
+try{Theme.init()}catch(e){}
+const KEYS=["kohelki","kat_trat","kat_dohodov","traty","dohody","istorija","byudzhety","celi","dolgi","regulyarnye","kredity","valyuty","kursy","lombard","lombard_info","aktivy","arhiv","kartki"];
+const DEF=()=>({kohelki:{"Наличные":0,"Карта":0},kat_trat:["Продукты","Транспорт","Развлечения","Жильё","Коммуналка","Связь","Здоровье","Одежда","Кафе","Прочее"],kat_dohodov:["Зарплата","Подарки","Прочее"],traty:{},dohody:{},istorija:[],byudzhety:{},celi:{},dolgi:[],regulyarnye:[],kredity:[],valyuty:{},kursy:{},lombard:[],lombard_info:{stavka:3,den:25,koshel:"Наличные",proc_ym:"",proc_sum:0},aktivy:[],arhiv:{},kartki:[]});
+let S=DEF(),tab="home",q="",lim=40,blocked=false,broken=null,RP="m",MF=null,MM=[];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const SY={MDL:"лей",USD:"$",EUR:"€"};
+const cur=w=>S.valyuty[w]||"MDL",sym=w=>SY[cur(w)]||cur(w),kurs=c=>c==="MDL"?1:(+S.kursy[c]||0);
+const fmt=x=>(+x).toLocaleString("ru-RU",{minimumFractionDigits:2,maximumFractionDigits:2});
+const r2=x=>Math.round(x*100)/100,num=v=>+String(v).replace(/\s/g,"").replace(",",".");
+const pos=x=>{x=r2(num(x));if(!(x>0))throw"Сумма должна быть больше нуля";return x};
+const nowS=()=>{const d=new Date(),p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes())};
+const ops=()=>S.istorija.filter(z=>z&&typeof z==="object");
+const nid=()=>Math.max(0,...ops().map(z=>z.id||0))+1;
+const mid=a=>Math.max(0,...a.map(x=>x.id||0))+1;
+const opt=(a,s)=>a.map(x=>`<option${x===s?" selected":""}>${esc(x)}</option>`).join("");
+const W=()=>Object.keys(S.kohelki),WM=()=>W().filter(w=>cur(w)==="MDL");
+function toast(t){const e=$("toast");e.textContent=t;e.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display="none",2200)}
+const err=e=>toast(typeof e==="string"?e:e.message);
 
-  function toast(t) { Notify.show(t); }
-  function closeSheet() { $("ov").classList.remove("on"); }
-  $("ov").addEventListener("click", e => { if (e.target.id === "ov") closeSheet(); });
-  function mm(t, it) { $("sh").innerHTML = `<h2>${t}</h2>` + it.map((x,i) => `<button class="bt${i?"":" pri"}" onclick="MM[${i}]()">${x[0]}</button>`).join("") + `<button class="bt" onclick="closeSheet()">Закрыть</button>`; MM = it.map(x => x[1]); $("ov").classList.add("on"); }
-  function mini(t, fs, ok) { MF = { fs, ok }; $("sh").innerHTML = `<h2>${t}</h2>` + fs.map(f => f[2] ? `<label>${f[1]}</label><select id="m_${f[0]}">${opt(f[2], f[3])}</select>` : `<input id="m_${f[0]}" placeholder="${f[1]}" value="${esc(f[3]??"")}"${f[4]?' inputmode="decimal"':""}>`).join("") + `<div class="err" id="m_e"></div><button class="bt pri" onclick="miniOk()">Готово</button><button class="bt" onclick="closeSheet()">Отмена</button>`; $("ov").classList.add("on"); }
-  function miniOk() { const v = {}; MF.fs.forEach(f => v[f[0]] = $("m_" + f[0]).value.trim()); try { MF.ok(v); closeSheet(); render(); toast("Сохранено"); } catch (e) { $("m_e").textContent = typeof e === "string" ? e : e.message; } }
+/* ---- хранение (ключ "fin" совместим с мобильной версией) ---- */
+function init(){
+  let raw=null,loc=null;
+  try{raw=localStorage.getItem("fin");if(raw)loc=JSON.parse(raw)}
+  catch(e){broken=raw;blocked=true;try{localStorage.setItem("fin_broken",raw||"")}catch(_){}}
+  if(loc&&typeof loc==="object")S=Object.assign(DEF(),loc);
+  render();if(!loc&&raw===null)save()
+}
+function save(){
+  if(blocked)return;S._ts=Date.now();
+  try{localStorage.setItem("fin",JSON.stringify(S))}catch(e){toast("Не удалось сохранить")}
+}
+addEventListener("pagehide",save);
+document.addEventListener("visibilitychange",()=>{if(document.hidden)save()});
+function brokenBox(){
+  return broken===null?"":`<div class="warn">⚠ <b>Данные не прочитаны.</b> Повреждённый JSON сохранён в <code>fin_broken</code>, исходные данные не перезаписываются, пока ты не решишь.<br><button class="bt" onclick="showBroken()">Показать копию</button> <button class="bt" onclick="discardBroken()">Начать с чистого листа</button></div>`}
+function showBroken(){$("sh").innerHTML=`<h2>fin_broken</h2><textarea readonly style="min-height:220px">${esc(broken)}</textarea><button class="bt" onclick="closeSheet()">Закрыть</button>`;$("ov").classList.add("on")}
+function discardBroken(){ask("Начать с чистых данных? Копия останется в fin_broken.",()=>{blocked=false;broken=null;S=DEF();save();render()})}
 
-  // --- Быстрая операция ---
-  function sheet(tip) {
-    const w = W();
-    let h = `<div class="seg">${["Трата","Доход"].map(t => `<button class="${t===tip?"on":""}" onclick="sheet('${t}')">${t}</button>`).join("")}</div>`;
-    h += `<input id="f_s" inputmode="decimal" placeholder="Сумма">
-          <label>Кошелёк</label><select id="f_w">${opt(w)}</select>
-          <label>Категория</label><select id="f_k">${opt(tip==="Трата"?State.getCategories().expense:State.getCategories().income)}</select>
-          <input id="f_n" placeholder="Заметка">
-          <div class="err" id="f_e"></div>
-          <button class="bt pri" onclick="submit('${tip}')">Сохранить</button>
-          <button class="bt" onclick="closeSheet()">Отмена</button>`;
-    $("sh").innerHTML = h; $("ov").classList.add("on");
-  }
+/* ---- логика ---- */
+function rec(tip,s,w,o){const z=Object.assign({id:nid(),data:nowS(),tip,summa:s,koshel:w},o);if(w&&cur(w)!=="MDL"&&["Трата","Доход","Корректировка"].includes(tip))z.baz=r2(s*kurs(cur(w)));Object.keys(z).forEach(k=>{if(z[k]===""||z[k]==null)delete z[k]});S.istorija.push(z);save()}
+function addOp(tip,w,kat,s,note){
+  s=r2(s);if(!(s>0))throw"Сумма должна быть больше нуля";kat=(kat||"").trim();if(!kat)throw"Выбери категорию";
+  if(tip==="Трата"){if(S.kohelki[w]<s)throw`Недостаточно средств: на «${w}» только ${fmt(S.kohelki[w])}`;
+    S.kohelki[w]=r2(S.kohelki[w]-s);S.traty[kat]=r2((S.traty[kat]||0)+s);if(!S.kat_trat.includes(kat))S.kat_trat.push(kat)}
+  else{S.kohelki[w]=r2(S.kohelki[w]+s);S.dohody[kat]=r2((S.dohody[kat]||0)+s);if(!S.kat_dohodov.includes(kat))S.kat_dohodov.push(kat)}
+  rec(tip,s,w,{kat,zametka:note})}
+function transfer(a,b,s,t,note){
+  s=r2(s);if(!(s>0))throw"Сумма должна быть больше нуля";if(a===b)throw"Выбери разные кошельки";
+  if(typeof b==="string"&&b.startsWith("💳 ")){
+    const c=S.kartki.find(x=>"💳 "+x.nazvanie===b);if(!c)throw"Карта не найдена";
+    if(cur(a)!=="MDL")throw"Платёж по карте — только с кошелька в леях";
+    if(S.kohelki[a]<s)throw`Недостаточно средств на «${a}»`;if(s>c.dolg)throw"Больше текущего долга по карте ("+fmt(c.dolg)+")";
+    const pp=c.posl;S.kohelki[a]=r2(S.kohelki[a]-s);c.dolg=r2(c.dolg-s);if(!c.min||s>=c.min||c.dolg<=0)c.posl=nowS().slice(0,7);
+    rec("Кредитка",s,a,{kat:c.nazvanie,napr:"платёж",cid:c.id,pp,zametka:note});return}
+  if(S.kohelki[a]<s)throw`Недостаточно средств на «${a}»`;
+  const same=cur(a)===cur(b);if(!same){t=r2(t);if(!(t>0))throw"Укажи сумму к зачислению"}else t=s;
+  S.kohelki[a]=r2(S.kohelki[a]-s);S.kohelki[b]=r2(S.kohelki[b]+t);
+  const z={id:nid(),data:nowS(),tip:same?"Перевод":"Конвертация",summa:s,koshel:a,kuda:b};
+  if(!same)z.summa_kuda=t;if(note)z.zametka=note;S.istorija.push(z);save()}
+function undo(id){
+  const z=ops().find(x=>x.id===id);if(!z)return;
+  try{const t=z.tip,w=z.koshel,s=z.summa;
+    if(!["Трата","Доход","Перевод","Корректировка"].includes(t))throw"Эту операцию нельзя отменить здесь";
+    if(!(w in S.kohelki)||(t==="Перевод"&&!(z.kuda in S.kohelki)))throw"Кошелёк из этой операции удалён";
+    if(t==="Трата"){S.kohelki[w]=r2(S.kohelki[w]+s);S.traty[z.kat]=Math.max(0,r2((S.traty[z.kat]||0)-s))}
+    else if(t==="Доход"){if(S.kohelki[w]<s)throw"На кошельке уже меньше этой суммы";S.kohelki[w]=r2(S.kohelki[w]-s);S.dohody[z.kat]=Math.max(0,r2((S.dohody[z.kat]||0)-s))}
+    else if(t==="Корректировка"){if(S.kohelki[w]-s<0)throw"Баланс станет отрицательным";S.kohelki[w]=r2(S.kohelki[w]-s)}
+    else{if(S.kohelki[z.kuda]<s)throw"На кошельке назначения уже меньше";S.kohelki[z.kuda]=r2(S.kohelki[z.kuda]-s);S.kohelki[w]=r2(S.kohelki[w]+s)}
+    S.istorija.splice(S.istorija.indexOf(z),1);save();render();toast("Операция отменена")
+  }catch(e){err(e)}}
 
-  function submit(tip) {
-    try {
-      const s = num($("f_s").value), n = $("f_n").value.trim();
-      if (s <= 0) throw "Введите сумму";
-      const w = $("f_w").value, cat = $("f_k").value;
-      if (tip === "Трата") FinanceAPI.spend({ wallet: w, amount: s, category: cat, note: n });
-      else FinanceAPI.receive({ wallet: w, amount: s, category: cat, note: n });
-      closeSheet(); render(); toast("Сохранено");
-    } catch (e) { $("f_e").textContent = e.message || e; }
-  }
+/* ---- окна ---- */
+function closeSheet(){$("ov").classList.remove("on")}
+$("ov").addEventListener("click",e=>{if(e.target.id==="ov")closeSheet()});
+function ask(t,yes){$("sh").innerHTML=`<p>${esc(t)}</p><button class="bt pri" id="yes">Да</button><button class="bt" onclick="closeSheet()">Нет</button>`;$("ov").classList.add("on");$("yes").onclick=()=>{closeSheet();yes()}}
+function mm(t,it){$("sh").innerHTML=`<h2>${t}</h2>`+it.map((x,i)=>`<button class="bt${i?"":" pri"}" onclick="MM[${i}]()">${x[0]}</button>`).join("")+`<button class="bt" onclick="closeSheet()">Закрыть</button>`;MM=it.map(x=>x[1]);$("ov").classList.add("on")}
+function mini(t,fs,ok,hint){MF={fs,ok};$("sh").innerHTML=`<h2>${t}</h2>${hint?`<div class="mut">${hint}</div>`:""}`+fs.map(f=>f[2]?`<label>${f[1]}</label><select id="m_${f[0]}">${opt(f[2],f[3])}</select>`:`<input id="m_${f[0]}" placeholder="${f[1]}" value="${esc(f[3]??"")}"${f[4]?' inputmode="decimal"':""}>`).join("")+`<div class="err" id="m_e"></div><button class="bt pri" onclick="miniOk()">Готово</button><button class="bt" onclick="closeSheet()">Отмена</button>`;$("ov").classList.add("on")}
+function miniOk(){const v={};MF.fs.forEach(f=>v[f[0]]=$("m_"+f[0]).value.trim());try{MF.ok(v);closeSheet();render();toast("Сохранено")}catch(e){$("m_e").textContent=typeof e==="string"?e:e.message}}
 
-  // ================= 1. КОШЕЛЬКИ =================
-  function renderHome() {
-    const wallets = State.getWallets();
-    const ops = State.getOps().slice().reverse().slice(0, 5);
-    return `<div class="card"><h2>Кошельки</h2>${Object.keys(wallets).map(w => `<div class="row" style="cursor:default"><span>${esc(w)}</span><b>${fmt(wallets[w])} лей</b></div>`).join("")}</div>
-    <div class="card"><h2>Последние операции</h2>${ops.length ? ops.map(o => `
-      <div class="row" style="cursor:default">
-        <div>${o.kind === 'expense' ? '➖' : '➕'} ${esc(o.cat)}<div class="mut">${o.date}</div></div>
-        <b class="${o.kind === 'expense' ? 'r' : 'g'}">${o.amount > 0 ? '+' : ''}${fmt(o.amount)}</b>
-      </div>
-    `).join("") : '<div class="mut">Нет операций</div>'}</div>`;
-  }
+/* ---- форма операции ---- */
+function sheet(tip){
+  const old=$("f_s")?$("f_s").value:"",w=W();
+  let h=`<div class="seg">${["Трата","Доход","Перевод"].map(t=>`<button class="${t===tip?"on":""}" onclick="sheet('${t}')">${t}</button>`).join("")}</div><input id="f_s" inputmode="decimal" placeholder="Сумма" value="${esc(old)}">`;
+  if(tip==="Перевод")h+=`<label>Откуда</label><select id="f_a" onchange="cv()">${opt(w)}</select><label>Куда</label><select id="f_b" onchange="cv()">${opt(w.concat(S.kartki.map(c=>"💳 "+c.nazvanie)),w[1])}</select><input id="f_c" inputmode="decimal" placeholder="Сумма к зачислению" style="display:none">`;
+  else h+=`<label>Кошелёк</label><select id="f_w">${opt(w)}</select><label>Категория</label><select id="f_k">${opt(tip==="Трата"?S.kat_trat:S.kat_dohodov)}</select>`;
+  h+=`<input id="f_n" placeholder="Заметка (необязательно)"><div class="err" id="f_e"></div><button class="bt pri" onclick="submit('${tip}')">Сохранить</button><button class="bt" onclick="closeSheet()">Отмена</button>`;
+  $("sh").innerHTML=h;$("ov").classList.add("on");if(tip==="Перевод")cv()}
+function cv(){const a=$("f_a").value,b=$("f_b").value,c=$("f_c");if(cur(a)===cur(b)){c.style.display="none";return}
+  c.style.display="block";const s=num($("f_s").value),ka=kurs(cur(a)),kb=kurs(cur(b));if(s>0&&ka&&kb&&!c.value)c.value=r2(s*ka/kb)}
+function submit(tip){
+  try{const s=num($("f_s").value),n=$("f_n").value.trim();
+    if(tip==="Перевод")transfer($("f_a").value,$("f_b").value,s,num($("f_c").value),n);
+    else addOp(tip,$("f_w").value,$("f_k").value,s,n);
+    closeSheet();render();toast("Сохранено")
+  }catch(e){$("f_e").textContent=typeof e==="string"?e:e.message}}
 
-  // ================= 2. ЦЕЛИ =================
-  function renderGoals() {
-    const goals = State.getGoals();
-    let html = `<div class="card"><h2>🎯 Мои цели</h2>`;
-    if (goals.length) {
-      html += goals.map((g, i) => {
-        const percent = g.target > 0 ? Math.min(100, Math.round(g.saved / g.target * 100)) : 0;
-        return `<div class="row" style="display:block" onclick="goalMenu(${i})">
-          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-            <b>${esc(g.name)}</b><span>${fmt(g.saved)} / ${fmt(g.target)}</span>
-          </div>
-          <div class="bar"><i style="width:${percent}%"></i></div>
-        </div>`;
-      }).join("");
-    } else { html += `<div class="mut">Пока нет целей</div>`; }
-    html += `</div><button class="bt pri" onclick="newGoal()">➕ Новая цель</button>`;
-    return html;
-  }
-  function newGoal() { mini("Новая цель", [["n","Название"],["s","Сумма",null,"",1]], v => { if (!v.n) throw "Введите название"; const goals = State.getGoals(); goals.push({ id: Date.now().toString(), name: v.n, target: pos(v.s), saved: 0 }); State.setGoals(goals); }); }
-  function goalMenu(i) { const goals = State.getGoals(), g = goals[i]; mm(esc(g.name), [["➕ Пополнить", () => addToGoal(i)], ["🗑 Удалить", () => { if(g.saved>0) return toast("Сначала снимите деньги"); goals.splice(i, 1); State.setGoals(goals); render(); }]]); }
-  function addToGoal(i) { const goals = State.getGoals(), g = goals[i]; mini("Пополнить", [["w","Кошелёк",W()],["s","Сумма",null,"",1]], v => { const s = pos(v.s); FinanceAPI.spend({ wallet: v.w, amount: s, category: "Цель", note: g.name }); g.saved += s; State.setGoals(goals); }); }
+/* ---- операции ---- */
+function row(z){
+  const ic={"Трата":"➖","Доход":"➕","Перевод":"🔄","Конвертация":"🔄","Кредитка":"💳","Долг":"🤝","Кредит":"🏛","Ломбард":"🥇","Цель":"🎯"}[z.tip]||"•";
+  const kp=z.tip==="Кредитка"&&(z.napr==="покупка"||z.napr==="проценты"),neg=z.tip==="Трата"||kp;
+  const sg=neg?"-":z.tip==="Доход"?"+":"",c=neg?"r":z.tip==="Доход"?"g":"",w=z.koshel||"",ttl=z.kat||(z.kuda?w+" → "+z.kuda:z.tip);
+  return `<div class="row" onclick="opMenu(${z.id})"><div>${ic} ${esc(ttl)}<div class="mut">${esc((z.data||"").slice(0,16))} · ${esc(w)}${z.zametka?" · "+esc(z.zametka):""}</div></div><b class="${c}">${sg}${fmt(z.summa)} ${esc(SY[cur(w)]||"")}</b></div>`}
+function opMenu(id){const z=ops().find(x=>x.id===id),it=[];if(!z)return;
+  if(z.tip==="Трата"||z.tip==="Доход")it.push(["✏️ Изменить",()=>editOp(id)]);
+  if(["Трата","Доход","Перевод","Корректировка"].includes(z.tip))it.push(["↩️ Отменить операцию",()=>ask("Отменить эту операцию?",()=>undo(id))]);
+  if(z.tip==="Кредитка")it.push(["↩️ Отменить операцию",()=>ask("Отменить эту операцию?",()=>undoCard(id))]);
+  if(it.length)mm(esc(z.tip)+" · "+fmt(z.summa),it)}
+function editOp(id){const z=ops().find(x=>x.id===id),L=z.tip==="Трата"?S.kat_trat:S.kat_dohodov;
+  mini("Изменить",[["k","Категория",L.includes(z.kat)?L:L.concat(z.kat),z.kat],["s","Сумма",null,z.summa,1],["w","Кошелёк",W(),z.koshel],["n","Заметка",null,z.zametka||""]],v=>{
+    const s=pos(v.s),sg=z.tip==="Трата"?-1:1,B=Object.assign({},S.kohelki);B[z.koshel]=r2(B[z.koshel]-sg*z.summa);B[v.w]=r2(B[v.w]+sg*s);
+    if(B[z.koshel]<0||B[v.w]<0)throw"Не хватит денег на кошельке";S.kohelki=B;
+    Object.assign(z,{kat:v.k,summa:s,koshel:v.w,zametka:v.n});if(!z.zametka)delete z.zametka;delete z.baz;if(cur(v.w)!=="MDL")z.baz=r2(s*kurs(cur(v.w)));save()})}
 
-  // ================= 3. ДОЛГИ =================
-  function renderDebts() {
-    const debts = State.getDebts();
-    let html = `<div class="card"><h2>🤝 Долги</h2>`;
-    if (debts.length) {
-      html += debts.map(d => `<div class="row" onclick="debtMenu('${d.id}')"><div>${d.type === 'i_owe' ? '🔴' : '🟢'} ${esc(d.name)}<div class="mut">${d.type === 'i_owe' ? 'Я должен' : 'Мне должны'}</div></div><b>${fmt(d.amount)} лей</b></div>`).join("");
-    } else { html += `<div class="mut">Нет активных долгов</div>`; }
-    html += `</div><button class="bt pri" onclick="newDebt()">➕ Новый долг</button>`;
-    return html;
-  }
-  function newDebt() { mini("Новый долг", [["t","Тип",["Я должен","Мне должны"]],["n","Кому/Кто"],["s","Сумма",null,"",1]], v => { if (!v.n) throw "Введите имя"; const debts = State.getDebts(); debts.push({ id: Date.now().toString(), type: v.t === "Я должен" ? "i_owe" : "owe_me", name: v.n, amount: pos(v.s) }); State.setDebts(debts); }); }
-  function debtMenu(id) { const debts = State.getDebts(), d = debts.find(x => x.id === id); mm(esc(d.name), [["✅ Погасить", () => payDebt(id)], ["🗑 Удалить", () => { State.setDebts(debts.filter(x => x.id !== id)); render(); }]]); }
-  function payDebt(id) { const debts = State.getDebts(), d = debts.find(x => x.id === id); mini("Погашение", [["w","Кошелёк",W()],["s","Сумма",null,d.amount,1]], v => { const s = pos(v.s); if (s > d.amount) throw "Больше остатка долга"; if (d.type === 'i_owe') FinanceAPI.spend({ wallet: v.w, amount: s, category: "Долг", note: "Погашение" }); else FinanceAPI.receive({ wallet: v.w, amount: s, category: "Долг", note: "Возврат" }); d.amount -= s; State.setDebts(d.amount <= 0 ? debts.filter(x => x.id !== id) : debts); }); }
+/* ---- вкладки ---- */
+const TABS=[["home","💰 Кошельки"],["hist","🕘 История"],["goal","🎯 Цели"],["debt","🤝 Долги"],["more","⚙️ Ещё"]];
+const MORE=["bud","reg","cat","rep","cred","cards","asset"];
+function nav(){const on=MORE.includes(tab)?"more":tab;return `<div class="tabs">${TABS.map(([k,l])=>`<div class="${on===k?"on":""}" onclick="go('${k}')">${l}</div>`).join("")}</div>`}
+function go(t){tab=t;render()}
+const back=t=>`<button class="bt" onclick="go('more')">← Назад</button><h2>${t}</h2>`;
 
-  // ================= 4. БЮДЖЕТЫ =================
-  function renderBudgets() {
-    const budgets = AppStorage.get("budgets", {});
-    const ym = nowS().slice(0,7);
-    let html = `<div class="card"><h2>📊 Бюджеты на месяц</h2>`;
-    const keys = Object.keys(budgets);
-    if (keys.length) {
-      html += keys.map(cat => {
-        const limit = budgets[cat];
-        const spent = State.getOps().filter(o => o.kind === 'expense' && o.cat === cat && o.date.startsWith(ym)).reduce((s,o) => s + Math.abs(o.amount), 0);
-        const percent = limit > 0 ? Math.min(100, Math.round(spent/limit*100)) : 0;
-        const color = percent >= 100 ? 'var(--red)' : percent >= 80 ? 'var(--orange)' : 'var(--green)';
-        return `<div class="row" style="display:block;cursor:default">
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px"><b>${esc(cat)}</b><span>${fmt(spent)} / ${fmt(limit)}</span></div>
-          <div class="bar"><i style="width:${percent}%;background:${color}"></i></div>
-        </div>`;
-      }).join("");
-    } else { html += `<div class="mut">Лимитов нет</div>`; }
-    html += `</div><button class="bt pri" onclick="newBudget()">➕ Установить лимит</button>`;
-    return html;
-  }
-  function newBudget() {
-    mini("Лимит на месяц", [["c","Категория",State.getCategories().expense],["s","Лимит",null,"",1]], v => {
-      const budgets = AppStorage.get("budgets", {});
-      budgets[v.c] = pos(v.s); AppStorage.set("budgets", budgets);
-    });
-  }
+function home(){
+  const ws=W(),tot=ws.reduce((a,w)=>a+S.kohelki[w]*kurs(cur(w)),0),ym=nowS().slice(0,7);let sp=0,inc=0;
+  ops().forEach(z=>{if((z.data||"").startsWith(ym)){const v=z.baz??z.summa;if(z.tip==="Трата"||(z.tip==="Кредитка"&&(z.napr==="покупка"||z.napr==="проценты")))sp+=v;if(z.tip==="Доход")inc+=v}});
+  const cs=[...new Set(ws.map(cur).concat(Object.keys(S.kursy)))].filter(c=>c!=="MDL");
+  return `<div class="card"><div class="mut">Всего в кошельках</div><h1>${fmt(tot)} лей</h1><div class="two"><div><div class="mut">Доходы за месяц</div><b class="g">+${fmt(inc)}</b></div><div><div class="mut">Траты за месяц</div><b class="r">-${fmt(sp)}</b></div></div></div>
+  <div class="card"><h2>Кошельки · нажми для действий</h2>${ws.map((w,i)=>`<div class="row" onclick="walMenu(${i})"><span>✎ ${esc(w)} <span class="mut">${esc(cur(w))}</span></span><b>${fmt(S.kohelki[w])} ${esc(sym(w))}</b></div>`).join("")}${S.kartki.length?`<div class="mut" style="margin:12px 0 2px">💳 Кредитные карты · не входят в общий итог</div>`+S.kartki.map(c=>{const bl=r2(c.limit-c.dolg);return `<div class="row" onclick="go('cards')"><span>💳 ${esc(c.nazvanie)} <span class="mut">долг ${fmt(c.dolg)}</span></span><b class="${bl<0?"r":""}">${bl<0?"−":""}${fmt(Math.abs(bl))} лей</b></div>`}).join(""):""}</div>
+  ${cs.length?`<div class="card"><h2>Курсы к лею</h2>${cs.map(c=>`<label>1 ${esc(c)} =</label><input inputmode="decimal" value="${S.kursy[c]||""}" onchange="setRate('${esc(c)}',this.value)">`).join("")}</div>`:""}
+  <div class="card"><h2>Новый кошелёк</h2><input id="nw" placeholder="Название"><select id="nc"><option>MDL</option><option>USD</option><option>EUR</option></select><input id="nr" inputmode="decimal" placeholder="Курс к лею (для USD/EUR)"><button class="bt pri" onclick="addW()">Добавить</button></div>
+  <div class="card"><h2>Последние операции</h2>${ops().slice(-5).reverse().map(row).join("")||'<div class="mut">Пока нет операций</div>'}</div>`}
+function setRate(c,v){const x=num(v);if(x>0){S.kursy[c]=x;save();render();toast("Курс сохранён")}}
+function addW(){const n=$("nw").value.trim(),c=$("nc").value,r=num($("nr").value);
+  if(!n)return toast("Введи название");if(n in S.kohelki)return toast("Такой кошелёк уже есть");
+  if(c!=="MDL"&&!(r>0)&&!(S.kursy[c]>0))return toast("Укажи курс");
+  S.kohelki[n]=0;if(c!=="MDL"){S.valyuty[n]=c;if(r>0)S.kursy[c]=r}save();render();toast("Кошелёк добавлен")}
+function walMenu(i){const w=W()[i];mm(`${esc(w)}: ${fmt(S.kohelki[w])} ${esc(sym(w))}`,[["⚖️ Корректировка баланса",()=>corr(i)],["✏️ Переименовать",()=>ren(i)],["🗑 Удалить",()=>delW(i)]])}
+function corr(i){const w=W()[i];mini("Корректировка: "+esc(w),[["r","Реальный остаток ("+sym(w)+")",null,S.kohelki[w],1],["n","Заметка"]],v=>{
+  const r=r2(num(v.r));if(!isFinite(r)||r<0)throw"Остаток не может быть отрицательным";const d=r2(r-S.kohelki[w]);if(!d)throw"Уже совпадает";S.kohelki[w]=r;rec("Корректировка",d,w,{zametka:v.n})},"Сейчас в учёте: "+fmt(S.kohelki[w]))}
+function ren(i){const w=W()[i];mini("Переименовать",[["n","Название",null,w]],v=>{
+  const n=v.n.replace(/\s+/g," ");if(!n)throw"Пустое название";if(n!==w&&n in S.kohelki)throw"Такой кошелёк уже есть";
+  const o={};W().forEach(k=>o[k===w?n:k]=S.kohelki[k]);S.kohelki=o;
+  ops().forEach(z=>{if(z.koshel===w)z.koshel=n;if(z.kuda===w)z.kuda=n});
+  if(S.valyuty[w]){S.valyuty[n]=S.valyuty[w];delete S.valyuty[w]}
+  S.regulyarnye.concat(S.kredity).forEach(r=>{if(r.koshel===w)r.koshel=n});if(S.lombard_info.koshel===w)S.lombard_info.koshel=n;save()})}
+function delW(i){const w=W()[i];if(S.kohelki[w]!==0)return toast("Сначала обнули баланс");ask("Удалить кошелёк «"+w+"»?",()=>{delete S.kohelki[w];delete S.valyuty[w];save();render()})}
 
-  // ================= 5. КРЕДИТЫ =================
-  function renderCredits() {
-    const credits = AppStorage.get("credits", []);
-    let html = `<div class="card"><h2>🏛 Кредиты</h2>`;
-    if (credits.length) {
-      html += credits.map((c,i) => `<div class="row" onclick="payCredit(${i})"><div><b>${esc(c.name)}</b><div class="mut">Остаток: ${fmt(c.remaining)} · Ставка: ${c.rate}%</div></div><b>Платёж: ${fmt(c.payment)}</b></div>`).join("");
-    } else { html += `<div class="mut">Нет кредитов</div>`; }
-    html += `</div><button class="bt pri" onclick="newCredit()">➕ Добавить кредит</button>`;
-    return html;
-  }
-  function newCredit() {
-    mini("Новый кредит", [["n","Название"],["r","Остаток",null,"",1],["p","Платёж",null,"",1],["s","Ставка %",null,"",1]], v => {
-      const credits = AppStorage.get("credits", []);
-      credits.push({ id: Date.now().toString(), name: v.n, remaining: pos(v.r), payment: pos(v.p), rate: num(v.s) });
-      AppStorage.set("credits", credits);
-    });
-  }
-  function payCredit(i) {
-    const credits = AppStorage.get("credits", []);
-    const c = credits[i];
-    mini("Платёж по кредиту", [["w","Кошелёк",W()],["s","Сумма",null,c.payment,1]], v => {
-      const s = pos(v.s);
-      FinanceAPI.spend({ wallet: v.w, amount: s, category: "Кредит", note: c.name });
-      c.remaining -= s;
-      if (c.remaining <= 0) credits.splice(i, 1);
-      AppStorage.set("credits", credits);
-    });
-  }
+function hist(){
+  const t=q.toLowerCase(),all=ops().slice().reverse().filter(z=>!t||[z.kat,z.koshel,z.kuda,z.zametka,z.tip,z.data].join(" ").toLowerCase().includes(t));
+  return `<input placeholder="Поиск" value="${esc(q)}" oninput="q=this.value;lim=40;render(1)"><div class="card" style="margin-top:8px">${all.slice(0,lim).map(row).join("")||'<div class="mut">Ничего нет</div>'}</div>${all.length>lim?'<button class="bt" onclick="lim+=40;render()">Показать ещё</button>':""}<div class="mut">Нажми на операцию, чтобы изменить или отменить.</div>`}
 
-  // ================= 6. КАТЕГОРИИ =================
-  function renderCategories() {
-    const cats = State.getCategories();
-    let html = `<div class="card"><h2>Расходы</h2>${cats.expense.map(c => `<div class="row" style="cursor:default"><span>${esc(c)}</span></div>`).join("")}</div>`;
-    html += `<div class="card"><h2>Доходы</h2>${cats.income.map(c => `<div class="row" style="cursor:default"><span>${esc(c)}</span></div>`).join("")}</div>`;
-    html += `<button class="bt" onclick="newCategory()">➕ Добавить категорию</button>`;
-    return html;
-  }
-  function newCategory() {
-    mini("Новая категория", [["t","Тип",["Расход","Доход"]],["n","Название"]], v => {
-      if (!v.n) throw "Введите название";
-      const cats = State.getCategories();
-      if (v.t === "Расход") cats.expense.push(v.n); else cats.income.push(v.n);
-      State.setCategories(cats);
-    });
-  }
+/* ---- цели ---- */
+function goal(){return `<div class="card">${Object.keys(S.celi).map((n,i)=>{const g=S.celi[n],p=g.cel>0?Math.min(100,Math.round(g.nakopleno/g.cel*100)):0;return `<div class="row" style="display:block" onclick="goalMv(${i})"><div style="display:flex;justify-content:space-between">🎯 ${esc(n)}<span>${p>=100?"✅ ":""}${fmt(g.nakopleno)} / ${fmt(g.cel)}</span></div><div class="bar"><i style="width:${p}%"></i></div></div>`}).join("")||'<div class="mut">Целей нет</div>'}</div><div class="mut">Нажми на цель: пополнить, снять или удалить.</div><button class="bt pri" onclick="newG()">➕ Новая цель</button>`}
+function newG(){mini("Новая цель",[["n","Название"],["s","Сколько накопить",null,"",1]],v=>{if(!v.n)throw"Укажи название";if(v.n in S.celi)throw"Такая цель уже есть";S.celi[v.n]={cel:pos(v.s),nakopleno:0};save()})}
+function goalMv(i){const n=Object.keys(S.celi)[i],g=S.celi[n];
+  mini("Цель «"+esc(n)+"»",[["t","Действие",["Пополнить цель","Снять из цели","Удалить цель (пустую)"]],["w","Кошелёк",WM()],["s","Сумма",null,"",1]],v=>{
+    if(v.t[0]==="У"){if(g.nakopleno>0)throw"В цели есть деньги";delete S.celi[n];save();return}
+    const s=pos(v.s),inn=v.t[0]==="П";
+    if(inn){if(S.kohelki[v.w]<s)throw"Недостаточно средств";S.kohelki[v.w]=r2(S.kohelki[v.w]-s);g.nakopleno=r2(g.nakopleno+s)}
+    else{if(g.nakopleno<s)throw"В цели меньше";g.nakopleno=r2(g.nakopleno-s);S.kohelki[v.w]=r2(S.kohelki[v.w]+s)}
+    rec("Цель",s,v.w,{kat:n,napr:inn?"in":"out"})})}
 
-  // ================= 7. ОТЧЁТЫ =================
-  function renderReports() {
-    const wallets = State.getWallets();
-    const totalW = Object.values(wallets).reduce((a, b) => a + b, 0);
-    const debts = State.getDebts().reduce((a, d) => a + (d.type === 'owe_me' ? d.amount : -d.amount), 0);
-    const credits = AppStorage.get("credits", []).reduce((a, c) => a - c.remaining, 0);
-    const net = totalW + debts + credits;
+/* ---- долги ---- */
+const dv=d=>d.val||"MDL",ds=d=>SY[dv(d)]||dv(d);
+function debt(){const o=S.dolgi.filter(d=>d.ostatok>0);return `<div class="card">${o.map(d=>`<div class="row" onclick="payD(${d.id})"><div>${d.napr==="Я должен"?"🔴":"🟢"} ${esc(d.kto)}<div class="mut">${esc(d.napr)} · ${esc((d.data||"").slice(0,10))}${d.zametka?" · "+esc(d.zametka):""}</div></div><b>${fmt(d.ostatok)} ${esc(ds(d))}</b></div>`).join("")||'<div class="mut">Открытых долгов нет</div>'}</div><div class="mut">Нажми на долг, чтобы погасить.</div><button class="bt pri" onclick="newD()">➕ Новый долг</button>`}
+function newD(){const NEWP="➕ Новый человек…",people=[...new Set(S.dolgi.map(d=>d.kto))];
+  mini("Новый долг",[["t","Тип",["Я взял в долг","Я дал в долг"]],["k","Кто",people.concat(NEWP)],["kn","Имя нового человека"],["w","Кошелёк",W()],["s","Сумма",null,"",1],["n","Заметка"]],v=>{
+    const s=pos(v.s),b=v.t==="Я взял в долг";let kk=v.k;
+    if(kk===NEWP){kk=v.kn.replace(/\s+/g," ").trim();const ex=people.find(x=>x.toLowerCase()===kk.toLowerCase());if(ex)kk=ex}
+    if(!kk)throw"Укажи, кто";if(!b&&S.kohelki[v.w]<s)throw"Недостаточно средств";
+    S.kohelki[v.w]=r2(S.kohelki[v.w]+(b?s:-s));
+    const d={id:mid(S.dolgi),kto:kk,napr:b?"Я должен":"Мне должны",summa:s,ostatok:s,data:nowS(),zametka:v.n};if(cur(v.w)!=="MDL")d.val=cur(v.w);
+    S.dolgi.push(d);rec("Долг",s,v.w,{kat:kk,napr:b?"взял":"дал",zametka:v.n,did:d.id})});
+  const st=()=>{$("m_kn").style.display=$("m_k").value===NEWP?"block":"none"};$("m_k").onchange=st;st()}
+function payD(id){const d=S.dolgi.find(x=>x.id===id),w=W().filter(x=>cur(x)===dv(d));if(!w.length)return toast("Нет кошелька в этой валюте");
+  mini("Погашение: "+esc(d.kto),[["w","Кошелёк",w],["s","Сумма (макс. "+fmt(d.ostatok)+")",null,d.ostatok,1]],v=>{
+    const s=pos(v.s),me=d.napr==="Я должен";if(s>d.ostatok)throw"Больше остатка долга";if(me&&S.kohelki[v.w]<s)throw"Недостаточно средств";
+    S.kohelki[v.w]=r2(S.kohelki[v.w]+(me?-s:s));d.ostatok=r2(d.ostatok-s);rec("Долг",s,v.w,{kat:d.kto,napr:me?"вернул я":"вернули мне",did:d.id})})}
 
-    return `<div class="card"><h2>Чистый капитал</h2><h1 class="${net >= 0 ? 'g' : 'r'}">${fmt(net)} лей</h1><div class="mut" style="margin-top:8px">Кошельки: ${fmt(totalW)}<br>Долги (нетто): ${fmt(debts)}<br>Кредиты: ${fmt(credits)}</div></div>`;
-  }
+/* ---- «Ещё» ---- */
+function more(){return `<div class="card"><h2>Разделы</h2>
+<button class="bt" onclick="go('bud')">💳 Бюджеты</button><button class="bt" onclick="go('cred')">🏛 Кредиты и ломбард</button><button class="bt" onclick="go('cards')">💳 Кредитные карты</button><button class="bt" onclick="go('asset')">🏺 Активы</button><button class="bt" onclick="go('reg')">🔁 Регулярные платежи</button><button class="bt" onclick="go('cat')">🗂 Категории</button><button class="bt" onclick="go('rep')">📊 Отчёты и капитал</button><button class="bt" onclick="rst()">🗑 Сбросить всё</button></div>
+<div class="card"><h2>Импорт данных</h2><div class="mut">Вставь JSON или блок «Экспорт» из старой версии.</div><textarea id="imp" placeholder="Вставь сюда"></textarea><button class="bt pri" onclick="doImp()">Импортировать</button></div>
+<div class="card"><h2>Экспорт / резервная копия</h2><button class="bt" onclick="doExp()">Python-блок (для вставки в код)</button><button class="bt" onclick="doExp(1)">JSON</button><textarea id="exp" readonly style="display:none"></textarea><button class="bt" id="cp" style="display:none" onclick="doCp()">Скопировать</button></div>`}
+function doExp(j){const e=$("exp");e.value=j?JSON.stringify(S,null,1):pyExp();e.style.display="block";$("cp").style.display="block"}
+function doCp(){const e=$("exp");e.select();try{navigator.clipboard.writeText(e.value).then(()=>toast("Скопировано"),()=>toast("Скопируй вручную"))}catch(x){toast("Скопируй вручную")}}
+function doImp(){const t=$("imp").value.trim();if(!t)return toast("Сначала вставь данные");
+  let d;try{d=JSON.parse(t)}catch(e){d=fromCode(t)}
+  if(!d||!d.kohelki||typeof d.kohelki!=="object")return toast("Не удалось распознать данные");
+  ask("Заменить текущие данные импортированными?",()=>{const n=DEF();KEYS.forEach(k=>{if(k in d)n[k]=d[k]});blocked=false;broken=null;S=n;save();tab="home";render();toast("Импортировано")})}
+function rst(){mini("Сброс всех данных",[["c","Введи СБРОС"]],v=>{if(v.c.toUpperCase()!=="СБРОС")throw"Нужно ввести СБРОС";blocked=false;broken=null;S=DEF();tab="home";save()},"Удалит всё. Сначала сделай экспорт!")}
 
-  // ================= РЕНДЕР =================
-  function render() {
-    const tabs = [["home","💰 Кошельки"],["goals","🎯 Цели"],["debts","🤝 Долги"],["more","⚙️ Ещё"]];
-    let html = `<div class="tabs">${tabs.map(([k,l]) => `<div class="${tab===k?"on":""}" onclick="tab='${k}';render()">${l}</div>`).join("")}</div>`;
+/* ---- бюджеты ---- */
+function bud(){const ym=nowS().slice(0,7),sp=k=>r2(ops().filter(z=>z.tip==="Трата"&&z.kat===k&&(z.data||"").startsWith(ym)).reduce((a,z)=>a+(z.baz??z.summa),0));
+  return back("Бюджеты")+`<div class="card">${Object.keys(S.byudzhety).map(k=>{const l=S.byudzhety[k],s=sp(k),p=Math.round(s/l*100);return `<div class="row" style="cursor:default"><div>${p>=100?"🔴":p>=80?"🟡":"🟢"} ${esc(k)}<div class="mut">${fmt(s)} из ${fmt(l)} (${p}%)</div></div><b onclick="delB('${esc(k)}')" style="cursor:pointer">✕</b></div>`}).join("")||'<div class="mut">Лимитов нет</div>'}</div><button class="bt pri" onclick="setB()">Установить лимит</button>`}
+function delB(k){delete S.byudzhety[k];save();render()}
+function setB(){mini("Лимит на месяц",[["k","Категория",S.kat_trat],["l","Лимит",null,"",1]],v=>{S.byudzhety[v.k]=pos(v.l);save()})}
 
-    if (tab === "home") html += renderHome();
-    else if (tab === "goals") html += renderGoals();
-    else if (tab === "debts") html += renderDebts();
-    else if (tab === "more") {
-      html += `<div class="card" style="padding:0">
-        <button class="menu-btn" onclick="tab='budgets';render()">💳 Бюджеты</button>
-        <button class="menu-btn" onclick="tab='credits';render()">🏛 Кредиты</button>
-        <button class="menu-btn" onclick="tab='categories';render()">🗂 Категории</button>
-        <button class="menu-btn" onclick="tab='reports';render()">📊 Отчёты и капитал</button>
-      </div>
-      <button class="bt" style="margin-top:20px" onclick="if(confirm('Сбросить все данные?')){localStorage.clear();location.reload()}">🗑 Сбросить всё</button>`;
-    }
-    else if (tab === "budgets") { html += `<button class="bt" onclick="tab='more';render()">← Назад</button>` + renderBudgets(); }
-    else if (tab === "credits") { html += `<button class="bt" onclick="tab='more';render()">← Назад</button>` + renderCredits(); }
-    else if (tab === "categories") { html += `<button class="bt" onclick="tab='more';render()">← Назад</button>` + renderCategories(); }
-    else if (tab === "reports") { html += `<button class="bt" onclick="tab='more';render()">← Назад</button>` + renderReports(); }
+/* ---- регулярные ---- */
+const regOk=r=>{const d=new Date(),dm=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();return r.posl!==nowS().slice(0,7)&&d.getDate()>=Math.min(r.den,dm)};
+function reg(){return back("Регулярные платежи")+`<div class="card">${S.regulyarnye.map((r,i)=>`<div class="row" onclick="regMenu(${i})"><div>${r.tip==="Трата"?"➖":"➕"} ${esc(r.nazvanie)}<div class="mut">${esc(r.kat)} · ${esc(r.koshel)} · ${r.den}-го${regOk(r)?" · 🔔 пора":""}</div></div><b>${fmt(r.summa)}</b></div>`).join("")||'<div class="mut">Нет</div>'}</div><button class="bt pri" onclick="newR()">Добавить платёж</button>`}
+function newR(){mini("Регулярный платёж",[["t","Тип",["Трата","Доход"]],["n","Название"],["k","Категория",S.kat_trat],["w","Кошелёк",W()],["s","Сумма",null,"",1],["d","День месяца (1-31)",null,"",1]],v=>{
+  const d=Math.round(num(v.d));if(!v.n||!v.k)throw"Заполни название и категорию";if(!(d>=1&&d<=31))throw"День от 1 до 31";
+  S.regulyarnye.push({nazvanie:v.n,tip:v.t,kat:v.k,koshel:v.w,summa:pos(v.s),den:d,posl:""});save()});
+  $("m_t").onchange=()=>{$("m_k").innerHTML=opt($("m_t").value==="Доход"?S.kat_dohodov:S.kat_trat)}}
+function regMenu(i){const r=S.regulyarnye[i],it=[],fin=()=>{r.posl=nowS().slice(0,7);save();closeSheet();render()};
+  if(regOk(r))it.push(["✅ Провести сейчас",()=>{try{addOp(r.tip,r.koshel,r.kat,r.summa,r.nazvanie);fin();toast("Проведено")}catch(e){closeSheet();err(e)}}],["⏭ Пропустить в этом месяце",fin]);
+  it.push(["🗑 Удалить",()=>{S.regulyarnye.splice(i,1);save();closeSheet();render()}]);mm(esc(r.nazvanie),it)}
 
-    $("app").innerHTML = html;
-  }
+/* ---- категории ---- */
+function cat(){const L=(t,a)=>`<div class="card"><h2>${t}</h2>`+a.map((k,i)=>`<div class="row" onclick="chC('${t[0]}',${i})"><span>${esc(k)}</span><b>✎</b></div>`).join("")+"</div>";
+  return back("Категории")+L("Траты",S.kat_trat)+L("Доходы",S.kat_dohodov)+`<button class="bt pri" onclick="newC()">Добавить категорию</button>`}
+function newC(){mini("Новая категория",[["t","Тип",["Траты","Доходы"]],["n","Название"]],v=>{const a=v.t==="Траты"?S.kat_trat:S.kat_dohodov,n=v.n.replace(/\s+/g," ");
+  if(!n)throw"Пустое название";if(a.some(x=>x.toLowerCase()===n.toLowerCase()))throw"Уже есть такая категория";a.push(n);save()})}
+function chC(t,i){const tr=t==="Т",a=tr?S.kat_trat:S.kat_dohodov,o=a[i],tip=tr?"Трата":"Доход",others=a.filter(x=>x!==o);
+  mm("«"+esc(o)+"»",[["✏️ Переименовать",()=>chC2(t,i)],["🗑 Удалить",()=>{
+    const n=ops().filter(z=>z.tip===tip&&z.kat===o).length,rm=()=>{a.splice(a.indexOf(o),1);if(tr)delete S.byudzhety[o];save();render()};
+    if(!n)return ask("Удалить категорию «"+o+"»?",rm);if(!others.length)return toast("Нет другой категории для переноса");
+    mini("Удалить «"+esc(o)+"»",[["c","Перенести операции ("+n+") в категорию",others]],v=>{
+      ops().forEach(z=>{if(z.tip===tip&&z.kat===o)z.kat=v.c});S.regulyarnye.forEach(r=>{if(r.tip===tip&&r.kat===o)r.kat=v.c});rm()})}]])}
+function chC2(t,i){const tr=t==="Т",a=tr?S.kat_trat:S.kat_dohodov,o=a[i],tip=tr?"Трата":"Доход";
+  mini("Категория «"+esc(o)+"»",[["n","Новое название",null,o]],v=>{const n=v.n.replace(/\s+/g," ");if(!n)throw"Пустое название";
+    if(n.toLowerCase()!==o.toLowerCase()&&a.some(x=>x.toLowerCase()===n.toLowerCase()))throw"Такая уже есть";
+    a[i]=n;ops().forEach(z=>{if(z.tip===tip&&z.kat===o)z.kat=n});if(tr&&o in S.byudzhety){S.byudzhety[n]=S.byudzhety[o];delete S.byudzhety[o]}
+    S.regulyarnye.forEach(r=>{if(r.tip===tip&&r.kat===o)r.kat=n});save()})}
 
-  render();
+/* ---- отчёты и капитал ---- */
+function rep(){
+  const ym=nowS().slice(0,7),y=ym.slice(0,4),f=z=>RP==="m"?(z.data||"").startsWith(ym):RP==="y"?(z.data||"").startsWith(y):1;
+  const grp=t=>{const d={};ops().filter(z=>z.tip===t&&f(z)).forEach(z=>{const k=z.kat||"?";d[k]=r2((d[k]||0)+(z.baz??z.summa))});
+    if(t==="Трата"){
+      ops().filter(z=>(z.tip==="Кредит"||z.tip==="Ломбард")&&z.napr==="платёж"&&z.proc>0&&f(z)).forEach(z=>{const k=z.tip==="Кредит"?"🏛 Проценты по кредитам":"🥇 Проценты по ломбарду";d[k]=r2((d[k]||0)+z.proc)});
+      ops().filter(z=>z.tip==="Кредитка"&&(z.napr==="покупка"||z.napr==="проценты")&&f(z)).forEach(z=>{const k=z.napr==="проценты"?"💳 Проценты по кредиткам":(z.kat||"?");d[k]=r2((d[k]||0)+z.summa)})}
+    return d};
+  const blk=(t,d)=>{const tot=Object.values(d).reduce((a,b)=>a+b,0);return `<div class="card"><h2>${t}: ${fmt(tot)} лей</h2>`+(Object.entries(d).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="row" style="cursor:default"><span>${esc(k)}</span><b>${fmt(v)} <span class="mut">${tot?Math.round(v/tot*100):0}%</span></b></div>`).join("")||"—")+"</div>"};
+  const Wt=W().reduce((a,w)=>a+S.kohelki[w]*kurs(cur(w)),0),A=S.aktivy.reduce((a,x)=>a+x.ocenka,0),G=Object.values(S.celi).reduce((a,g)=>a+g.nakopleno,0),
+    M=S.dolgi.reduce((a,d)=>a+(d.napr==="Мне должны"?1:-1)*d.ostatok*kurs(dv(d)),0),K=S.kredity.reduce((a,k)=>a+k.ostatok,0),L=S.lombard.reduce((a,b)=>a+b.ostatok,0),C=S.kartki.reduce((a,c)=>a+c.dolg,0);
+  return back("Отчёты и капитал")+`<div class="card"><h2>Чистый капитал</h2><h1>${fmt(Wt+A+G+M-K-L-C)} лей</h1><div class="mut">Кошельки ${fmt(Wt)} · цели ${fmt(G)} · активы ${fmt(A)} · долги (нетто) ${fmt(M)} · кредиты −${fmt(K)} · ломбард −${fmt(L)} · кредитки −${fmt(C)}</div></div>
+  <div class="seg">${[["m","Месяц"],["y","Год"],["a","Всё"]].map(p=>`<button class="${p[0]===RP?"on":""}" onclick="RP='${p[0]}';render()">${p[1]}</button>`).join("")}</div>`+blk("Доходы",grp("Доход"))+blk("Траты (с процентами)",grp("Трата"))}
+
+/* ---- кредиты / ломбард ---- */
+function cred(){const ym=nowS().slice(0,7),lo=S.lombard.filter(b=>b.ostatok>0);
+  return back("Кредиты и ломбард")+`<div class="card"><h2>Кредиты (нажми — платёж)</h2>${S.kredity.filter(k=>k.ostatok>0).map(k=>`<div class="row" onclick="payK(${k.id})"><div>🏛 ${esc(k.nazvanie)}<div class="mut">платёж ${fmt(k.plat)} · ${k.den}-го · ${k.stavka}%${k.posl===ym?" · ✅ оплачен":""}</div></div><b>${fmt(k.ostatok)}</b></div>`).join("")||'<div class="mut">Нет</div>'}<button class="bt" onclick="newK()">➕ Кредит</button></div>
+<div class="card"><h2>Ломбард: ${S.lombard_info.stavka}%/мес = ${fmt(lo.reduce((a,b)=>a+b.summa,0)*S.lombard_info.stavka/100)}</h2>${lo.map(b=>`<div class="row" style="cursor:default"><span>🥇 ${esc(b.nazvanie)}</span><b>${fmt(b.ostatok)}</b></div>`).join("")||'<div class="mut">Нет</div>'}<div class="two"><div><button class="bt" onclick="newL()">➕ Ломбард</button></div><div><button class="bt pri" onclick="payL()">Внести платёж</button></div></div></div>`}
+function payK(id){const k=S.kredity.find(x=>x.id===id);
+  mini("Платёж: "+esc(k.nazvanie),[["w","Кошелёк",WM(),k.koshel],["s","Сумма",null,k.plat,1]],v=>{
+    let s=pos(v.s);const pr=Math.min(s,r2(k.ostatok*k.stavka/1200)),os=r2(Math.min(k.ostatok,s-pr));s=r2(pr+os);
+    if(S.kohelki[v.w]<s)throw"Недостаточно средств";S.kohelki[v.w]=r2(S.kohelki[v.w]-s);k.ostatok=r2(k.ostatok-os);k.posl=nowS().slice(0,7);
+    rec("Кредит",s,v.w,{kat:k.nazvanie,napr:"платёж",osn:os,proc:pr})})}
+function newK(){mini("Новый кредит",[["n","Название"],["p","Платёж в месяц",null,"",1],["d","День (1-31)",null,"",1],["s","Ставка % годовых",null,"",1],["o","Остаток",null,"",1],["w","Кошелёк",W(),"Наличные"]],v=>{
+  const p=r2(num(v.p)),d=Math.round(num(v.d))||1,s=num(v.s)||0,o=r2(num(v.o));
+  if(!v.n)throw"Название";if(!(p>0))throw"Платёж > 0";if(!(d>=1&&d<=31))throw"День 1-31";if(!(o>=0))throw"Остаток >= 0";
+  S.kredity.push({id:mid(S.kredity),nazvanie:v.n,plat:p,den:d,stavka:s,ostatok:o,koshel:v.w,posl:""});save()})}
+function newL(){mini("Новый ломбард",[["n","Название"],["s","Сумма займа",null,"",1]],v=>{const s=pos(v.s);if(!v.n)throw"Название";S.lombard.push({id:mid(S.lombard),nazvanie:v.n,summa:s,ostatok:s});save()})}
+function payL(){const ym=nowS().slice(0,7),I=S.lombard_info,LO=()=>S.lombard.filter(b=>b.ostatok>0.005),
+  pm=r2(LO().reduce((a,b)=>a+b.summa,0)*I.stavka/100),due=Math.max(0,r2(pm-(I.proc_ym===ym?I.proc_sum:0))),tot=r2(LO().reduce((a,b)=>a+b.ostatok,0));
+  mini("Платёж по ломбарду",[["w","Кошелёк",WM(),I.koshel],["s","Сумма (макс. "+fmt(r2(due+tot))+")",null,due||"",1]],v=>{
+    const s=Math.min(pos(v.s),r2(due+tot));if(S.kohelki[v.w]<s)throw"Недостаточно средств";
+    const pr=Math.min(s,due);let rest=r2(s-pr);const det=[];
+    LO().forEach(b=>{if(rest<=0)return;const x=Math.min(rest,b.ostatok);b.ostatok=r2(b.ostatok-x);rest=r2(rest-x);det.push([b.id,x]);if(b.ostatok<=0.005)b.ostatok=0});
+    S.kohelki[v.w]=r2(S.kohelki[v.w]-s);if(I.proc_ym!==ym){I.proc_ym=ym;I.proc_sum=0}I.proc_sum=r2(I.proc_sum+pr);
+    rec("Ломбард",s,v.w,{kat:"Ломбард",napr:"платёж",osn:r2(s-pr),proc:pr,det})},"Проценты к оплате в этом месяце: "+fmt(due))}
+
+/* ---- активы ---- */
+function asset(){return back("Активы")+`<div class="card">${S.aktivy.map((a,i)=>`<div class="row" onclick="chA(${i})"><span>🏺 ${esc(a.nazvanie)}</span><b>${fmt(a.ocenka)}</b></div>`).join("")||'<div class="mut">Активов нет</div>'}</div><button class="bt pri" onclick="chA(-1)">Добавить актив</button>`}
+function chA(i){const a=S.aktivy[i];
+  mini(a?"Изменить оценку":"Новый актив",(a?[]:[["n","Название"]]).concat([["s",a?"Новая оценка (0 — удалить)":"Оценка в леях",null,a?a.ocenka:"",1]]),v=>{
+    if(a){const x=r2(num(v.s));if(x===0)S.aktivy.splice(i,1);else if(x>0)a.ocenka=x;else throw"Некорректная сумма"}
+    else{if(!v.n)throw"Укажи название";S.aktivy.push({id:mid(S.aktivy),nazvanie:v.n,ocenka:pos(v.s)})}save()})}
+
+/* ---- кредитные карты ---- */
+const cdue=c=>{const d=new Date(),dm=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();return c.dolg>0&&c.den>0&&c.posl!==nowS().slice(0,7)&&d.getDate()>=Math.max(1,Math.min(c.den,dm)-5)};
+function cards(){
+  const tl=S.kartki.reduce((a,c)=>a+c.limit,0),td=S.kartki.reduce((a,c)=>a+c.dolg,0),bal=r2(tl-td);
+  return back("Кредитные карты")+`<div class="card"><div class="mut">Баланс по картам</div><h1 class="${bal<0?"r":""}">${bal<0?"−":""}${fmt(Math.abs(bal))} лей</h1><div class="mut">Долг ${fmt(td)} · лимит ${fmt(tl)}</div></div>`+
+  S.kartki.map(c=>{const p=Math.min(100,Math.round(c.dolg/c.limit*100)),bl=r2(c.limit-c.dolg);
+    return `<div class="card"><div class="row" style="border-top:0;padding-top:0;cursor:default"><b style="white-space:normal">💳 ${esc(c.nazvanie)}</b><span class="mut">${Math.round(c.dolg/c.limit*100)}%</span></div>
+    <div class="bar"><i style="width:${p}%;background:${p>=90?"var(--red)":p>=70?"#e0a43a":"var(--green)"}"></i></div>
+    <div class="two" style="margin-top:8px"><div><div class="mut">Баланс</div><b class="${bl<0?"r":"g"}">${bl<0?"−":""}${fmt(Math.abs(bl))}</b></div><div><div class="mut">Долг</div><b class="${c.dolg>0?"r":""}">${fmt(c.dolg)}</b></div><div><div class="mut">Лимит</div><b>${fmt(c.limit)}</b></div></div>
+    <div class="mut" style="margin-top:8px">${c.dolg>c.limit?"⚠ сверх лимита на "+fmt(r2(c.dolg-c.limit))+" · ":""}${c.stavka?c.stavka+"% годовых":"ставка не указана"}${c.den?" · платёж до "+c.den+"-го":""}${c.min?" · мин. "+fmt(c.min):""}${c.posl===nowS().slice(0,7)?" · ✅ оплачено":""}${cdue(c)?" · 🔔 пора платить":""}</div>
+    <div class="two"><div><button class="bt pri" onclick="cardBuy(${c.id})">🛍 Покупка</button></div><div><button class="bt" onclick="cardPay(${c.id})">💰 Платёж</button></div></div>
+    <button class="bt" onclick="cardMenu(${c.id})">⚙ Ещё</button></div>`}).join("")+`<button class="bt pri" onclick="cardNew()">Добавить карту</button>`}
+function cardNew(){mini("Новая кредитная карта",[["n","Название"],["l","Лимит",null,"",1],["d","Долг банку",null,"0",1],["r","Ставка, % годовых",null,"",1],["y","День платежа (1-31)",null,"",1],["m","Мин. платёж в месяц",null,"",1]],v=>{
+  const l=pos(v.l),d=Math.abs(r2(num(v.d||0))),r=num(v.r||0)||0,y=Math.round(num(v.y||0))||0,m=r2(num(v.m||0))||0;
+  if(!v.n)throw"Укажи название";if(S.kartki.some(c=>c.nazvanie===v.n))throw"Такая карта уже есть";if(y<0||y>31)throw"День от 1 до 31";
+  S.kartki.push({id:mid(S.kartki),nazvanie:v.n,limit:l,dolg:d,stavka:r,den:y,min:m,posl:""});save()})}
+function cardBuy(id){const c=S.kartki.find(x=>x.id===id);
+  mini("Покупка: "+esc(c.nazvanie),[["k","Категория",S.kat_trat],["s","Сумма",null,"",1],["n","Заметка"]],v=>{
+    const s=pos(v.s),av=r2(c.limit-c.dolg);if(s>av)throw"Превышен лимит. Доступно: "+fmt(Math.max(0,av));
+    c.dolg=r2(c.dolg+s);S.traty[v.k]=r2((S.traty[v.k]||0)+s);rec("Кредитка",s,c.nazvanie,{kat:v.k,napr:"покупка",cid:c.id,zametka:v.n})},"Доступно: "+fmt(Math.max(0,r2(c.limit-c.dolg))))}
+function cardPay(id){const c=S.kartki.find(x=>x.id===id),ws=WM();if(!ws.length)return toast("Нет кошелька в леях");
+  mini("Платёж по карте: "+esc(c.nazvanie),[["w","Откуда платим",ws],["s","Сумма (долг "+fmt(c.dolg)+")",null,c.min&&c.min<=c.dolg?c.min:c.dolg,1]],v=>{
+    const s=pos(v.s);if(s>c.dolg)throw"Больше текущего долга";if(S.kohelki[v.w]<s)throw"Недостаточно средств на «"+v.w+"»";
+    const pp=c.posl;S.kohelki[v.w]=r2(S.kohelki[v.w]-s);c.dolg=r2(c.dolg-s);if(!c.min||s>=c.min||c.dolg<=0)c.posl=nowS().slice(0,7);
+    rec("Кредитка",s,v.w,{kat:c.nazvanie,napr:"платёж",cid:c.id,pp})})}
+function cardFee(id){const c=S.kartki.find(x=>x.id===id);
+  mini("Проценты / комиссия: "+esc(c.nazvanie),[["s","Сумма (увеличит долг)",null,"",1],["n","Заметка"]],v=>{const s=pos(v.s);c.dolg=r2(c.dolg+s);rec("Кредитка",s,c.nazvanie,{kat:c.nazvanie,napr:"проценты",cid:c.id,zametka:v.n})})}
+function cardCash(id){const c=S.kartki.find(x=>x.id===id);
+  mini("Снять наличные: "+esc(c.nazvanie),[["w","Зачислить на",WM()],["s","Сумма",null,"",1]],v=>{
+    const s=pos(v.s),av=r2(c.limit-c.dolg);if(s>av)throw"Превышен лимит. Доступно: "+fmt(Math.max(0,av));
+    c.dolg=r2(c.dolg+s);S.kohelki[v.w]=r2(S.kohelki[v.w]+s);rec("Кредитка",s,v.w,{kat:c.nazvanie,napr:"снятие",cid:c.id})})}
+function cardEdit(id){const c=S.kartki.find(x=>x.id===id);
+  mini("Изменить карту",[["n","Название",null,c.nazvanie],["l","Лимит",null,c.limit,1],["d","Долг по выписке",null,c.dolg,1],["r","Ставка, %",null,c.stavka||"",1],["y","День (1-31)",null,c.den||"",1],["m","Мин. платёж",null,c.min||"",1]],v=>{
+    const l=pos(v.l),d=Math.abs(r2(num(v.d||0))),r=num(v.r||0)||0,y=Math.round(num(v.y||0))||0,m=r2(num(v.m||0))||0;
+    if(!v.n)throw"Укажи название";if(v.n!==c.nazvanie&&S.kartki.some(x=>x.nazvanie===v.n))throw"Такая карта уже есть";if(y<0||y>31)throw"День от 1 до 31";
+    const df=r2(d-c.dolg);Object.assign(c,{nazvanie:v.n,limit:l,stavka:r,den:y,min:m});
+    if(df){c.dolg=d;rec("Кредитка",Math.abs(df),c.nazvanie,{kat:c.nazvanie,napr:"корректировка",cid:c.id,d:df})}save()})}
+function cardMenu(id){const c=S.kartki.find(x=>x.id===id);
+  mm(esc(c.nazvanie),[["📈 Проценты / комиссия",()=>cardFee(id)],["💵 Снять наличные",()=>cardCash(id)],["✏️ Изменить параметры",()=>cardEdit(id)],["🗑 Удалить карту",()=>{if(c.dolg>0)return toast("Сначала погаси долг");ask("Удалить карту «"+c.nazvanie+"»?",()=>{S.kartki.splice(S.kartki.indexOf(c),1);save();render()})}]])}
+function undoCard(id){const z=ops().find(x=>x.id===id);if(!z)return;
+  try{const c=S.kartki.find(x=>x.id===z.cid);if(!c)throw"Карта удалена";const s=z.summa,n=z.napr;
+    if(n==="покупка"){c.dolg=r2(c.dolg-s);S.traty[z.kat]=Math.max(0,r2((S.traty[z.kat]||0)-s))}
+    else if(n==="проценты"){c.dolg=r2(c.dolg-s)}
+    else if(n==="платёж"){if(!(z.koshel in S.kohelki))throw"Кошелёк из операции удалён";c.dolg=r2(c.dolg+s);S.kohelki[z.koshel]=r2(S.kohelki[z.koshel]+s);c.posl=z.pp||""}
+    else if(n==="снятие"){if(!(z.koshel in S.kohelki)||S.kohelki[z.koshel]<s)throw"На кошельке уже меньше этой суммы";S.kohelki[z.koshel]=r2(S.kohelki[z.koshel]-s);c.dolg=r2(c.dolg-s)}
+    else if(n==="корректировка"){c.dolg=r2(c.dolg-z.d)}
+    else throw"Эту операцию нельзя отменить";
+    c.dolg=Math.max(0,c.dolg);S.istorija.splice(S.istorija.indexOf(z),1);save();render();toast("Операция отменена")
+  }catch(e){err(e)}}
+
+/* ---- Python-блок: экспорт / импорт ---- */
+function py(v){if(v==null)return"None";if(v===true)return"True";if(v===false)return"False";if(typeof v==="number")return String(v);if(typeof v==="string")return"'"+v.replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/\n/g,"\\n")+"'";if(Array.isArray(v))return"["+v.map(py).join(", ")+"]";return"{"+Object.keys(v).map(k=>py(k)+": "+py(v[k])).join(", ")+"}"}
+function pyExp(){return"# >>> ДАННЫЕ НАЧАЛО\n"+KEYS.map(k=>k+" = "+py(S[k])).join("\n")+"\n# <<< ДАННЫЕ КОНЕЦ"}
+function pyj(s){let o="",seg="",i=0;
+  const fl=()=>{o+=seg.replace(/\bTrue\b/g,"true").replace(/\bFalse\b/g,"false").replace(/\bNone\b/g,"null").replace(/,(\s*[}\]])/g,"$1");seg=""};
+  while(i<s.length){const c=s[i];
+    if(c==="'"||c==='"'){fl();let j=i+1,v="";
+      while(j<s.length&&s[j]!==c){if(s[j]==="\\"&&j+1<s.length){v+=s[j]+s[j+1];j+=2}else v+=s[j++]}
+      let d;try{d=JSON.parse('"'+v.replace(/\\'/g,"'").replace(/(^|[^\\])"/g,'$1\\"')+'"')}catch(e){d=v}
+      o+=JSON.stringify(d);i=j+1}else{seg+=c;i++}}
+  fl();return o}
+function fromCode(t){
+  const a=t.indexOf("# >>> ДАННЫЕ НАЧАЛО"),b=t.indexOf("# <<< ДАННЫЕ КОНЕЦ");
+  const blk=(a>=0&&b>a?t.slice(a,b):t).replace(/^\s*#.*$/gm,"");
+  const re=/^(\w+)\s*=\s*/gm,ms=[];let m;while((m=re.exec(blk)))ms.push([m[1],m.index+m[0].length,m.index]);
+  const o={};ms.forEach((x,k)=>{if(!KEYS.includes(x[0]))return;const e=k+1<ms.length?ms[k+1][2]:blk.length;try{o[x[0]]=JSON.parse(pyj(blk.slice(x[1],e).trim()))}catch(e2){}});return o}
+
+/* ---- рендер ---- */
+function render(keep){
+  const map={home,hist,goal,debt,more,bud,reg,cat,rep,cred,cards,asset};
+  const f=keep&&document.activeElement&&document.activeElement.tagName==="INPUT";
+  $("app").innerHTML=brokenBox()+nav()+(map[tab]||home)();
+  if(f){const i=$("app").querySelector("input");if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}}}
+init();
 </script>
-</body>
-</html>
+</body></html>
