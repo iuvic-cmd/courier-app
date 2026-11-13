@@ -82,3 +82,44 @@
 }
 .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 .toast.error { background: var(--red); }
+/* --- Нижнее меню навигации (Tab Bar) --- */
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: center;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  z-index: 1000;
+}
+.tabbar .in {
+  display: flex;
+  width: 100%;
+  max-width: 480px;
+}
+.tabbar a {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 2px;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 600;
+}
+.tabbar a span {
+  font-size: 22px;
+  line-height: 1;
+}
+.tabbar a.active {
+  color: var(--accent);
+}
+/* Отступ снизу для контента, чтобы меню не перекрывало кнопки */
+body {
+  padding-bottom: 80px;
+}
