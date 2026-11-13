@@ -7,27 +7,41 @@
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/components.css">
   <style>
-    .container { max-width: 480px; margin: 0 auto; padding: 16px; }
+    .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-top: calc(16px + env(safe-area-inset-top, 0px)); padding-bottom: 90px; }
     .header { margin-bottom: 12px; }
-    .wallet-badge { background: #e8f5e9; color: #2e7d32; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 16px; display: inline-block; border: 1px solid #43a047; }
+    .wallet-badge { background: #e8f5e9; color: #2e7d32; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 16px; display: inline-block; border: 1px solid #43a047; max-width: 100%; }
+    
     .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
     .stat-card { background: var(--panel); padding: 12px; border-radius: 12px; text-align: center; border-left: 3px solid var(--accent); }
     .stat-label { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; display: block; }
     .stat-value { font-size: 18px; font-weight: 700; }
+    
     .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 24px; }
     .action-grid .btn { padding: 14px; font-size: 14px; }
+
     details.acc { margin-bottom: 12px; }
-    details.acc > summary { list-style: none; background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 16px; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+    details.acc > summary {
+      list-style: none; background: var(--panel); border: 1px solid var(--border);
+      border-radius: 16px; padding: 16px; cursor: pointer; font-weight: 600;
+      display: flex; justify-content: space-between; align-items: center;
+    }
     details.acc > summary::-webkit-details-marker { display: none; }
     details.acc > summary::after { content: "▼"; font-size: 12px; color: var(--text-dim); }
     details.acc[open] > summary::after { content: "▲"; }
-    .acc-body { background: var(--panel); border: 1px solid var(--border); border-top: none; border-radius: 0 0 16px 16px; padding: 16px; margin-top: -4px; }
+    
+    .acc-body {
+      background: var(--panel); border: 1px solid var(--border); border-top: none;
+      border-radius: 0 0 16px 16px; padding: 16px; margin-top: -4px;
+    }
+    
     .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
     .input-row > div { flex: 1; }
     .input-row label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+    
     .history-list { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
     .history-item { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; color: var(--text-dim); }
     .section-title { font-size: 14px; font-weight: 700; margin: 24px 0 10px; color: var(--text-dim); text-transform: uppercase; }
+
     .save-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; transition: 0.2s; }
     .save-btn:active { background: #2e7d32; transform: scale(0.98); }
     .cancel-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--border); color: var(--text); border: none; font-weight: 700; margin-top: 8px; cursor: pointer; }
@@ -37,7 +51,6 @@
 <div class="container">
   <div class="header">
     <h1>🛵 Скутер</h1>
-    <div class="wallet-badge" id="walletDisplay">Баланс: Загрузка...</div>
   </div>
   
   <div class="stats-grid">
@@ -56,6 +69,12 @@
     <button class="btn btn-green" onclick="toggleMileageForm()"><span>📏</span> Пробег</button>
   </div>
 
+  <!-- Кошельки для скутера -->
+  <div class="section-title" style="margin-top: 0;">💰 Мои кошельки для скутера</div>
+  <div id="scooterWallets" style="background: var(--panel); border-radius: 16px; padding: 0 16px; border: 1px solid var(--border); margin-bottom: 16px; display: none;"></div>
+  <div class="hint" id="noScooterWallets" style="text-align: center; margin-bottom: 16px;">Пока нет оплат с кошельков. Сделай первую заправку или ТО.</div>
+
+  <!-- Форма заправки -->
   <div id="fuelFormContainer" style="display: none; margin-bottom: 20px;">
     <div style="background: var(--panel); border: 2px solid var(--accent); border-radius: 16px; padding: 16px;">
       <h3 style="margin-bottom: 12px; font-size: 16px;">⛽ Новая заправка</h3>
@@ -69,6 +88,7 @@
     </div>
   </div>
 
+  <!-- Форма пробега -->
   <div id="mileageFormContainer" style="display: none; margin-bottom: 20px;">
     <div style="background: var(--panel); border: 2px solid var(--green); border-radius: 16px; padding: 16px;">
       <h3 style="margin-bottom: 12px; font-size: 16px;">📏 Обновить пробег</h3>
@@ -107,7 +127,6 @@
 <script src="js/domain/finance-api.js"></script>
 <script>
   Theme.init();
-  // УДАЛЕНО: блок с проверкой кошельков (он затирал данные при 0)
   
   const COMPONENTS = [
     { id: 'oil', title: '🛢 Масло', interval: 2000 },
@@ -121,14 +140,44 @@
     { id: 'insurance', title: '🛡 Страховка' }
   ];
 
-  function walletSelectHtml() {
+  // Возвращает HTML для выпадающего списка кошельков (только те, с которых платили за скутер)
+  function walletSelectHtml(onlyScooter = false) {
     const wallets = State.getWallets();
-    return Object.keys(wallets).map(w => `<option value="${UI.esc(w)}">${UI.esc(w)} (${wallets[w]} лей)</option>`).join("");
+    let keys = Object.keys(wallets);
+    
+    if (onlyScooter) {
+      // Ищем уникальные кошельки из операций по скутеру
+      const scooterOps = State.getOps().filter(o => o.kind === 'expense' && (o.cat.includes("Скутер") || o.cat.includes("Топливо")));
+      const usedWallets = [...new Set(scooterOps.map(o => o.wallet))];
+      // Если таких нет, показываем все
+      if (usedWallets.length > 0) keys = usedWallets;
+    }
+
+    return keys.map(w => `<option value="${UI.esc(w)}">${UI.esc(w)} (${wallets[w] || 0} лей)</option>`).join("");
   }
 
   function render() {
     const wallets = State.getWallets();
-    document.getElementById("walletDisplay").innerText = `💳 ${Object.keys(wallets).map(w => `${w}: ${wallets[w]}`).join(" | ")}`;
+
+    // Отображение кошельков, связанных со скутером
+    const scooterOps = State.getOps().filter(o => o.kind === 'expense' && (o.cat.includes("Скутер") || o.cat.includes("Топливо")));
+    const usedWallets = [...new Set(scooterOps.map(o => o.wallet))];
+    
+    if (usedWallets.length > 0) {
+      document.getElementById("scooterWallets").style.display = "block";
+      document.getElementById("noScooterWallets").style.display = "none";
+      document.getElementById("scooterWallets").innerHTML = usedWallets.map(w => `
+        <div class="history-item" style="padding: 12px 0; border-bottom: 1px solid var(--border);">
+          <span>${UI.esc(w)}</span>
+          <b style="color: var(--green);">${wallets[w] || 0} лей</b>
+        </div>
+      `).join("");
+    } else {
+      document.getElementById("scooterWallets").style.display = "none";
+      document.getElementById("noScooterWallets").style.display = "block";
+    }
+
+    // Заполняем селекты
     document.getElementById("f_wall").innerHTML = walletSelectHtml();
 
     const scooter = State.getScooter();
@@ -139,6 +188,7 @@
     const totalLiters = fuels.reduce((s, f) => s + f.liters, 0);
     document.getElementById("statConsumption").innerText = (totalKm > 0 ? (totalLiters / totalKm * 100) : 0).toFixed(2) + " л/100км";
 
+    // Компоненты
     document.getElementById("componentsList").innerHTML = COMPONENTS.map(c => {
       const data = State.getComponent(c.id);
       const nextKm = data.lastKm ? data.lastKm + data.intervalKm : 0;
@@ -165,6 +215,7 @@
       </details>`;
     }).join("");
 
+    // Документы
     document.getElementById("officialList").innerHTML = OFFICIALS.map(o => {
       const data = State.getOfficial(o.id);
       let status = data.nextDate ? `Действует до: ${data.nextDate} (${data.cost} лей)` : "Нет данных";
@@ -183,6 +234,7 @@
       </details>`;
     }).join("");
 
+    // История
     let historyHtml = "";
     State.getMileageLog().slice().reverse().slice(0, 5).forEach(m => historyHtml += `<div class="history-item"><span>📏 Пробег</span><span>${m.date}: <b>${m.km} км</b></span></div>`);
     fuels.slice().reverse().slice(0, 5).forEach(f => historyHtml += `<div class="history-item"><span>⛽ Заправка</span><span>${f.date}: <b>${f.total} лей</b> (${f.liters.toFixed(2)} л)</span></div>`);
@@ -206,9 +258,12 @@
       const totalCost = UI.num(document.getElementById("f_total").value);
       const price = UI.num(document.getElementById("f_price").value);
       const wallet = document.getElementById("f_wall").value;
+      
       if (!wallet) throw new Error("Кошелёк не выбран");
       if (totalCost <= 0 || price <= 0) throw new Error("Заполните сумму и цену");
+      
       const liters = UI.r2(totalCost / price);
+      
       FinanceAPI.spend({ wallet, amount: totalCost, category: "Топливо (Скутер)", note: `${liters}л` });
       State.setFuel([...State.getFuel(), { date: UI.date.local(), liters, price, total: totalCost }]);
       toggleFuelForm();
@@ -223,6 +278,7 @@
       const scooter = State.getScooter();
       const km = UI.num(document.getElementById("m_km").value);
       if (km < scooter.currentKm) throw new Error("Пробег не может уменьшаться");
+      
       State.setMileageLog([...State.getMileageLog(), { date: UI.date.local(), km }]);
       scooter.currentKm = km;
       if (scooter.startKm === 0) scooter.startKm = km;
@@ -241,8 +297,10 @@
       const interval = UI.num(document.getElementById(`c_int_${id}`).value);
       const cost = UI.num(document.getElementById(`c_cost_${id}`).value);
       const wallet = document.getElementById(`c_wall_${id}`).value;
+      
       if (km <= 0 || interval <= 0) throw new Error("Заполните км и интервал");
       if (cost > 0) FinanceAPI.spend({ wallet, amount: cost, category: `Скутер: ${title}`, note: `Замена на ${km} км` });
+      
       data.lastKm = km; data.intervalKm = interval; data.lastDate = UI.date.local();
       data.history.push({ date: data.lastDate, km, cost }); State.setComponent(id, data);
       render();
@@ -258,9 +316,11 @@
       const next = document.getElementById(`o_next_${id}`).value;
       const cost = UI.num(document.getElementById(`o_cost_${id}`).value);
       const wallet = document.getElementById(`o_wall_${id}`).value;
+      
       if (!date || !next) throw new Error("Укажите даты");
       if (cost > 0) FinanceAPI.spend({ wallet, amount: cost, category: `Скутер: ${title}`, note: `Оплата до ${next}` });
-      data.lastDate = date; data.nextDate = next; data.cost = cost; // П.5: сохраняем cost
+      
+      data.lastDate = date; data.nextDate = next; data.cost = cost;
       data.history.push({ date, nextDate: next, cost });
       State.setOfficial(id, data);
       render();
