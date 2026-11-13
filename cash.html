@@ -31,6 +31,9 @@
     .history-list { background: var(--panel); border-radius: 16px; padding: 0 16px; border: 1px solid var(--border); }
     .history-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
     .history-item:last-child { border-bottom: none; }
+
+    /* ФИКС ДЛЯ КЛАВИАТУРЫ */
+    .dialog-box { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important; }
   </style>
 </head>
 <body>
@@ -139,121 +142,131 @@
     document.getElementById("fuelHistory").innerHTML = fuels.slice().reverse().slice(0, 5).map(f => `<div class="history-item"><div><b>${f.date}</b> <span style="font-size:12px;color:var(--text-dim)">${f.liters.toFixed(2)} л</span></div><b style="color:var(--orange)">${f.total} лей</b></div>`).join("") || `<div class="history-item">Нет заправок</div>`;
   }
 
+  // ОБЕРТКА ДЛЯ ФОРМЫ (Исправляет баг с сохранением на iPhone)
+  function showFormModal(title, innerHtml, onSave) {
+    const ov = document.createElement("div"); ov.className = "dialog-overlay";
+    const box = document.createElement("div"); box.className = "dialog-box";
+    
+    box.innerHTML = `
+      <form id="modal-form" novalidate>
+        <h3 style="margin-bottom: 16px;">${title}</h3>
+        ${innerHtml}
+        <div class="dialog-buttons">
+          <button type="submit" class="dialog-yes" id="btn-save">💾 Сохранить</button>
+          <button type="button" class="dialog-no" id="btn-cancel">Отмена</button>
+        </div>
+      </form>
+    `;
+    ov.appendChild(box); document.body.appendChild(ov);
+
+    document.getElementById("btn-cancel").onclick = () => ov.remove();
+    
+    // Перехватываем событие submit формы
+    document.getElementById("modal-form").onsubmit = function(e) {
+      e.preventDefault(); // Отменяем стандартную отправку
+      if (document.activeElement) document.activeElement.blur(); // Скрываем клавиатуру
+      
+      if (!guardAction("saveForm")) return;
+      
+      try {
+        onSave(); // Вызываем функцию сохранения
+        ov.remove(); // Закрываем окно
+        render(); // Обновляем экран
+      } catch (err) {
+        Notify.error(err.message);
+      }
+    };
+  }
+
   function openComponent(id, title) {
     const scooter = State.getScooter();
     const data = State.getComponent(id);
     const defaultInterval = COMPONENTS.find(c => c.id === id).interval;
-    const ov = document.createElement("div"); ov.className = "dialog-overlay";
-    const box = document.createElement("div"); box.className = "dialog-box";
-    box.innerHTML = `
-      <h3 style="margin-bottom: 16px;">${title}</h3>
+    
+    const historyHtml = data.history.length ? `<div style="margin-top:16px;border-top:1px solid var(--border);padding-top:10px"><b>📜 История:</b>${data.history.map(h => `<div style="font-size:12px;color:var(--text-dim);margin-top:4px">${h.date} — ${h.km} км ${h.cost ? `(${h.cost} лей)` : ""}</div>`).join("")}</div>` : "";
+
+    const formHtml = `
       <div class="input-row">
-        <div><label>Пробег (км)</label><input type="text" inputmode="numeric" id="inp_km" class="form-control" value="${scooter.currentKm}"></div>
-        <div><label>Интервал (км)</label><input type="text" inputmode="numeric" id="inp_int" class="form-control" value="${data.intervalKm || defaultInterval}"></div>
+        <div><label>Пробег (км)</label><input type="number" inputmode="numeric" id="inp_km" class="form-control" value="${scooter.currentKm}"></div>
+        <div><label>Интервал (км)</label><input type="number" inputmode="numeric" id="inp_int" class="form-control" value="${data.intervalKm || defaultInterval}"></div>
       </div>
-      <div style="margin-bottom: 10px;"><label>Стоимость (лей)</label><input type="text" inputmode="decimal" id="inp_cost" class="form-control" placeholder="0"></div>
+      <div style="margin-bottom: 10px;"><label>Стоимость (лей)</label><input type="number" inputmode="decimal" id="inp_cost" class="form-control" placeholder="0"></div>
       <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="inp_wallet" class="form-control">${walletSelectHtml()}</select></div>
-      <div class="dialog-buttons"><button class="dialog-yes" id="btn-save">💾 Записать</button><button class="dialog-no" id="btn-cancel">Отмена</button></div>
-      ${data.history.length ? `<div style="margin-top:16px;border-top:1px solid var(--border);padding-top:10px"><b>📜 История:</b>${data.history.map(h => `<div style="font-size:12px;color:var(--text-dim);margin-top:4px">${h.date} — ${h.km} км ${h.cost ? `(${h.cost} лей)` : ""}</div>`).join("")}</div>` : ""}
+      ${historyHtml}
     `;
-    ov.appendChild(box); document.body.appendChild(ov);
-    document.getElementById("btn-cancel").onclick = () => ov.remove();
-    document.getElementById("btn-save").onclick = () => {
-      if (document.activeElement) document.activeElement.blur();
+
+    showFormModal(title, formHtml, () => {
       const km = UI.num(document.getElementById("inp_km").value);
       const interval = UI.num(document.getElementById("inp_int").value);
       const cost = UI.num(document.getElementById("inp_cost").value);
       const wallet = document.getElementById("inp_wallet").value;
-      if (km <= 0 || interval <= 0) return Notify.error("Заполните км и интервал");
-      try {
-        if (cost > 0) FinanceAPI.spend({ wallet, amount: cost, category: `Скутер: ${title}`, note: `Замена на ${km} км` });
-        data.lastKm = km; data.intervalKm = interval; data.lastDate = UI.date.local();
-        data.history.push({ date: data.lastDate, km, cost }); State.setComponent(id, data);
-        ov.remove(); render(); Notify.show(`✅ Замена ${title} записана`);
-      } catch (err) { Notify.error(err.message); }
-    };
+      if (km <= 0 || interval <= 0) throw new Error("Заполните км и интервал");
+      
+      if (cost > 0) FinanceAPI.spend({ wallet, amount: cost, category: `Скутер: ${title}`, note: `Замена на ${km} км` });
+      data.lastKm = km; data.intervalKm = interval; data.lastDate = UI.date.local();
+      data.history.push({ date: data.lastDate, km, cost }); State.setComponent(id, data);
+      Notify.show(`✅ Замена ${title} записана`);
+    });
   }
 
   function openOfficial(id, title) {
     const data = State.getOfficial(id);
-    const ov = document.createElement("div"); ov.className = "dialog-overlay";
-    const box = document.createElement("div"); box.className = "dialog-box";
-    box.innerHTML = `
-      <h3 style="margin-bottom: 16px;">${title}</h3>
+    const formHtml = `
       <div style="margin-bottom: 10px;"><label>Дата прохождения</label><input type="date" id="inp_date" class="form-control" value="${UI.date.local()}"></div>
       <div style="margin-bottom: 10px;"><label>Действует до</label><input type="date" id="inp_next" class="form-control" value="${data.nextDate || ""}"></div>
-      <div style="margin-bottom: 10px;"><label>Стоимость (лей)</label><input type="text" inputmode="decimal" id="inp_cost" class="form-control" placeholder="0"></div>
+      <div style="margin-bottom: 10px;"><label>Стоимость (лей)</label><input type="number" inputmode="decimal" id="inp_cost" class="form-control" placeholder="0"></div>
       <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="inp_wallet" class="form-control">${walletSelectHtml()}</select></div>
-      <div class="dialog-buttons"><button class="dialog-yes" id="btn-save">💾 Сохранить</button><button class="dialog-no" id="btn-cancel">Отмена</button></div>
     `;
-    ov.appendChild(box); document.body.appendChild(ov);
-    document.getElementById("btn-cancel").onclick = () => ov.remove();
-    document.getElementById("btn-save").onclick = () => {
-      if (document.activeElement) document.activeElement.blur();
+    showFormModal(title, formHtml, () => {
       const date = document.getElementById("inp_date").value;
       const next = document.getElementById("inp_next").value;
       const cost = UI.num(document.getElementById("inp_cost").value);
       const wallet = document.getElementById("inp_wallet").value;
-      if (!date || !next) return Notify.error("Укажите даты");
-      try {
-        if (cost > 0) FinanceAPI.spend({ wallet, amount: cost, category: `Скутер: ${title}`, note: `Оплата до ${next}` });
-        data.lastDate = date; data.nextDate = next; data.history.push({ date, nextDate: next, cost });
-        State.setOfficial(id, data);
-        ov.remove(); render(); Notify.show(`✅ ${title} записан`);
-      } catch (err) { Notify.error(err.message); }
-    };
+      if (!date || !next) throw new Error("Укажите даты");
+      
+      if (cost > 0) FinanceAPI.spend({ wallet, amount: cost, category: `Скутер: ${title}`, note: `Оплата до ${next}` });
+      data.lastDate = date; data.nextDate = next; data.history.push({ date, nextDate: next, cost });
+      State.setOfficial(id, data);
+      Notify.show(`✅ ${title} записан`);
+    });
   }
 
   function openAddFuel() {
-    const ov = document.createElement("div"); ov.className = "dialog-overlay";
-    const box = document.createElement("div"); box.className = "dialog-box";
-    box.innerHTML = `
-      <h3 style="margin-bottom: 16px;">⛽ Заправка</h3>
+    const formHtml = `
       <div class="input-row">
-        <div><label>Сумма по чеку</label><input type="text" inputmode="decimal" id="inp_total" class="form-control" placeholder="0"></div>
-        <div><label>Цена за литр</label><input type="text" inputmode="decimal" id="inp_price" class="form-control" placeholder="0"></div>
+        <div><label>Сумма по чеку</label><input type="number" inputmode="decimal" id="inp_total" class="form-control" placeholder="0"></div>
+        <div><label>Цена за литр</label><input type="number" inputmode="decimal" id="inp_price" class="form-control" placeholder="0"></div>
       </div>
       <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="inp_wallet" class="form-control">${walletSelectHtml()}</select></div>
-      <div class="dialog-buttons"><button class="dialog-yes" id="btn-save">💾 Записать</button><button class="dialog-no" id="btn-cancel">Отмена</button></div>
     `;
-    ov.appendChild(box); document.body.appendChild(ov);
-    document.getElementById("btn-cancel").onclick = () => ov.remove();
-    document.getElementById("btn-save").onclick = () => {
-      if (document.activeElement) document.activeElement.blur();
-      try {
-        const totalCost = UI.num(document.getElementById("inp_total").value);
-        const price = UI.num(document.getElementById("inp_price").value);
-        const wallet = document.getElementById("inp_wallet").value;
-        if (totalCost <= 0 || price <= 0) throw new Error("Заполните сумму и цену");
-        const liters = UI.r2(totalCost / price);
-        FinanceAPI.spend({ wallet, amount: totalCost, category: "Топливо (Скутер)", note: `${liters}л` });
-        State.setFuel([...State.getFuel(), { date: UI.date.local(), liters, price, total: totalCost }]);
-        ov.remove(); render(); Notify.show(`✅ ${liters} л. Списано ${totalCost} лей`);
-      } catch (e) { Notify.error(e.message); }
-    };
+    showFormModal("⛽ Заправка", formHtml, () => {
+      const totalCost = UI.num(document.getElementById("inp_total").value);
+      const price = UI.num(document.getElementById("inp_price").value);
+      const wallet = document.getElementById("inp_wallet").value;
+      if (totalCost <= 0 || price <= 0) throw new Error("Заполните сумму и цену");
+      const liters = UI.r2(totalCost / price);
+      
+      FinanceAPI.spend({ wallet, amount: totalCost, category: "Топливо (Скутер)", note: `${liters}л` });
+      State.setFuel([...State.getFuel(), { date: UI.date.local(), liters, price, total: totalCost }]);
+      Notify.show(`✅ ${liters} л. Списано ${totalCost} лей`);
+    });
   }
 
   function openAddMileage() {
     const scooter = State.getScooter();
-    const ov = document.createElement("div"); ov.className = "dialog-overlay";
-    const box = document.createElement("div"); box.className = "dialog-box";
-    box.innerHTML = `
-      <h3 style="margin-bottom: 16px;">📏 Пробег</h3>
-      <div style="margin-bottom: 10px;"><label>Текущий пробег (км)</label><input type="text" inputmode="numeric" id="inp_km" class="form-control" value="${scooter.currentKm || ""}"></div>
-      <div class="dialog-buttons"><button class="dialog-yes" id="btn-save">💾 Сохранить</button><button class="dialog-no" id="btn-cancel">Отмена</button></div>
+    const formHtml = `
+      <div style="margin-bottom: 10px;"><label>Текущий пробег (км)</label><input type="number" inputmode="numeric" id="inp_km" class="form-control" value="${scooter.currentKm || ""}"></div>
     `;
-    ov.appendChild(box); document.body.appendChild(ov);
-    document.getElementById("btn-cancel").onclick = () => ov.remove();
-    document.getElementById("btn-save").onclick = () => {
-      if (document.activeElement) document.activeElement.blur();
+    showFormModal("📏 Пробег", formHtml, () => {
       const km = UI.num(document.getElementById("inp_km").value);
-      if (km < scooter.currentKm) return Notify.error("Пробег не может уменьшаться");
+      if (km < scooter.currentKm) throw new Error("Пробег не может уменьшаться");
+      
       State.setMileageLog([...State.getMileageLog(), { date: UI.date.local(), km }]);
       scooter.currentKm = km;
       if (scooter.startKm === 0) scooter.startKm = km;
       State.setScooter(scooter);
-      ov.remove(); render(); Notify.show("✅ Пробег обновлен");
-    };
+      Notify.show("✅ Пробег обновлен");
+    });
   }
 
   function openAddExpense() { Notify.show("Мойка и прочее ТО добавляются через карточки ниже"); }
