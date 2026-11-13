@@ -19,6 +19,8 @@
     .form-control { width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--text); font-size: 16px; }
     
     .btn-save { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
+    .btn-danger { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; background: var(--red); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; }
+    
     .hint { font-size: 12px; color: var(--text-dim); margin-top: 4px; line-height: 1.4; }
     
     .pair-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--bg); border-radius: 8px; font-size: 13px; margin-bottom: 4px; }
@@ -26,6 +28,11 @@
     .pair-num { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
     .partner-btn { padding: 8px 14px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--panel); color: var(--text); font-weight: 600; font-size: 13px; cursor: pointer; }
     .partner-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    /* Список кошельков */
+    .wallet-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .wallet-item:last-child { border-bottom: none; }
+    .wallet-del { background: var(--red-bg); color: var(--red); border: none; border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -34,9 +41,19 @@
     <h1>⚙ Настройки</h1>
   </div>
 
+  <!-- Кошельки -->
+  <div class="card">
+    <h3>💳 Мои кошельки</h3>
+    <div id="walletsList"></div>
+    <div style="display: flex; gap: 8px; margin-top: 12px;">
+      <input type="text" id="newWalletName" class="form-control" placeholder="Название (напр. Банк)">
+      <button class="btn-save" style="width: auto; padding: 0 16px; margin-top: 0;" onclick="addWallet()">Добавить</button>
+    </div>
+  </div>
+
   <!-- График смен -->
   <div class="card">
-    <h3>⚡ Короткие дни и подмога</h3>
+    <h3>⚡ График смен (2/2)</h3>
     <p class="hint">Скользящие пары: (1,2)→(3,4)→(5,6)→(7,1)→(2,3)→(4,5)→(6,7)</p>
     
     <div class="form-group">
@@ -45,7 +62,7 @@
     </div>
     
     <div class="form-group">
-      <label>Мой номер (1–7)</label>
+      <label>Мой номер в смене (1–7)</label>
       <select id="myNumber" class="form-control" onchange="onMyNumberChange()">
         <option value="">—</option>
         <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option>
@@ -66,18 +83,15 @@
       </div>
     </div>
     
-    <div class="hint" id="shiftPreview" style="display:none; margin-top:10px; background:var(--green-bg); color:var(--green-fg); padding:10px; border-radius:8px;"></div>
-    
     <button class="btn-save" onclick="applyShiftSchedule()">✅ Применить график</button>
   </div>
 
-  <!-- Список пар -->
-  <div class="card">
-    <h3>📋 Все пары</h3>
-    <div id="allPairsList"></div>
+  <!-- Опасная зона -->
+  <div class="card" style="border-color: var(--red);">
+    <h3 style="color: var(--red);">⚠️ Опасная зона</h3>
+    <p class="hint">Это действие удалит ВСЕ данные: историю дней, финансы, заправки и настройки. Приложение вернется в исходное состояние.</p>
+    <button class="btn-danger" onclick="resetAllData()">🗑 Сбросить все данные</button>
   </div>
-
-  <button class="btn-save" style="background:var(--red)" onclick="clearShiftConfig()">🗑 Сбросить настройки смен</button>
 </div>
 
 <nav class="tabbar">
@@ -85,7 +99,7 @@
     <a href="index.html"><span>📦</span>Учёт</a>
     <a href="fin.html"><span>💼</span>Финансы</a>
     <a href="cash.html"><span>🛵</span>Скутер</a>
-    <a href="stats.html"><span>📊</span>Стата</a>
+    <a href="stats.html"><span>📈</span>Отчёты</a>
     <a href="settings.html" class="active"><span>⚙</span>Настройки</a>
   </div>
 </nav>
@@ -114,9 +128,42 @@
   const getPairForWorkDay = (wdi, offset) => { const idx = (((wdi + offset) % 7) + 7) % 7; return PAIRS[idx]; };
   const findPairsForNumber = n => PAIRS.map((pair, index) => ({ index, pair, partner: pair[0] === n ? pair[1] : pair[0] })).filter(p => p.pair.includes(n));
 
+  // --- Кошельки ---
+  function renderWallets() {
+    const wallets = State.getWallets();
+    document.getElementById("walletsList").innerHTML = Object.keys(wallets).map(name => `
+      <div class="wallet-item">
+        <span>${name}</span>
+        <button class="wallet-del" onclick="deleteWallet('${name}')">Удалить</button>
+      </div>
+    `).join("") || `<div class="hint">Нет кошельков</div>`;
+  }
+
+  function addWallet() {
+    const name = document.getElementById("newWalletName").value.trim();
+    if (!name) return Notify.error("Введите название");
+    const wallets = State.getWallets();
+    if (wallets[name] !== undefined) return Notify.error("Такой кошелёк уже есть");
+    wallets[name] = 0;
+    State.setWallets(wallets);
+    document.getElementById("newWalletName").value = "";
+    renderWallets();
+    Notify.show("Кошелёк добавлен");
+  }
+
+  function deleteWallet(name) {
+    if (!confirm(`Удалить кошелёк «${name}»? Все деньги из него пропадут.`)) return;
+    const wallets = State.getWallets();
+    delete wallets[name];
+    State.setWallets(wallets);
+    renderWallets();
+    Notify.show("Кошелёк удалён");
+  }
+
+  // --- График смен ---
   function onMyNumberChange() {
     const n = parseInt(document.getElementById("myNumber").value) || 0;
-    if (!n) { document.getElementById("myPairsInfo").style.display = "none"; renderAllPairsList(); return; }
+    if (!n) { document.getElementById("myPairsInfo").style.display = "none"; return; }
     document.getElementById("myPairsInfo").style.display = "block";
     
     const mine = findPairsForNumber(n);
@@ -137,14 +184,6 @@
       btns.appendChild(b);
     });
     selectedRefPartner = null; 
-    renderAllPairsList();
-  }
-
-  function renderAllPairsList() {
-    const n = parseInt(document.getElementById("myNumber").value) || 0;
-    document.getElementById("allPairsList").innerHTML = PAIRS.map((p, i) => 
-      `<div class="pair-row${n && p.includes(n) ? " mine" : ""}"><span class="pair-num">${i + 1}</span><span>👤 ${p[0]} и 👤 ${p[1]}</span></div>`
-    ).join("");
   }
 
   function applyShiftSchedule() {
@@ -165,10 +204,6 @@
     const shiftConfig = { firstWorkDay: first, myNumber: myNum, offset, refPartner: selectedRefPartner };
     State.setShift(shiftConfig);
     
-    document.getElementById("shiftPreview").innerHTML = `✅ Настроено!<br>Номер: <b>${myNum}</b>, offset: <b>${offset}</b>`; 
-    document.getElementById("shiftPreview").style.display = "block";
-    
-    // Пересчитать календарь
     generateCalendarDays();
     Notify.show("✅ График применен!");
   }
@@ -180,7 +215,6 @@
     const days = State.getDays();
     const now = new Date();
     
-    // Генерируем дни на 3 месяца вперед и 1 назад
     for (let mo = -1; mo <= 3; mo++) {
       const dt = new Date(now.getFullYear(), now.getMonth() + mo, 1);
       const year = dt.getFullYear(), month = dt.getMonth();
@@ -188,7 +222,7 @@
       
       for (let d = 1; d <= last; d++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        if (days[dateStr] && !days[dateStr].generated) continue; // Не трогаем ручные записи
+        if (days[dateStr] && days[dateStr].generated === false) continue; 
         
         const isWork = (() => {
           const p = ((dayDiff(shift.firstWorkDay, dateStr) % 4) + 4) % 4;
@@ -210,13 +244,20 @@
     State.setDays(days);
   }
 
-  function clearShiftConfig() {
-    if (!confirm("Сбросить настройки коротких дней? Сгенерированные дни будут удалены.")) return;
-    State.setShift(null);
+  // --- Сброс ---
+  function resetAllData() {
+    if (!confirm("ВНИМАНИЕ! Вы уверены, что хотите удалить ВСЕ данные приложения? Это действие необратимо.")) return;
+    
+    // Удаляем только ключи с префиксом uchot.v2.
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith("uchot.v2.")) localStorage.removeItem(key);
+    });
+    
+    alert("Все данные удалены. Приложение перезагрузится.");
     location.reload();
   }
 
-  // Загрузка текущих настроек при открытии
+  // Загрузка при старте
   function loadSettings() {
     const shift = State.getShift();
     if (shift) {
@@ -231,12 +272,8 @@
           });
         }
       }
-      if (shift.offset !== undefined) {
-        document.getElementById("shiftPreview").innerHTML = `✅ Настроено! Номер: <b>${shift.myNumber}</b>`;
-        document.getElementById("shiftPreview").style.display = "block";
-      }
     }
-    renderAllPairsList();
+    renderWallets();
   }
 
   loadSettings();
