@@ -1,4 +1,4 @@
-/* Кнопки */
+/* --- Кнопки --- */
 .btn {
   width: 100%;
   padding: 12px;
@@ -18,7 +18,7 @@
 .btn-orange { background: var(--orange); }
 .btn-purple { background: var(--purple); }
 
-/* Диалоги (Dialog.js) */
+/* --- Диалоговые окна (если используются) --- */
 .dialog-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.4);
@@ -52,7 +52,7 @@
 .dialog-ok, .dialog-yes { background: var(--accent); color: #fff; }
 .dialog-no { background: var(--border); color: var(--text); }
 
-/* Поля ввода (для prompt) */
+/* --- Поля ввода (базовые) --- */
 .form-control {
   width: 100%;
   padding: 10px 14px;
@@ -61,9 +61,14 @@
   font-size: 16px;
   background: var(--bg);
   color: var(--text);
+  font-family: inherit;
+}
+.form-control:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
-/* Уведомления (Toast в notify.js) */
+/* --- Уведомления (Тосты) --- */
 .toast {
   position: fixed;
   top: 20px;
@@ -82,6 +87,7 @@
 }
 .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 .toast.error { background: var(--red); }
+
 /* --- Нижнее меню навигации (Tab Bar) --- */
 .tabbar {
   position: fixed;
@@ -111,6 +117,7 @@
   text-decoration: none;
   font-size: 11px;
   font-weight: 600;
+  transition: color 0.2s;
 }
 .tabbar a span {
   font-size: 22px;
@@ -119,19 +126,11 @@
 .tabbar a.active {
   color: var(--accent);
 }
-/* Отступ снизу для контента, чтобы меню не перекрывало кнопки */
-body {
-  padding-bottom: 80px;
-}
-/* Фикс клавиатуры на iOS */
-.dialog-box {
-  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
-}
-/* Кнопки всегда выше клавиатуры */
-.dialog-buttons {
-  position: sticky;
-  bottom: 0;
-  background: var(--panel);
-  padding-top: 10px;
-  margin-bottom: -10px;
+
+/* --- Общий контейнер (отступ снизу, чтобы меню не перекрывало контент) --- */
+.container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+  padding-bottom: 90px; /* Отступ под нижнее меню */
 }
