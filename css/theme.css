@@ -9,10 +9,12 @@
   --red: #ff3b30;
   --orange: #ff9500;
   --purple: #af52de;
-  
-  /* Добавленные переменные для фонов */
+
+  /* Фоны */
   --red-bg: rgba(255, 59, 48, 0.12);
   --help-bg: rgba(0, 122, 255, 0.10);
+  --subtle-bg: #f8f8fc;
+  --warn-bg: #fff4d6;
 }
 
 :root[data-theme="dark"] {
@@ -26,10 +28,12 @@
   --red: #ff453a;
   --orange: #ff9f0a;
   --purple: #bf5af2;
-  
-  /* Добавленные переменные для темной темы */
+
+  /* Фоны для тёмной темы */
   --red-bg: rgba(255, 69, 58, 0.15);
   --help-bg: rgba(10, 132, 255, 0.15);
+  --subtle-bg: #2c2c2e;
+  --warn-bg: #2a1f0a;
 }
 
 * {
@@ -44,5 +48,5 @@ body {
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
   transition: background-color 0.3s, color 0.3s;
-  /* П.7: Убран padding-bottom, так как он уже задан в .container */
+  /* padding-bottom задан в .container */
 }
