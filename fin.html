@@ -74,7 +74,25 @@ function load(){
   APP_KEYS.forEach(k=>{S[k]=clone(AppStorage.get(k,d[k]))});
   S.arhiv=clone(AppStorage.get("arhiv",{}));
   if(!S.lombard_info||typeof S.lombard_info!=="object")S.lombard_info=d.lombard_info;
+  if(migrateLegacy())save();
 }
+
+function migrateLegacy(){
+  let ch=false,id=Math.max(0,...S.istorija.map(z=>+z.id||0));
+  S.istorija=S.istorija.map(z=>{
+    if(!z||typeof z!=="object"||!z.kind)return z;
+    ch=true;
+    const b={id:++id,data:(z.date||"")+" 00:00",koshel:z.wallet,summa:Math.abs(+z.amount||0)};
+    if(z.note)b.zametka=z.note;
+    if(String(z.cat||"").includes("Корректировка"))return Object.assign(b,{tip:"Корректировка",summa:+z.amount||0});
+    if(z.kind==="expense")return Object.assign(b,{tip:"Трата",kat:z.cat});
+    if(z.kind==="income")return Object.assign(b,{tip:"Доход",kat:z.cat});
+    if(z.kind==="transfer")return Object.assign(b,{tip:"Перевод",kuda:z.toWallet});
+    return z;
+  });
+  return ch;
+}
+
 function save(){
   State.setWallets(S.kohelki);
   State.setOps(S.istorija);
@@ -91,7 +109,7 @@ const fmt=UI.fmt,r2=UI.r2,num=UI.num;
 const pos=x=>{x=r2(num(x));if(!(x>0))throw"Сумма должна быть больше нуля";return x};
 const nowS=()=>{const d=new Date(),p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes())};
 const ops=()=>S.istorija.filter(z=>z&&typeof z==="object");
-const nid=()=>Math.max(0,...ops().map(z=>z.id||0))+1;
+const nid=()=>Math.max(0,...ops().map(z=>+z.id||0))+1;
 const mid=a=>Math.max(0,...a.map(x=>x.id||0))+1;
 const opt=(a,s)=>a.map(x=>`<option${x===s?" selected":""}>${esc(x)}</option>`).join("");
 const W=()=>Object.keys(S.kohelki),WM=()=>W().filter(w=>cur(w)==="MDL");
