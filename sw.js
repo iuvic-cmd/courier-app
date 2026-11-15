@@ -1,4 +1,4 @@
-const CACHE_NAME = 'uchot-v2';
+const CACHE_NAME = 'uchot-v5';
 const ASSETS = [
   './',
   './index.html',
