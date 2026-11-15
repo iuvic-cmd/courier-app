@@ -203,7 +203,7 @@ function submit(tip){
 /* ---- операции ---- */
 function row(z){
   const ic={"Трата":"➖","Доход":"➕","Перевод":"🔄","Конвертация":"🔄","Кредитка":"💳","Долг":"🤝","Кредит":"🏛","Ломбард":"🥇","Цель":"🎯"}[z.tip]||"•";
-  const kp=z.tip==="Кредитка"&&(z.napr==="покупка"||z.napr==="проценты"),neg=z.tip==="Трата"||kp;
+  const kp=(z.tip==="Кредитка"&&(z.napr==="покупка"||z.napr==="проценты"))||((z.tip==="Кредит"||z.tip==="Ломбард")&&z.napr==="платёж"),neg=z.tip==="Трата"||kp;
   const sg=neg?"-":z.tip==="Доход"?"+":"",c=neg?"r":z.tip==="Доход"?"g":"",w=z.koshel||"",ttl=z.kat||(z.kuda?w+" → "+z.kuda:z.tip);
   return `<div class="row" onclick="opMenu(${z.id})"><div>${ic} ${esc(ttl)}<div class="mut">${esc((z.data||"").slice(0,16))} · ${esc(w)}${z.zametka?" · "+esc(z.zametka):""}</div></div><b class="${c}">${sg}${fmt(z.summa)} ${esc(SY[cur(w)]||"")}</b></div>`}
 function opMenu(id){const z=ops().find(x=>x.id===id),it=[];if(!z)return;
@@ -229,7 +229,7 @@ const back=(t,to="sect")=>`<button class="bt" onclick="go('${to}')">← Наза
 /* ---- главная ---- */
 function home(){
   const ws=W(),tot=ws.reduce((a,w)=>a+S.kohelki[w]*kurs(cur(w)),0),ym=nowS().slice(0,7);let sp=0,inc=0;
-  ops().forEach(z=>{if((z.data||"").startsWith(ym)){const v=z.baz??z.summa;if(z.tip==="Трата"||(z.tip==="Кредитка"&&(z.napr==="покупка"||z.napr==="проценты")))sp+=v;if(z.tip==="Доход")inc+=v}});
+  ops().forEach(z=>{if((z.data||"").startsWith(ym)){const v=z.baz??z.summa;if(z.tip==="Трата"||(z.tip==="Кредитка"&&(z.napr==="покупка"||z.napr==="проценты")))sp+=v;if((z.tip==="Кредит"||z.tip==="Ломбард")&&z.napr==="платёж")sp+=+z.proc||0;if(z.tip==="Доход")inc+=v}});
   const last=ops().slice(-5).reverse().map(row).join("")||'<div class="mut">Пока нет операций</div>';
   return innerNav()+
   `<div class="card"><div class="mut">Всего в кошельках</div><h1>${fmt(tot)} лей</h1><div class="two"><div><div class="mut">Доходы за месяц</div><b class="g">+${fmt(inc)}</b></div><div><div class="mut">Траты за месяц</div><b class="r">-${fmt(sp)}</b></div></div></div>
