@@ -141,14 +141,22 @@
     { id: 'insurance', title: '🛡 Страховка' }
   ];
 
+  // Читает и старый (kind/expense), и новый (tip: Трата) формат операций,
+  // возвращая только записи, связанные со скутером (Скутер/Топливо).
+  function getScooterOps() {
+    return State.getOps()
+      .map(o => o.tip ? (o.tip === "Трата" ? { cat: o.kat, wallet: o.koshel } : null) : (o.kind === "expense" ? o : null))
+      .filter(o => o && /Скутер|Топливо/.test(o.cat || ""));
+  }
+
   // Возвращает HTML для выпадающего списка кошельков (только те, с которых платили за скутер)
   function walletSelectHtml(onlyScooter = false) {
     const wallets = State.getWallets();
     let keys = Object.keys(wallets);
     
     if (onlyScooter) {
-      // Ищем уникальные кошельки из операций по скутеру
-      const scooterOps = State.getOps().filter(o => o.kind === 'expense' && (o.cat.includes("Скутер") || o.cat.includes("Топливо")));
+      // Ищем уникальные кошельки из операций по скутеру (оба формата)
+      const scooterOps = getScooterOps();
       const usedWallets = [...new Set(scooterOps.map(o => o.wallet))];
       // Если таких нет, показываем все
       if (usedWallets.length > 0) keys = usedWallets;
@@ -160,8 +168,8 @@
   function render() {
     const wallets = State.getWallets();
 
-    // Отображение кошельков, связанных со скутером
-    const scooterOps = State.getOps().filter(o => o.kind === 'expense' && (o.cat.includes("Скутер") || o.cat.includes("Топливо")));
+    // Отображение кошельков, связанных со скутером (оба формата)
+    const scooterOps = getScooterOps();
     const usedWallets = [...new Set(scooterOps.map(o => o.wallet))];
     
     if (usedWallets.length > 0) {
