@@ -426,13 +426,19 @@ function newK(){mini("Новый кредит",[["n","Название"],["p","�
   S.kredity.push({id:mid(S.kredity),nazvanie:v.n,plat:p,den:d,stavka:s,ostatok:o,koshel:v.w,posl:""})})}
 function newL(){mini("Новый ломбард",[["n","Название"],["s","Сумма займа",null,"",1]],v=>{const s=pos(v.s);if(!v.n)throw"Название";S.lombard.push({id:mid(S.lombard),nazvanie:v.n,summa:s,ostatok:s})})}
 function payL(){const ym=nowS().slice(0,7),I=S.lombard_info,LO=()=>S.lombard.filter(b=>b.ostatok>0.005),
-  pm=r2(LO().reduce((a,b)=>a+b.summa,0)*I.stavka/100),due=Math.max(0,r2(pm-(I.proc_ym===ym?I.proc_sum:0))),tot=r2(LO().reduce((a,b)=>a+b.ostatok,0));
-  mini("Платёж по ломбарду",[["w","Кошелёк",WM(),I.koshel],["s","Сумма (макс. "+fmt(r2(due+tot))+")",null,due||"",1]],v=>{
-    const s=Math.min(pos(v.s),r2(due+tot));if(S.kohelki[v.w]<s)throw"Недостаточно средств";
-    const pr=Math.min(s,due);let rest=r2(s-pr);const det=[];
+  pm=r2(LO().reduce((a,b)=>a+b.summa,0)*I.stavka/100),tot=r2(LO().reduce((a,b)=>a+b.ostatok,0));
+  // Переплата процентов (оплата вперёд) переходит на следующие месяцы
+  const nextYm=s=>{let[y,m]=s.split("-").map(Number);m++;if(m>12){m=1;y++}return y+"-"+String(m).padStart(2,"0")};
+  if(I.proc_ym&&I.proc_ym<ym){let g=0;while(I.proc_ym<ym&&g++<120){const c=Math.max(0,r2(I.proc_sum-pm));I.proc_ym=nextYm(I.proc_ym);I.proc_sum=c}}
+  const due=Math.max(0,r2(pm-(I.proc_ym===ym?I.proc_sum:0)));
+  mini("Платёж по ломбарду",[["t","Что платим",["Только проценты (тело не трогаем)","Проценты + тело долга"]],["k","За сколько месяцев процентов",null,"1",1],["w","Кошелёк",WM(),I.koshel],["s","Сумма",null,due||"",1]],v=>{
+    const onlyP=v.t[0]==="Т",km=Math.max(1,Math.round(num(v.k))||1);
+    const s=onlyP?pos(v.s):Math.min(pos(v.s),r2(due+tot));if(S.kohelki[v.w]<s)throw"Недостаточно средств";
+    const pr=onlyP?s:Math.min(s,due);let rest=onlyP?0:r2(s-pr);const det=[];
     LO().forEach(b=>{if(rest<=0)return;const x=Math.min(rest,b.ostatok);b.ostatok=r2(b.ostatok-x);rest=r2(rest-x);det.push([b.id,x]);if(b.ostatok<=0.005)b.ostatok=0});
     S.kohelki[v.w]=r2(S.kohelki[v.w]-s);if(I.proc_ym!==ym){I.proc_ym=ym;I.proc_sum=0}I.proc_sum=r2(I.proc_sum+pr);
-    rec("Ломбард",s,v.w,{kat:"Ломбард",napr:"платёж",osn:r2(s-pr),proc:pr,det})},"Проценты к оплате в этом месяце: "+fmt(due))}
+    rec("Ломбард",s,v.w,{kat:"Ломбард",napr:"платёж",osn:r2(s-pr),proc:pr,det,zametka:onlyP&&km>1?"проценты за "+km+" мес.":""})},"Проценты к оплате в этом месяце: "+fmt(due)+" · в месяц: "+fmt(pm));
+  $("m_k").oninput=()=>{const k=Math.max(1,Math.round(num($("m_k").value))||1);$("m_s").value=r2(due+pm*(k-1))||""}}
 
 /* ---- активы ---- */
 function asset(){return innerNav()+back("Активы")+`<div class="card">${S.aktivy.map((a,i)=>`<div class="row" onclick="chA(${i})"><span>🏺 ${esc(a.nazvanie)}</span><b>${fmt(a.ocenka)}</b></div>`).join("")||'<div class="mut">Активов нет</div>'}</div><button class="bt pri" onclick="chA(-1)">Добавить актив</button>`}
