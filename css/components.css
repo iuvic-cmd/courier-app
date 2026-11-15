@@ -1,6 +1,7 @@
 body {
   padding-top: calc(12px + env(safe-area-inset-top, 0px));
 }
+
 /* --- Кнопки --- */
 .btn {
   width: 100%;
@@ -21,7 +22,7 @@ body {
 .btn-orange { background: var(--orange); }
 .btn-purple { background: var(--purple); }
 
-/* --- Диалоговые окна (если используются) --- */
+/* --- Диалоговые окна --- */
 .dialog-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.4);
@@ -71,10 +72,10 @@ body {
   border-color: var(--accent);
 }
 
-/* --- Уведомления (Тосты) --- */
+/* --- Уведомления (тосты) --- */
 .toast {
   position: fixed;
-  top: 20px;
+  top: calc(20px + env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%) translateY(-20px);
   background: #333;
@@ -130,10 +131,10 @@ body {
   color: var(--accent);
 }
 
-/* --- Общий контейнер (отступ снизу, чтобы меню не перекрывало контент) --- */
+/* --- Общий контейнер (отступ снизу под нижнее меню) --- */
 .container {
   max-width: 480px;
   margin: 0 auto;
   padding: 16px;
-  padding-bottom: 90px; /* Отступ под нижнее меню */
+  padding-bottom: 90px;
 }
