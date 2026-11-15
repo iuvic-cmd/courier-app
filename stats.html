@@ -265,6 +265,10 @@
         return o.napr === "платёж" && num(o.proc) > 0
           ? { date, kind: "expense", cat: o.tip === "Кредит" ? "🏛 Проценты по кредитам" : "🥇 Проценты по ломбарду", amount: num(o.proc) }
           : null;
+      case "Рассрочка":
+        return o.napr === "платёж"
+          ? { date, kind: "expense", cat: "🧾 Рассрочка: " + (o.kat || "?"), amount: num(o.summa) }
+          : null;
       default: // Корректировка, переводы, долги, цели — не расход и не доход
         return null;
     }
