@@ -1,10 +1,11 @@
-const CACHE_NAME = 'uchot-v1';
+const CACHE_NAME = 'uchot-v2';
 const ASSETS = [
   './',
   './index.html',
   './fin.html',
   './cash.html',
   './stats.html',
+  './plan.html',
   './settings.html',
   './css/theme.css',
   './css/components.css',
@@ -19,14 +20,16 @@ const ASSETS = [
   './js/domain/finance-api.js',
   './js/domain/ledger.js',
   './manifest.json',
-  './icon-512.png'
+  './icon-512.PNG' // регистр важен: на GitHub Pages имя файла в верхнем регистре
 ];
 
-// Установка: кэшируем все файлы
+// Установка: кэшируем файлы по одному, чтобы один недоступный файл не ломал установку
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(ASSETS))
+      .then(cache => Promise.all(
+        ASSETS.map(url => cache.add(url).catch(err => console.warn('SW: не закэшировано', url, err)))
+      ))
       .then(() => self.skipWaiting())
   );
 });
@@ -40,16 +43,19 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Перехват запросов: сначала сеть, потом кэш
+// Сначала сеть (в обход HTTP-кэша браузера), при ошибке — кэш
 self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
+  const req = event.request;
+  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   event.respondWith(
-    fetch(event.request)
+    fetch(req, { cache: 'no-cache' })
       .then(response => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
+        }
         return response;
       })
-      .catch(() => caches.match(event.request))
+      .catch(() => caches.match(req, { ignoreSearch: true }))
   );
 });
