@@ -392,8 +392,29 @@ function rep(){
 
 /* ---- кредиты и ломбард ---- */
 function cred(){const ym=nowS().slice(0,7),lo=S.lombard.filter(b=>b.ostatok>0);
-  return innerNav()+back("Кредиты и ломбард")+`<div class="card"><h2>Кредиты (нажми — платёж)</h2>${S.kredity.filter(k=>k.ostatok>0).map(k=>`<div class="row" onclick="payK(${k.id})"><div>🏛 ${esc(k.nazvanie)}<div class="mut">платёж ${fmt(k.plat)} · ${k.den}-го · ${k.stavka}%${k.posl===ym?" · ✅ оплачен":""}</div></div><b>${fmt(k.ostatok)}</b></div>`).join("")||'<div class="mut">Нет</div>'}<button class="bt" onclick="newK()">➕ Кредит</button></div>
-<div class="card"><h2>Ломбард: ${S.lombard_info.stavka}%/мес = ${fmt(lo.reduce((a,b)=>a+b.summa,0)*S.lombard_info.stavka/100)}</h2>${lo.map(b=>`<div class="row" style="cursor:default"><span>🥇 ${esc(b.nazvanie)}</span><b>${fmt(b.ostatok)}</b></div>`).join("")||'<div class="mut">Нет</div>'}<div class="two" style="margin-top:6px"><div><button class="bt" onclick="newL()">➕ Ломбард</button></div><div><button class="bt pri" onclick="payL()">Внести платёж</button></div></div></div>`}
+  return innerNav()+back("Кредиты и ломбард")+`<div class="card"><h2>Кредиты (нажми — действия)</h2>${S.kredity.filter(k=>k.ostatok>0).map(k=>`<div class="row" onclick="credMenu(${k.id})"><div>🏛 ${esc(k.nazvanie)}<div class="mut">платёж ${fmt(k.plat)} · ${k.den}-го · ${k.stavka}%${k.posl===ym?" · ✅ оплачен":""}</div></div><b>${fmt(k.ostatok)}</b></div>`).join("")||'<div class="mut">Нет</div>'}<button class="bt" onclick="newK()">➕ Кредит</button></div>
+<div class="card"><h2>Ломбард: ${S.lombard_info.stavka}%/мес = ${fmt(lo.reduce((a,b)=>a+b.summa,0)*S.lombard_info.stavka/100)} · нажми — действия</h2>${lo.map(b=>`<div class="row" onclick="lombMenu(${b.id})"><span>🥇 ${esc(b.nazvanie)}</span><b>${fmt(b.ostatok)}</b></div>`).join("")||'<div class="mut">Нет</div>'}<div class="two" style="margin-top:6px"><div><button class="bt" onclick="newL()">➕ Ломбард</button></div><div><button class="bt pri" onclick="payL()">Внести платёж</button></div></div></div>`}
+function credMenu(id){const k=S.kredity.find(x=>x.id===id);if(!k)return;
+  mm("🏛 "+esc(k.nazvanie),[
+    ["💰 Внести платёж",()=>payK(id)],
+    ["✏️ Изменить",()=>editK(id)],
+    ["🗑 Удалить",()=>ask("Удалить кредит «"+k.nazvanie+"»? Кошельки и история не изменятся.",()=>{S.kredity=S.kredity.filter(x=>x.id!==id);save();render();toast("Кредит удалён")})]])}
+function editK(id){const k=S.kredity.find(x=>x.id===id);if(!k)return;
+  mini("Изменить кредит",[["n","Название",null,k.nazvanie],["p","Платёж в месяц",null,k.plat,1],["d","День (1-31)",null,k.den,1],["s","Ставка % годовых",null,k.stavka,1],["o","Остаток",null,k.ostatok,1],["w","Кошелёк",WM(),k.koshel]],v=>{
+    const p=r2(num(v.p)),d=Math.round(num(v.d)),s=num(v.s)||0,o=r2(num(v.o));
+    if(!v.n)throw"Название";if(S.kredity.some(x=>x.id!==id&&x.nazvanie===v.n))throw"Такой кредит уже есть";
+    if(!(p>0))throw"Платёж > 0";if(!(d>=1&&d<=31))throw"День 1-31";if(!(o>=0))throw"Остаток >= 0";
+    if(v.n!==k.nazvanie)ops().forEach(z=>{if(z.tip==="Кредит"&&z.kat===k.nazvanie)z.kat=v.n});
+    Object.assign(k,{nazvanie:v.n,plat:p,den:d,stavka:s,ostatok:o,koshel:v.w})})}
+function lombMenu(id){const b=S.lombard.find(x=>x.id===id);if(!b)return;
+  mm("🥇 "+esc(b.nazvanie),[
+    ["✏️ Изменить",()=>editL(id)],
+    ["🗑 Удалить",()=>ask("Удалить «"+b.nazvanie+"» из ломбарда? Кошельки и история не изменятся.",()=>{S.lombard=S.lombard.filter(x=>x.id!==id);save();render();toast("Удалено")})]])}
+function editL(id){const b=S.lombard.find(x=>x.id===id);if(!b)return;
+  mini("Изменить ломбард",[["n","Название",null,b.nazvanie],["s","Сумма займа",null,b.summa,1],["o","Остаток долга",null,b.ostatok,1]],v=>{
+    const s=r2(num(v.s)),o=r2(num(v.o));
+    if(!v.n)throw"Название";if(!(s>0))throw"Сумма займа > 0";if(!(o>=0))throw"Остаток >= 0";if(o>s)throw"Остаток больше суммы займа";
+    Object.assign(b,{nazvanie:v.n,summa:s,ostatok:o})})}
 function payK(id){const k=S.kredity.find(x=>x.id===id);
   mini("Платёж: "+esc(k.nazvanie),[["w","Кошелёк",WM(),k.koshel],["s","Сумма",null,k.plat,1]],v=>{
     let s=pos(v.s);const pr=Math.min(s,r2(k.ostatok*k.stavka/1200)),os=r2(Math.min(k.ostatok,s-pr));s=r2(pr+os);
