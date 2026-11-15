@@ -85,7 +85,7 @@
   <div class="totals">
     <div class="tot plan"><small>План</small><b id="totPlan">0</b></div>
     <div class="tot fact"><small>Факт</small><b id="totFact">0</b></div>
-    <div class="tot diff" id="totDiffWrap"><small>Разница</small><b id="totDiff">0</b></div>
+    <div class="tot diff" id="totDiffWrap"><small>Остаток</small><b id="totDiff">0</b></div>
   </div>
 
   <div class="toolbar">
@@ -304,16 +304,17 @@
       <div class="task-nums">
         <div class="task-num"><small>План</small><input type="number" inputmode="decimal" value="${t.plan || ""}" onchange="setNum('${esc(t.id)}','plan',this)"></div>
         <div class="task-num fact ${auto ? "auto" : ""}"><small>Факт</small><input type="number" inputmode="decimal" value="${f || ""}" ${auto ? "readonly" : ""} onchange="setNum('${esc(t.id)}','fact',this)"></div>
-        <div class="task-num diff"><small>Разница</small><b data-diff="${esc(t.id)}"></b></div>
+        <div class="task-num diff"><small>Остаток</small><b data-diff="${esc(t.id)}"></b></div>
       </div>
     </div>`;
   }
 
+  // Остаток = план − факт: перерасход показывается минусом (красный), экономия — плюсом (зелёный)
   function updateTotals() {
     const all = P.sections.flatMap(s => s.tasks);
     const p = all.reduce((a, t) => a + num(t.plan), 0);
     const f = all.reduce((a, t) => a + factOf(t), 0);
-    const d = f - p;
+    const d = p - f;
     $("totPlan").textContent = fmt(p) + " лей";
     $("totFact").textContent = fmt(f) + " лей";
     $("totDiff").textContent = (d > 0 ? "+" : "") + fmt(d) + " лей";
@@ -325,7 +326,7 @@
       sec.tasks.forEach(t => {
         const diffEl = document.querySelector(`[data-diff="${t.id}"]`);
         if (diffEl) {
-          const td = factOf(t) - num(t.plan);
+          const td = num(t.plan) - factOf(t);
           diffEl.textContent = (td > 0 ? "+" : "") + fmt(td);
           diffEl.className = td < 0 ? "diff-neg" : td > 0 ? "diff-pos" : "";
         }
