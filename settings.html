@@ -231,7 +231,7 @@
   function resetSection(section) {
     const names = {
       days: "Дни учёта (календарь, заказы, лог)",
-      fin: "Финансы (кошельки, операции, долги, кредиты)",
+      fin: "Финансы (кошельки, операции, долги, кредиты, рассрочки)",
       cash: "Скутер (пробег, заправки, ТО)",
       settings: "Настройки смен, подмоги, тариф, PIN"
     };
@@ -241,7 +241,7 @@
     if (section === "days") keysToRemove = ["days", "orders_log"];
     else if (section === "fin") keysToRemove = [
       "wallets", "ops", "categories",
-      "traty", "dohody", "byudzhety", "celi", "dolgi", "regulyarnye", "kredity", "kartki",
+      "traty", "dohody", "byudzhety", "celi", "dolgi", "regulyarnye", "kredity", "kartki", "rassrochki",
       "valyuty", "kursy", "lombard", "lombard_info", "aktivy", "arhiv",
       "debts", "goals"
     ];
