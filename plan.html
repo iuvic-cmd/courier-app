@@ -144,6 +144,7 @@
       <option value="lombard">🥇 Платежи по ломбарду (из «Финансов»)</option>
       <option value="credit">🏛 Платежи по кредитам (из «Финансов»)</option>
       <option value="card">💳 Платежи по кредиткам (из «Финансов»)</option>
+      <option value="inst">🧾 Платежи по рассрочкам (из «Финансов»)</option>
       <option value="cat">🗂 Траты по категории</option>
     </select>
     <div id="tCatWrap" style="display:none">
@@ -286,6 +287,7 @@
         }
         if (o.tip === "Кредит" && o.napr === "платёж") return { date, type: "credit", s };
         if (o.tip === "Ломбард" && o.napr === "платёж") return { date, type: "lombard", s };
+        if (o.tip === "Рассрочка" && o.napr === "платёж") return { date, type: "inst", s };
         return null;
       }
       if (o.kind === "expense" && !/корректиров/i.test(o.cat || "")) return { date, type: "exp", cat: o.cat || "", s: Math.abs(+o.amount || 0) };
@@ -295,7 +297,7 @@
   const isAuto = t => !!t.src && t.src !== "manual";
   function autoFact(src) {
     const inM = OPS.filter(o => o.date.startsWith(P.ym));
-    if (src === "lombard" || src === "credit" || src === "card") return inM.filter(o => o.type === src).reduce((a, o) => a + o.s, 0);
+    if (src === "lombard" || src === "credit" || src === "card" || src === "inst") return inM.filter(o => o.type === src).reduce((a, o) => a + o.s, 0);
     if (src.startsWith("cat:")) {
       const name = src.slice(4).toLowerCase();
       return inM.filter(o => o.type === "exp" && o.cat.toLowerCase().includes(name)).reduce((a, o) => a + o.s, 0);
@@ -303,10 +305,11 @@
     return 0;
   }
   const factOf = t => isAuto(t) ? Math.round(autoFact(t.src)) : num(t.fact);
-  const srcLabel = s => s === "lombard" ? "ломбард" : s === "credit" ? "кредиты" : s === "card" ? "кредитки" : s.startsWith("cat:") ? s.slice(4) : "";
+  const srcLabel = s => s === "lombard" ? "ломбард" : s === "credit" ? "кредиты" : s === "card" ? "кредитки" : s === "inst" ? "рассрочки" : s.startsWith("cat:") ? s.slice(4) : "";
   function detectSrc(title) {
     const l = String(title).toLowerCase();
     if (l.includes("ломбард")) return "lombard";
+    if (l.includes("рассрочк")) return "inst";
     if (l.includes("кредитк")) return "card";
     if (l.includes("кредит")) return "credit";
     if (/бензин|топлив/.test(l)) return "cat:Топлив";
