@@ -244,10 +244,10 @@ function hist(){
 
 /* ---- кошельки ---- */
 function wal(){
-  const cs=[...new Set(W().map(cur).concat(Object.keys(S.kursy)))].filter(c=>c!=="MDL");
+  const cs=[...new Set(["USD","EUR"].concat(W().map(cur),Object.keys(S.kursy)))].filter(c=>c!=="MDL");
   return innerNav()+
   `<div class="card"><h2>Кошельки · нажми для действий</h2>${W().map((w,i)=>`<div class="row" onclick="walMenu(${i})"><span>✎ ${esc(w)} <span class="mut">${esc(cur(w))}</span></span><b>${fmt(S.kohelki[w])} ${esc(sym(w))}</b></div>`).join("")}${S.kartki.length?`<div class="mut" style="margin:12px 0 2px">💳 Кредитные карты · не входят в общий итог</div>`+S.kartki.map(c=>{const bl=r2(c.limit-c.dolg);return `<div class="row" onclick="go('cards')"><span>💳 ${esc(c.nazvanie)} <span class="mut">долг ${fmt(c.dolg)}</span></span><b class="${bl<0?"r":""}">${bl<0?"−":""}${fmt(Math.abs(bl))} лей</b></div>`}).join(""):""}</div>
-  ${cs.length?`<div class="card"><h2>Курсы к лею</h2>${cs.map(c=>`<label>1 ${esc(c)} =</label><input inputmode="decimal" value="${S.kursy[c]||""}" onchange="setRate('${esc(c)}',this.value)">`).join("")}</div>`:""}
+  ${cs.length?`<div class="card"><h2>Курсы к лею</h2>${cs.map(c=>`<label>1 ${esc(c)} = ... лей</label><input inputmode="decimal" placeholder="Например 17.5" value="${S.kursy[c]||""}" onchange="setRate('${esc(c)}',this.value)">`).join("")}<div class="mut">Введи курс и выйди из поля — он сохранится сам. Курс нужен для валютных кошельков и общего итога.</div></div>`:""}
   <div class="card"><h2>Новый кошелёк</h2><input id="nw" placeholder="Название"><select id="nc"><option>MDL</option><option>USD</option><option>EUR</option></select><input id="nr" inputmode="decimal" placeholder="Курс к лею (для USD/EUR)"><button class="bt pri" onclick="addW()">Добавить</button></div>`}
 function setRate(c,v){const x=num(v);if(x>0){S.kursy[c]=x;save();render();toast("Курс сохранён")}}
 function addW(){const n=$("nw").value.trim(),c=$("nc").value,r=num($("nr").value);
