@@ -16,8 +16,8 @@
     .stat-label { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; display: block; }
     .stat-value { font-size: 18px; font-weight: 700; }
     
-    .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 24px; }
-    .action-grid .btn { padding: 14px; font-size: 14px; }
+    .action-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 24px; }
+    .action-grid .btn { padding: 14px 6px; font-size: 13px; }
 
     details.acc { margin-bottom: 12px; }
     details.acc > summary {
@@ -67,6 +67,7 @@
   <div class="action-grid">
     <button class="btn btn-primary" onclick="toggleFuelForm()"><span>⛽</span> Заправка</button>
     <button class="btn btn-green" onclick="toggleMileageForm()"><span>📏</span> Пробег</button>
+    <button class="btn" style="background: var(--orange); color: #fff;" onclick="toggleExpForm()"><span>🧼</span> Мойка / траты</button>
   </div>
 
   <!-- Кошельки для скутера -->
@@ -91,10 +92,40 @@
   <!-- Форма пробега -->
   <div id="mileageFormContainer" style="display: none; margin-bottom: 20px;">
     <div style="background: var(--panel); border: 2px solid var(--green); border-radius: 16px; padding: 16px;">
-      <h3 style="margin-bottom: 12px; font-size: 16px;">📏 Обновить пробег</h3>
-      <div style="margin-bottom: 12px;"><label>Текущий пробег (км)</label><input type="number" id="m_km" class="form-control" value="" inputmode="numeric"></div>
+      <h3 style="margin-bottom: 12px; font-size: 16px;">📏 Внести пробег</h3>
+      <div style="margin-bottom: 12px;">
+        <label>Что вносим</label>
+        <select id="m_mode" class="form-control" onchange="mileModeChanged()">
+          <option value="day">📅 Пробег за день (+ к общему)</option>
+          <option value="odo">🔢 Показание одометра (всего)</option>
+        </select>
+      </div>
+      <div style="margin-bottom: 12px;"><label id="m_label">Пробег за день (км)</label><input type="number" id="m_km" class="form-control" value="" inputmode="decimal" placeholder="0"></div>
+      <div style="margin-bottom: 12px;"><label>Дата</label><input type="date" id="m_date" class="form-control"></div>
+      <div class="hint" id="m_hint" style="margin-bottom: 4px;"></div>
       <button class="save-btn" onclick="saveMileage()">💾 СОХРАНИТЬ</button>
       <button class="cancel-btn" onclick="toggleMileageForm()">Отмена</button>
+    </div>
+  </div>
+
+  <!-- Форма трат (мойка и прочее) -->
+  <div id="expFormContainer" style="display: none; margin-bottom: 20px;">
+    <div style="background: var(--panel); border: 2px solid var(--orange); border-radius: 16px; padding: 16px;">
+      <h3 style="margin-bottom: 12px; font-size: 16px;">🧼 Трата на скутер</h3>
+      <div style="margin-bottom: 12px;">
+        <label>Что оплатили</label>
+        <select id="x_type" class="form-control">
+          <option>🧼 Мойка</option>
+          <option>🔧 Ремонт</option>
+          <option>🔩 Запчасти</option>
+          <option>📝 Прочее</option>
+        </select>
+      </div>
+      <div style="margin-bottom: 12px;"><label>Сумма (лей)</label><input type="number" id="x_cost" class="form-control" placeholder="0" inputmode="decimal"></div>
+      <div style="margin-bottom: 12px;"><label>Кошелёк</label><select id="x_wall" class="form-control"></select></div>
+      <div style="margin-bottom: 12px;"><label>Заметка (необязательно)</label><input type="text" id="x_note" class="form-control" placeholder=""></div>
+      <button class="save-btn" onclick="saveExpense()">💾 СОХРАНИТЬ</button>
+      <button class="cancel-btn" onclick="toggleExpForm()">Отмена</button>
     </div>
   </div>
 
@@ -186,8 +217,9 @@
       document.getElementById("noScooterWallets").style.display = "block";
     }
 
-    // Заполняем селекты
-    document.getElementById("f_wall").innerHTML = walletSelectHtml();
+    // Заполняем селекты (не трогаем, пока форма открыта, чтобы не сбить выбор)
+    if (document.getElementById("fuelFormContainer").style.display === "none") document.getElementById("f_wall").innerHTML = walletSelectHtml();
+    if (document.getElementById("expFormContainer").style.display === "none") document.getElementById("x_wall").innerHTML = walletSelectHtml();
 
     const scooter = State.getScooter();
     const fuels = State.getFuel();
@@ -245,8 +277,9 @@
 
     // История
     let historyHtml = "";
-    State.getMileageLog().slice().reverse().slice(0, 5).forEach(m => historyHtml += `<div class="history-item"><span>📏 Пробег</span><span>${m.date}: <b>${m.km} км</b></span></div>`);
+    State.getMileageLog().slice().reverse().slice(0, 5).forEach(m => historyHtml += `<div class="history-item"><span>📏 Пробег</span><span>${m.date}: <b>${m.km} км</b>${m.trip ? ` (+${m.trip})` : ""}</span></div>`);
     fuels.slice().reverse().slice(0, 5).forEach(f => historyHtml += `<div class="history-item"><span>⛽ Заправка</span><span>${f.date}: <b>${f.total} лей</b> (${f.liters.toFixed(2)} л)</span></div>`);
+    State.getScooterExpenses().slice().reverse().slice(0, 5).forEach(e => historyHtml += `<div class="history-item"><span>${UI.esc(e.type || "🧼 Расход")}${e.note ? " · " + UI.esc(e.note) : ""}</span><span>${e.date}: <b>${e.cost} лей</b></span></div>`);
     document.getElementById("globalHistory").innerHTML = historyHtml || `<div class="history-item">Нет записей</div>`;
   }
 
@@ -255,10 +288,27 @@
     c.style.display = c.style.display === "none" ? "block" : "none";
     if (c.style.display === "block") document.getElementById("f_total").focus();
   }
+  function mileModeChanged() {
+    const day = document.getElementById("m_mode").value === "day";
+    document.getElementById("m_label").innerText = day ? "Пробег за день (км)" : "Показание одометра (км)";
+    document.getElementById("m_km").value = "";
+  }
   function toggleMileageForm() {
     const c = document.getElementById("mileageFormContainer");
     c.style.display = c.style.display === "none" ? "block" : "none";
-    if (c.style.display === "block") document.getElementById("m_km").focus();
+    if (c.style.display === "block") {
+      document.getElementById("m_date").value = UI.date.local();
+      document.getElementById("m_hint").innerText = "Сейчас на одометре: " + State.getScooter().currentKm + " км";
+      document.getElementById("m_km").focus();
+    }
+  }
+  function toggleExpForm() {
+    const c = document.getElementById("expFormContainer");
+    c.style.display = c.style.display === "none" ? "block" : "none";
+    if (c.style.display === "block") {
+      document.getElementById("x_wall").innerHTML = walletSelectHtml();
+      document.getElementById("x_cost").focus();
+    }
   }
 
   function saveFuel() {
@@ -285,16 +335,57 @@
     if (!guardAction("saveMileage")) return;
     try {
       const scooter = State.getScooter();
-      const km = UI.num(document.getElementById("m_km").value);
-      if (km < scooter.currentKm) throw new Error("Пробег не может уменьшаться");
-      
-      State.setMileageLog([...State.getMileageLog(), { date: UI.date.local(), km }]);
+      const day = document.getElementById("m_mode").value === "day";
+      const val = UI.num(document.getElementById("m_km").value);
+      const date = document.getElementById("m_date").value || UI.date.local();
+      if (!(val > 0)) throw new Error("Введите пробег");
+
+      let km, trip;
+      if (day) {
+        // Пробег за день прибавляется к текущему показанию одометра
+        km = UI.r2(scooter.currentKm + val);
+        trip = val;
+      } else {
+        km = val;
+        if (km < scooter.currentKm) throw new Error("Пробег не может уменьшаться");
+        trip = scooter.currentKm > 0 ? UI.r2(km - scooter.currentKm) : 0;
+      }
+
+      const entry = { date, km };
+      if (trip > 0) entry.trip = trip;
+      State.setMileageLog([...State.getMileageLog(), entry]);
+      // Начальное значение фиксируем только при самом первом вводе показаний одометра
+      if (!day && scooter.startKm === 0 && scooter.currentKm === 0) scooter.startKm = km;
       scooter.currentKm = km;
-      if (scooter.startKm === 0) scooter.startKm = km;
       State.setScooter(scooter);
+
+      document.getElementById("m_km").value = "";
       toggleMileageForm();
       render();
-      Notify.show("✅ Пробег обновлен");
+      Notify.show(day ? `✅ +${val} км, всего на одометре ${km}` : "✅ Пробег обновлен");
+    } catch (e) { Notify.error(e.message); }
+  }
+
+  function saveExpense() {
+    if (!guardAction("saveExp")) return;
+    try {
+      const type = document.getElementById("x_type").value;
+      const cost = UI.num(document.getElementById("x_cost").value);
+      const wallet = document.getElementById("x_wall").value;
+      const note = document.getElementById("x_note").value.trim();
+
+      if (!wallet) throw new Error("Кошелёк не выбран");
+      if (cost <= 0) throw new Error("Введите сумму");
+
+      // Категория содержит «Скутер» — так трата попадает в отчёты («Мойка / ТО»)
+      FinanceAPI.spend({ wallet, amount: cost, category: "Скутер: " + type, note: note || type });
+      State.setScooterExpenses([...State.getScooterExpenses(), { date: UI.date.local(), type, cost, wallet, note }]);
+
+      document.getElementById("x_cost").value = "";
+      document.getElementById("x_note").value = "";
+      toggleExpForm();
+      render();
+      Notify.show(`✅ ${type}: списано ${cost} лей`);
     } catch (e) { Notify.error(e.message); }
   }
 
