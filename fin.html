@@ -232,7 +232,7 @@ const back=(t,to="sect")=>`<button class="bt" onclick="go('${to}')">← Наза
 /* ---- главная ---- */
 function home(){
   const ws=W(),tot=ws.reduce((a,w)=>a+S.kohelki[w]*kurs(cur(w)),0),ym=nowS().slice(0,7);let sp=0,inc=0;
-  ops().forEach(z=>{if((z.data||"").startsWith(ym)){const v=z.baz??z.summa;if(z.tip==="Трата"||(z.tip==="Кредитка"&&(z.napr==="покупка"||z.napr==="проценты")))sp+=v;if((z.tip==="Кредит"||z.tip==="Ломбард")&&z.napr==="платёж")sp+=+z.proc||0;if(z.tip==="Рассрочка")sp+=+z.summa||0;if(z.tip==="Доход")inc+=v}});
+  ops().forEach(z=>{if((z.data||"").startsWith(ym)){const v=z.baz??z.summa;if(z.tip==="Трата"||(z.tip==="Кредитка"&&(z.napr==="покупка"||z.napr==="проценты")))sp+=v;if((z.tip==="Кредит"||z.tip==="Ломбард")&&z.napr==="платёж")sp+=+z.summa||0;if(z.tip==="Рассрочка")sp+=+z.summa||0;if(z.tip==="Доход")inc+=v}});
   const last=ops().slice(-5).reverse().map(row).join("")||'<div class="mut">Пока нет операций</div>';
   return innerNav()+
   `<div class="card"><div class="mut">Всего в кошельках</div><h1>${fmt(tot)} лей</h1><div class="two"><div><div class="mut">Доходы за месяц</div><b class="g">+${fmt(inc)}</b></div><div><div class="mut">Траты за месяц</div><b class="r">-${fmt(sp)}</b></div></div></div>
@@ -386,6 +386,7 @@ function rep(){
   const grp=t=>{const d={};ops().filter(z=>z.tip===t&&f(z)).forEach(z=>{const k=z.kat||"?";d[k]=r2((d[k]||0)+(z.baz??z.summa))});
     if(t==="Трата"){
       ops().filter(z=>(z.tip==="Кредит"||z.tip==="Ломбард")&&z.napr==="платёж"&&z.proc>0&&f(z)).forEach(z=>{const k=z.tip==="Кредит"?"🏛 Проценты по кредитам":"🥇 Проценты по ломбарду";d[k]=r2((d[k]||0)+z.proc)});
+      ops().filter(z=>(z.tip==="Кредит"||z.tip==="Ломбард")&&z.napr==="платёж"&&z.osn>0&&f(z)).forEach(z=>{const k=z.tip==="Кредит"?"🏛 Кредит: "+(z.kat||"?")+" (основной долг)":"🥇 Ломбард (основной долг)";d[k]=r2((d[k]||0)+z.osn)});
       ops().filter(z=>z.tip==="Кредитка"&&(z.napr==="покупка"||z.napr==="проценты")&&f(z)).forEach(z=>{const k=z.napr==="проценты"?"💳 Проценты по кредиткам":(z.kat||"?");d[k]=r2((d[k]||0)+z.summa)});
       ops().filter(z=>z.tip==="Рассрочка"&&f(z)).forEach(z=>{const k="🧾 Рассрочка: "+(z.kat||"?");d[k]=r2((d[k]||0)+z.summa)})}
     return d};
