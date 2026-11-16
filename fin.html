@@ -211,6 +211,8 @@ function opMenu(id){const z=ops().find(x=>x.id===id),it=[];if(!z)return;
   if(["Трата","Доход","Перевод","Корректировка"].includes(z.tip))it.push(["↩️ Отменить операцию",()=>ask("Отменить эту операцию?",()=>undo(id))]);
   if(z.tip==="Кредитка")it.push(["↩️ Отменить операцию",()=>ask("Отменить эту операцию?",()=>undoCard(id))]);
   if(z.tip==="Рассрочка")it.push(["↩️ Отменить операцию",()=>ask("Отменить эту операцию?",()=>undoInst(id))]);
+  if(z.tip==="Кредит"&&z.napr==="платёж")it.push(["↩️ Отменить платёж",()=>ask("Отменить платёж по кредиту? Деньги вернутся на кошелёк, остаток долга восстановится.",()=>undoK(id))]);
+  if(z.tip==="Ломбард"&&z.napr==="платёж")it.push(["↩️ Отменить платёж",()=>ask("Отменить платёж по ломбарду? Деньги вернутся на кошелёк, долг и проценты восстановятся.",()=>undoL(id))]);
   if(it.length)mm(esc(z.tip)+" · "+fmt(z.summa),it)}
 function editOp(id){const z=ops().find(x=>x.id===id),L=z.tip==="Трата"?S.kat_trat:S.kat_dohodov;
   mini("Изменить",[["k","Категория",L.includes(z.kat)?L:L.concat(z.kat),z.kat],["s","Сумма",null,z.summa,1],["w","Кошелёк",W(),z.koshel],["n","Заметка",null,z.zametka||""]],v=>{
@@ -421,8 +423,8 @@ function editL(id){const b=S.lombard.find(x=>x.id===id);if(!b)return;
 function payK(id){const k=S.kredity.find(x=>x.id===id);
   mini("Платёж: "+esc(k.nazvanie),[["w","Кошелёк",WM(),k.koshel],["s","Сумма",null,k.plat,1]],v=>{
     let s=pos(v.s);const pr=Math.min(s,r2(k.ostatok*k.stavka/1200)),os=r2(Math.min(k.ostatok,s-pr));s=r2(pr+os);
-    if(S.kohelki[v.w]<s)throw"Недостаточно средств";S.kohelki[v.w]=r2(S.kohelki[v.w]-s);k.ostatok=r2(k.ostatok-os);k.posl=nowS().slice(0,7);
-    rec("Кредит",s,v.w,{kat:k.nazvanie,napr:"платёж",osn:os,proc:pr})})}
+    if(S.kohelki[v.w]<s)throw"Недостаточно средств";const pp=k.posl;S.kohelki[v.w]=r2(S.kohelki[v.w]-s);k.ostatok=r2(k.ostatok-os);k.posl=nowS().slice(0,7);
+    rec("Кредит",s,v.w,{kat:k.nazvanie,napr:"платёж",osn:os,proc:pr,cid:k.id,pp})})}
 function newK(){mini("Новый кредит",[["n","Название"],["p","Платёж в месяц",null,"",1],["d","День (1-31)",null,"",1],["s","Ставка % годовых",null,"",1],["o","Остаток",null,"",1],["w","Кошелёк",W(),"Наличные"]],v=>{
   const p=r2(num(v.p)),d=Math.round(num(v.d))||1,s=num(v.s)||0,o=r2(num(v.o));
   if(!v.n)throw"Название";if(!(p>0))throw"Платёж > 0";if(!(d>=1&&d<=31))throw"День 1-31";if(!(o>=0))throw"Остаток >= 0";
@@ -489,6 +491,21 @@ function cardEdit(id){const c=S.kartki.find(x=>x.id===id);
     if(df){c.dolg=d;rec("Кредитка",Math.abs(df),c.nazvanie,{kat:c.nazvanie,napr:"корректировка",cid:c.id,d:df})}})}
 function cardMenu(id){const c=S.kartki.find(x=>x.id===id);
   mm(esc(c.nazvanie),[["📈 Проценты / комиссия",()=>cardFee(id)],["💵 Снять наличные",()=>cardCash(id)],["✏️ Изменить параметры",()=>cardEdit(id)],["🗑 Удалить карту",()=>{if(c.dolg>0)return toast("Сначала погаси долг");ask("Удалить карту «"+c.nazvanie+"»?",()=>{S.kartki.splice(S.kartki.indexOf(c),1);save();render()})}]])}
+
+/* ---- отмена платежей по кредиту и ломбарду ---- */
+function undoK(id){const z=ops().find(x=>x.id===id);if(!z)return;
+  try{const k=S.kredity.find(y=>z.cid!=null?y.id===z.cid:y.nazvanie===z.kat);if(!k)throw"Кредит удалён";
+    if(!(z.koshel in S.kohelki))throw"Кошелёк из операции удалён";
+    S.kohelki[z.koshel]=r2(S.kohelki[z.koshel]+z.summa);k.ostatok=r2(k.ostatok+(+z.osn||0));k.posl=z.pp||"";
+    S.istorija.splice(S.istorija.indexOf(z),1);save();render();toast("Платёж отменён")
+  }catch(e){err(e)}}
+function undoL(id){const z=ops().find(x=>x.id===id);if(!z)return;
+  try{if(!(z.koshel in S.kohelki))throw"Кошелёк из операции удалён";
+    S.kohelki[z.koshel]=r2(S.kohelki[z.koshel]+z.summa);
+    (z.det||[]).forEach(([bid,x])=>{const b=S.lombard.find(y=>y.id===bid);if(b)b.ostatok=r2(Math.min(b.summa,b.ostatok+x))});
+    const I=S.lombard_info;I.proc_sum=Math.max(0,r2((+I.proc_sum||0)-(+z.proc||0)));
+    S.istorija.splice(S.istorija.indexOf(z),1);save();render();toast("Платёж отменён")
+  }catch(e){err(e)}}
 
 /* ---- рассрочки ---- */
 const instDue=x=>x.ostatok>0&&regOk(x);
