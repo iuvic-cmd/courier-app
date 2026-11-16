@@ -261,10 +261,15 @@
         if (o.napr === "проценты") return { date, kind: "expense", cat: "💳 Проценты по кредиткам", amount: num(o.summa) };
         return null;
       case "Кредит":
-      case "Ломбард":
-        return o.napr === "платёж" && num(o.proc) > 0
-          ? { date, kind: "expense", cat: o.tip === "Кредит" ? "🏛 Проценты по кредитам" : "🥇 Проценты по ломбарду", amount: num(o.proc) }
-          : null;
+      case "Ломбард": {
+        if (o.napr !== "платёж") return null;
+        // Платёж показываем целиком, разбив на основной долг и проценты (в сумме = списанные деньги)
+        const isK = o.tip === "Кредит", res = [];
+        if (num(o.osn) > 0) res.push({ date, kind: "expense", cat: isK ? "🏛 Кредит: " + (o.kat || "?") + " (основной долг)" : "🥇 Ломбард (основной долг)", amount: num(o.osn) });
+        if (num(o.proc) > 0) res.push({ date, kind: "expense", cat: isK ? "🏛 Проценты по кредитам" : "🥇 Проценты по ломбарду", amount: num(o.proc) });
+        if (!res.length && num(o.summa) > 0) res.push({ date, kind: "expense", cat: isK ? "🏛 Кредит: " + (o.kat || "?") : "🥇 Ломбард", amount: num(o.summa) });
+        return res;
+      }
       case "Рассрочка":
         return o.napr === "платёж"
           ? { date, kind: "expense", cat: "🧾 Рассрочка: " + (o.kat || "?"), amount: num(o.summa) }
@@ -273,7 +278,7 @@
         return null;
     }
   }
-  const getOps = () => State.getOps().map(normOp).filter(Boolean);
+  const getOps = () => State.getOps().flatMap(o => { const r = normOp(o); return Array.isArray(r) ? r : r ? [r] : []; });
 
   function changeMonth(dir) {
     currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + dir, 1);
