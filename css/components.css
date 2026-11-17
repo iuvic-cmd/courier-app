@@ -138,3 +138,17 @@ body {
   padding: 16px;
   padding-bottom: 90px;
 }
+
+/* --- Без зума: двойной тап, авто-зум полей ввода iOS --- */
+html, body {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+button, a, summary, label, .day, .pin-btn {
+  touch-action: manipulation;
+}
+/* iOS зумит страницу при фокусе на поле со шрифтом меньше 16px */
+input, select, textarea {
+  font-size: 16px !important;
+}
