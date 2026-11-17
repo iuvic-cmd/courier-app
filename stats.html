@@ -38,6 +38,7 @@
     .list-row.muted { color: var(--text-dim); }
     .neg { color: var(--red, #c62828); }
     .pos { color: var(--green, #2e7d32); }
+    .note { font-size: 12px; color: var(--text-dim); margin-top: 10px; line-height: 1.4; }
 
     /* Календарь */
     .calendar-section { background: var(--panel); border-radius: 16px; padding: 16px 12px 12px; margin-bottom: 16px; border: 1px solid var(--border); }
@@ -126,6 +127,7 @@
       <div class="stat-item red wide"><span class="stat-label">💸 Потрачено</span><span class="stat-val" id="statExpenses">0</span></div>
       <div class="stat-item blue wide"><span class="stat-label">Чистый доход</span><span class="stat-val" id="statNet">0</span></div>
     </div>
+    <div class="note" id="statNote"></div>
   </div>
 
   <!-- Заказы и эффективность -->
@@ -141,7 +143,7 @@
 
   <!-- Экономика заказа -->
   <div class="card">
-    <h3>📊 Экономика заказа</h3>
+    <h3>📊 Экономика заказа <span style="text-transform:none;letter-spacing:0">(топливо и скутер)</span></h3>
     <div class="stat-grid">
       <div class="stat-item green"><span class="stat-label">📊 КПД</span><span class="stat-val" id="ecoKpd">0%</span></div>
       <div class="stat-item blue"><span class="stat-label">💰 Прибыль</span><span class="stat-val" id="ecoProfit">0</span></div>
@@ -428,7 +430,7 @@
     const expenses = sumAbs(monthExp);
     // Заправки берём из журнала заправок (cash.html), если их нет — из расходов по категории
     const fuels = State.getFuel().filter(f => String(f.date || "").startsWith(prefix));
-    const fuelFromLog = fuels.reduce((s, f) => s + num(f.total), 0);
+    const fuelFromLog = fuels.reduce((s, f) => s + num(f.total != null ? f.total : f.amount), 0);
     const fuelCost = fuelFromLog > 0 ? fuelFromLog : sumAbs(monthExp.filter(o => catHas(o, "Топливо")));
     // «Топливо (Скутер)» тоже содержит слово «Скутер» — исключаем, чтобы не считать дважды
     const maintCost = sumAbs(monthExp.filter(o => catHas(o, "Скутер") && !catHas(o, "Топливо")));
@@ -440,6 +442,13 @@
     setText("statIncome", fmt(income));
     setText("statExpenses", fmt(expenses));
     setText("statNet", fmt(net));
+    const firstEver = State.getOps().map(o => String(o.data || o.date || "").slice(0, 10)).filter(Boolean).sort()[0] || "";
+    let note = "";
+    if (firstEver) {
+      if (prefix < firstEver.slice(0, 7)) note = `ℹ Журнал операций начинается с ${fmtDate(firstEver)} — расходов и доходов за этот месяц нет.`;
+      else if (prefix === firstEver.slice(0, 7) && firstEver.slice(8) !== "01") note = `ℹ Расходы и доходы учтены с ${fmtDate(firstEver)} — раньше записей нет, итоги неполные.`;
+    }
+    setText("statNote", note);
     setText("statFuelCost", fmt(fuelCost));
     setText("statMaintCost", fmt(maintCost));
 
@@ -452,16 +461,18 @@
     setText("statAvgOrder", fmt(avgOrder));
 
     // === 4. Экономика заказа ===
-    const gross = salary + income;
-    const kpd = gross > 0 ? (net / gross * 100) : 0;
+    // Рабочие расходы: топливо и скутер. Быт (газ, связь, продукты…) в экономику заказа не входит.
+    const workExp = fuelCost + maintCost;
+    const workNet = salary - workExp;
+    const kpd = salary > 0 ? (workNet / salary * 100) : 0;
     setText("ecoKpd", kpd.toFixed(1) + "%");
-    setText("ecoProfit", fmt(net));
+    setText("ecoProfit", fmt(workNet));
     setText("ecoIncPerOrder", fmt(avgOrder));
     setText("ecoFuelPerOrder", fmt(totalOrders ? fuelCost / totalOrders : 0));
-    setText("ecoExpPerOrder", fmt(totalOrders ? expenses / totalOrders : 0));
-    setText("ecoNetPerOrder", fmt(totalOrders ? net / totalOrders : 0));
+    setText("ecoExpPerOrder", fmt(totalOrders ? workExp / totalOrders : 0));
+    setText("ecoNetPerOrder", fmt(totalOrders ? workNet / totalOrders : 0));
     setText("ecoIncPerDay", fmt(avgDay));
-    setText("ecoNetPerDay", fmt(workDays ? net / workDays : 0));
+    setText("ecoNetPerDay", fmt(workDays ? workNet / workDays : 0));
 
     if (totalOrders > 0) {
       const pN = Math.round(nightSum / totalOrders * 100);
@@ -481,22 +492,26 @@
     const totalLiters = fuels.reduce((s, f) => s + num(f.liters), 0);
     const price = totalLiters > 0 ? fuelCost / totalLiters : 0;
 
-    // Пробег за месяц — по журналу пробега: конец месяца минус последняя запись до его начала
+    // Пробег за месяц. В журнале смешаны два формата: старый (км за день, меньше стартового
+    // показания) и новый (показание одометра, не меньше стартового). Восстанавливаем одометр.
+    const sc = State.getScooter() || {};
+    const startOdo = num(sc.startKm);
     const mlog = State.getMileageLog().map(e => ({ date: String(e.date || ""), km: num(e.km) }))
-      .filter(e => e.km > 0).sort((a, b) => a.date.localeCompare(b.date));
-    const inM = mlog.filter(e => e.date.startsWith(prefix));
-    const prevE = mlog.filter(e => e.date < prefix + "-01").pop();
+      .filter(e => e.km > 0 && e.date).sort((a, b) => a.date.localeCompare(b.date));
+    let odo = startOdo;
+    const track = mlog.map(e => {
+      if (e.km >= startOdo) odo = Math.max(odo, e.km); else odo += e.km;
+      return { date: e.date, odo };
+    });
+    const inMonthTrack = track.filter(t => t.date.startsWith(prefix));
     let totalKm = 0, kmIsMonthly = false;
-    if (inM.length) {
-      const endKm = Math.max(...inM.map(e => e.km));
-      const startKm = prevE ? prevE.km : Math.min(...inM.map(e => e.km));
-      totalKm = Math.max(endKm - startKm, 0);
+    if (inMonthTrack.length) {
+      const endOdo = inMonthTrack[inMonthTrack.length - 1].odo;
+      const before = track.filter(t => t.date.slice(0, 7) < prefix).pop();
+      totalKm = Math.max(endOdo - (before ? before.odo : startOdo), 0);
       kmIsMonthly = totalKm > 0;
     }
-    if (!kmIsMonthly) {
-      const sc = State.getScooter() || {};
-      totalKm = Math.max(num(sc.currentKm) - num(sc.startKm), 0);
-    }
+    if (!kmIsMonthly) totalKm = Math.max(num(sc.currentKm) - startOdo, 0);
     setText("statKmLabel", kmIsMonthly ? "🛵 Пробег (за месяц)" : "🛵 Пробег (всего)");
     const cons = totalKm > 0 && kmIsMonthly ? (totalLiters / totalKm * 100) : 0;
     const costKm = totalKm > 0 && kmIsMonthly ? fuelCost / totalKm : 0;
@@ -512,8 +527,10 @@
       const mKey = k.slice(0, 7);
       byMonth[mKey] = (byMonth[mKey] || 0) + num(days[k].total);
     });
-    const sortedM = Object.keys(byMonth).sort().slice(-6);
-    drawBarChart("chartMonths", sortedM.map(k => MONTHS_SHORT[+k.slice(5, 7) - 1]), sortedM.map(k => byMonth[k]));
+    const nowYm = UI.date.local().slice(0, 7);
+    const sortedM = Object.keys(byMonth).filter(k => k <= nowYm && (byMonth[k] > 0 || k === nowYm)).sort().slice(-6);
+    const multiYear = new Set(sortedM.map(k => k.slice(0, 4))).size > 1;
+    drawBarChart("chartMonths", sortedM.map(k => MONTHS_SHORT[+k.slice(5, 7) - 1] + (multiYear ? " " + k.slice(2, 4) : "")), sortedM.map(k => byMonth[k]));
 
     drawGroupedChart(
       "chartNightAp",
