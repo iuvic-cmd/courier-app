@@ -1,59 +1,52 @@
-/**
- * theme.js — Управление темой (светлая/тёмная) + запрет зума страницы.
- */
-(function (global) {
-    // --- Запрет зума (пинч и двойной тап) ---
-    (function disableZoom() {
-        const content = "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover";
-        let vp = document.querySelector('meta[name="viewport"]');
-        if (!vp) {
-            vp = document.createElement("meta");
-            vp.name = "viewport";
-            document.head.appendChild(vp);
-        }
-        vp.setAttribute("content", content);
-        // iOS Safari игнорирует user-scalable=no, поэтому дополнительно гасим жесты
-        ["gesturestart", "gesturechange", "gestureend"].forEach(ev =>
-            document.addEventListener(ev, e => e.preventDefault(), { passive: false })
-        );
-        // Двойной тап, который не поймал touch-action
-        let lastTouch = 0;
-        document.addEventListener("touchend", e => {
-            const now = Date.now();
-            if (now - lastTouch < 300 && e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA") e.preventDefault();
-            lastTouch = now;
-        }, { passive: false });
-    })();
+:root {
+  --bg: #f2f2f7;
+  --text: #1c1c1e;
+  --text-dim: #8e8e93;
+  --panel: #ffffff;
+  --border: #e5e5ea;
+  --accent: #007aff;
+  --green: #34c759;
+  --red: #ff3b30;
+  --orange: #ff9500;
+  --purple: #af52de;
 
-    const THEME_KEY = "theme"; // Используем старый ключ для совместимости с CSS
+  /* Фоны */
+  --red-bg: rgba(255, 59, 48, 0.12);
+  --help-bg: rgba(0, 122, 255, 0.10);
+  --subtle-bg: #f8f8fc;
+  --warn-bg: #fff4d6;
+}
 
-    global.Theme = {
-        init() {
-            let saved = null;
-            try { saved = localStorage.getItem(THEME_KEY); } catch (e) {}
+:root[data-theme="dark"] {
+  --bg: #0a0a0f;
+  --text: #f2f2f7;
+  --text-dim: #8e8e93;
+  --panel: #1c1c1e;
+  --border: #2c2c2e;
+  --accent: #0a84ff;
+  --green: #30d158;
+  --red: #ff453a;
+  --orange: #ff9f0a;
+  --purple: #bf5af2;
 
-            const isDark = saved === "dark" || (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches);
-            document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+  /* Фоны для тёмной темы */
+  --red-bg: rgba(255, 69, 58, 0.15);
+  --help-bg: rgba(10, 132, 255, 0.15);
+  --subtle-bg: #2c2c2e;
+  --warn-bg: #2a1f0a;
+}
 
-            const toggle = document.getElementById("theme-toggle");
-            if (toggle) {
-                toggle.checked = isDark;
-                toggle.addEventListener("change", function () {
-                    const val = this.checked ? "dark" : "light";
-                    document.documentElement.setAttribute("data-theme", val);
-                    try { localStorage.setItem(THEME_KEY, val); } catch (e) {}
-                });
-            }
-        }
-    };
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
 
-    // Слушаем изменения из других вкладок
-    window.addEventListener("storage", e => {
-        if (e.key === THEME_KEY && e.newValue) {
-            document.documentElement.setAttribute("data-theme", e.newValue);
-            const toggle = document.getElementById("theme-toggle");
-            if (toggle) toggle.checked = e.newValue === "dark";
-        }
-    });
-
-})(window);
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  transition: background-color 0.3s, color 0.3s;
+  /* padding-bottom задан в .container */
+}
