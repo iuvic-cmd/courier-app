@@ -37,6 +37,7 @@
     .list-row:last-child { border-bottom: none; }
     .list-row.muted { color: var(--text-dim); }
     .neg { color: var(--red, #c62828); }
+    .pos { color: var(--green, #2e7d32); }
 
     /* Календарь */
     .calendar-section { background: var(--panel); border-radius: 16px; padding: 16px 12px 12px; margin-bottom: 16px; border: 1px solid var(--border); }
@@ -103,7 +104,8 @@
       <h3 id="dayStatsTitle" style="color: var(--accent);">Статистика за день</h3>
       <div class="stat-grid" style="margin-bottom: 12px;">
         <div class="stat-item green"><span class="stat-label">💼 Заработано</span><span class="stat-val" id="daySalary">0</span></div>
-        <div class="stat-item red"><span class="stat-label">💸 Потрачено</span><span class="stat-val" id="dayExpenses">0</span></div>
+        <div class="stat-item green"><span class="stat-label">💵 Чаевые и др. доходы</span><span class="stat-val" id="dayIncome">0</span></div>
+        <div class="stat-item red wide"><span class="stat-label">💸 Потрачено</span><span class="stat-val" id="dayExpenses">0</span></div>
         <div class="stat-item blue wide"><span class="stat-label">Чистый доход</span><span class="stat-val" id="dayNet">0</span></div>
       </div>
       <div class="stat-grid">
@@ -120,7 +122,8 @@
     <h3>💰 Итоги за месяц</h3>
     <div class="stat-grid">
       <div class="stat-item green"><span class="stat-label">💼 Заработано</span><span class="stat-val" id="statSalary">0</span></div>
-      <div class="stat-item red"><span class="stat-label">💸 Потрачено</span><span class="stat-val" id="statExpenses">0</span></div>
+      <div class="stat-item green"><span class="stat-label">💵 Чаевые и др. доходы</span><span class="stat-val" id="statIncome">0</span></div>
+      <div class="stat-item red wide"><span class="stat-label">💸 Потрачено</span><span class="stat-val" id="statExpenses">0</span></div>
       <div class="stat-item blue wide"><span class="stat-label">Чистый доход</span><span class="stat-val" id="statNet">0</span></div>
     </div>
   </div>
@@ -239,6 +242,8 @@
   const pad = n => String(n).padStart(2, "0");
   const fmtDate = ds => ds.split("-").reverse().join(".");
   const isExpense = o => o && o.kind === "expense";
+  // Прочие доходы (чаевые и т.д.). «Зарплата» исключена — она уже учтена по дням.
+  const isIncome = o => o && o.kind === "income" && !String(o.cat || "").includes("Зарплата");
   const catHas = (o, word) => String(o.cat || "").includes(word);
 
   // Приводим операции к единому виду {date, kind, cat, amount}.
@@ -261,24 +266,15 @@
         if (o.napr === "проценты") return { date, kind: "expense", cat: "💳 Проценты по кредиткам", amount: num(o.summa) };
         return null;
       case "Кредит":
-      case "Ломбард": {
-        if (o.napr !== "платёж") return null;
-        // Платёж показываем целиком, разбив на основной долг и проценты (в сумме = списанные деньги)
-        const isK = o.tip === "Кредит", res = [];
-        if (num(o.osn) > 0) res.push({ date, kind: "expense", cat: isK ? "🏛 Кредит: " + (o.kat || "?") + " (основной долг)" : "🥇 Ломбард (основной долг)", amount: num(o.osn) });
-        if (num(o.proc) > 0) res.push({ date, kind: "expense", cat: isK ? "🏛 Проценты по кредитам" : "🥇 Проценты по ломбарду", amount: num(o.proc) });
-        if (!res.length && num(o.summa) > 0) res.push({ date, kind: "expense", cat: isK ? "🏛 Кредит: " + (o.kat || "?") : "🥇 Ломбард", amount: num(o.summa) });
-        return res;
-      }
-      case "Рассрочка":
-        return o.napr === "платёж"
-          ? { date, kind: "expense", cat: "🧾 Рассрочка: " + (o.kat || "?"), amount: num(o.summa) }
+      case "Ломбард":
+        return o.napr === "платёж" && num(o.proc) > 0
+          ? { date, kind: "expense", cat: o.tip === "Кредит" ? "🏛 Проценты по кредитам" : "🥇 Проценты по ломбарду", amount: num(o.proc) }
           : null;
       default: // Корректировка, переводы, долги, цели — не расход и не доход
         return null;
     }
   }
-  const getOps = () => State.getOps().flatMap(o => { const r = normOp(o); return Array.isArray(r) ? r : r ? [r] : []; });
+  const getOps = () => State.getOps().map(normOp).filter(Boolean);
 
   function changeMonth(dir) {
     currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + dir, 1);
@@ -296,21 +292,28 @@
   function selectDay(ds) {
     selectedDate = ds;
     const rec = State.getDays()[ds] || { type: "weekend", night: 0, ap: 0, total: 0 };
-    const ops = getOps().filter(o => o.date === ds && isExpense(o));
+    const dayOps = getOps().filter(o => o.date === ds);
+    const ops = dayOps.filter(isExpense);
+    const incOps = dayOps.filter(isIncome);
     const expenses = ops.reduce((s, o) => s + Math.abs(num(o.amount)), 0);
+    const income = incOps.reduce((s, o) => s + Math.abs(num(o.amount)), 0);
     const salary = num(rec.total);
-    const net = salary - expenses;
+    const net = salary + income - expenses;
 
     setText("dayStatsTitle", `Статистика за ${fmtDate(ds)} (${getDayLabel(rec.type)})`);
     setText("daySalary", fmt(salary));
+    setText("dayIncome", fmt(income));
     setText("dayExpenses", fmt(expenses));
     setText("dayNet", fmt(net));
     setText("dayNight", num(rec.night));
     setText("dayAp", num(rec.ap));
 
-    $("dayOpsList").innerHTML = ops.length
-      ? `<b>Траты дня:</b>` + ops.map(o => `<div class="list-row"><span>${esc(o.cat)}</span><b class="neg">${fmt(Math.abs(num(o.amount)))} лей</b></div>`).join("")
-      : `<div class="list-row muted">Нет трат</div>`;
+    const rows = (list, cls, sign) => list.map(o =>
+      `<div class="list-row"><span>${esc(o.cat)}</span><b class="${cls}">${sign}${fmt(Math.abs(num(o.amount)))} лей</b></div>`).join("");
+    $("dayOpsList").innerHTML =
+      (incOps.length ? `<b>Доходы дня:</b>` + rows(incOps, "pos", "+") : "") +
+      (ops.length ? `<b style="display:block;margin-top:8px">Траты дня:</b>` + rows(ops, "neg", "−") : "") +
+      (!incOps.length && !ops.length ? `<div class="list-row muted">Нет доходов и трат</div>` : "");
 
     $("dayStatsContainer").style.display = "block";
     render();
@@ -429,9 +432,12 @@
     const fuelCost = fuelFromLog > 0 ? fuelFromLog : sumAbs(monthExp.filter(o => catHas(o, "Топливо")));
     // «Топливо (Скутер)» тоже содержит слово «Скутер» — исключаем, чтобы не считать дважды
     const maintCost = sumAbs(monthExp.filter(o => catHas(o, "Скутер") && !catHas(o, "Топливо")));
-    const net = salary - expenses;
+    const incomeOps = monthOps.filter(isIncome);
+    const income = sumAbs(incomeOps);
+    const net = salary + income - expenses;
 
     setText("statSalary", fmt(salary));
+    setText("statIncome", fmt(income));
     setText("statExpenses", fmt(expenses));
     setText("statNet", fmt(net));
     setText("statFuelCost", fmt(fuelCost));
@@ -446,7 +452,8 @@
     setText("statAvgOrder", fmt(avgOrder));
 
     // === 4. Экономика заказа ===
-    const kpd = salary > 0 ? (net / salary * 100) : 0;
+    const gross = salary + income;
+    const kpd = gross > 0 ? (net / gross * 100) : 0;
     setText("ecoKpd", kpd.toFixed(1) + "%");
     setText("ecoProfit", fmt(net));
     setText("ecoIncPerOrder", fmt(avgOrder));
