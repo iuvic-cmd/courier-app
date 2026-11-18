@@ -7,17 +7,16 @@
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/components.css">
   <style>
-    .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-top: calc(16px + env(safe-area-inset-top, 0px)); padding-bottom: 90px; }
+    .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-top: 16px; padding-bottom: 90px; }
     .header { margin-bottom: 12px; }
-    .wallet-badge { background: #e8f5e9; color: #2e7d32; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 16px; display: inline-block; border: 1px solid #43a047; max-width: 100%; }
-    
+
     .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
     .stat-card { background: var(--panel); padding: 12px; border-radius: 12px; text-align: center; border-left: 3px solid var(--accent); }
     .stat-label { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; display: block; }
     .stat-value { font-size: 18px; font-weight: 700; }
-    
-    .action-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 24px; }
-    .action-grid .btn { padding: 14px 6px; font-size: 13px; }
+
+    .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 24px; }
+    .action-grid .btn { padding: 14px; font-size: 14px; }
 
     details.acc { margin-bottom: 12px; }
     details.acc > summary {
@@ -28,16 +27,16 @@
     details.acc > summary::-webkit-details-marker { display: none; }
     details.acc > summary::after { content: "▼"; font-size: 12px; color: var(--text-dim); }
     details.acc[open] > summary::after { content: "▲"; }
-    
+
     .acc-body {
       background: var(--panel); border: 1px solid var(--border); border-top: none;
       border-radius: 0 0 16px 16px; padding: 16px; margin-top: -4px;
     }
-    
+
     .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
-    .input-row > div { flex: 1; }
-    .input-row label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
-    
+    .input-row > div { flex: 1; min-width: 0; }
+    .input-row label, .acc-body label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+
     .history-list { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
     .history-item { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; color: var(--text-dim); }
     .section-title { font-size: 14px; font-weight: 700; margin: 24px 0 10px; color: var(--text-dim); text-transform: uppercase; }
@@ -45,6 +44,19 @@
     .save-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; transition: 0.2s; }
     .save-btn:active { background: #2e7d32; transform: scale(0.98); }
     .cancel-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--border); color: var(--text); border: none; font-weight: 700; margin-top: 8px; cursor: pointer; }
+
+    .check-row { display: flex !important; align-items: center; gap: 8px; font-size: 14px !important; color: var(--text) !important; margin: 4px 0 10px; }
+    .check-row input { width: 20px; height: 20px; accent-color: var(--accent); }
+
+    .svc-summary { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; font-size: 14px; line-height: 1.7; }
+    .svc-summary b { font-weight: 700; }
+    .svc-list { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 0 16px; margin-top: 10px; }
+    .svc-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .svc-row:last-child { border-bottom: none; }
+    .svc-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+    .svc-right { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .del-btn { background: none; border: none; font-size: 18px; cursor: pointer; padding: 4px; }
+    .empty-note { color: var(--text-dim); font-size: 13px; padding: 14px 0; text-align: center; }
   </style>
 </head>
 <body>
@@ -52,7 +64,7 @@
   <div class="header">
     <h1>🛵 Скутер</h1>
   </div>
-  
+
   <div class="stats-grid">
     <div class="stat-card">
       <span class="stat-label">📊 Общий пробег</span>
@@ -67,7 +79,6 @@
   <div class="action-grid">
     <button class="btn btn-primary" onclick="toggleFuelForm()"><span>⛽</span> Заправка</button>
     <button class="btn btn-green" onclick="toggleMileageForm()"><span>📏</span> Пробег</button>
-    <button class="btn" style="background: var(--orange); color: #fff;" onclick="toggleExpForm()"><span>🧼</span> Мойка / траты</button>
   </div>
 
   <!-- Кошельки для скутера -->
@@ -92,40 +103,10 @@
   <!-- Форма пробега -->
   <div id="mileageFormContainer" style="display: none; margin-bottom: 20px;">
     <div style="background: var(--panel); border: 2px solid var(--green); border-radius: 16px; padding: 16px;">
-      <h3 style="margin-bottom: 12px; font-size: 16px;">📏 Внести пробег</h3>
-      <div style="margin-bottom: 12px;">
-        <label>Что вносим</label>
-        <select id="m_mode" class="form-control" onchange="mileModeChanged()">
-          <option value="day">📅 Пробег за день (+ к общему)</option>
-          <option value="odo">🔢 Показание одометра (всего)</option>
-        </select>
-      </div>
-      <div style="margin-bottom: 12px;"><label id="m_label">Пробег за день (км)</label><input type="number" id="m_km" class="form-control" value="" inputmode="decimal" placeholder="0"></div>
-      <div style="margin-bottom: 12px;"><label>Дата</label><input type="date" id="m_date" class="form-control"></div>
-      <div class="hint" id="m_hint" style="margin-bottom: 4px;"></div>
+      <h3 style="margin-bottom: 12px; font-size: 16px;">📏 Обновить пробег</h3>
+      <div style="margin-bottom: 12px;"><label>Текущий пробег (км)</label><input type="number" id="m_km" class="form-control" value="" inputmode="numeric"></div>
       <button class="save-btn" onclick="saveMileage()">💾 СОХРАНИТЬ</button>
       <button class="cancel-btn" onclick="toggleMileageForm()">Отмена</button>
-    </div>
-  </div>
-
-  <!-- Форма трат (мойка и прочее) -->
-  <div id="expFormContainer" style="display: none; margin-bottom: 20px;">
-    <div style="background: var(--panel); border: 2px solid var(--orange); border-radius: 16px; padding: 16px;">
-      <h3 style="margin-bottom: 12px; font-size: 16px;">🧼 Трата на скутер</h3>
-      <div style="margin-bottom: 12px;">
-        <label>Что оплатили</label>
-        <select id="x_type" class="form-control">
-          <option>🧼 Мойка</option>
-          <option>🔧 Ремонт</option>
-          <option>🔩 Запчасти</option>
-          <option>📝 Прочее</option>
-        </select>
-      </div>
-      <div style="margin-bottom: 12px;"><label>Сумма (лей)</label><input type="number" id="x_cost" class="form-control" placeholder="0" inputmode="decimal"></div>
-      <div style="margin-bottom: 12px;"><label>Кошелёк</label><select id="x_wall" class="form-control"></select></div>
-      <div style="margin-bottom: 12px;"><label>Заметка (необязательно)</label><input type="text" id="x_note" class="form-control" placeholder=""></div>
-      <button class="save-btn" onclick="saveExpense()">💾 СОХРАНИТЬ</button>
-      <button class="cancel-btn" onclick="toggleExpForm()">Отмена</button>
     </div>
   </div>
 
@@ -134,6 +115,12 @@
 
   <div class="section-title">Официальные документы</div>
   <div id="officialList"></div>
+
+  <!-- История замен и учёт -->
+  <div class="section-title">🧾 История замен и учёт</div>
+  <select id="svcFilter" class="form-control" onchange="renderServiceHistory()" style="margin-bottom: 10px;"></select>
+  <div class="svc-summary" id="svcSummary"></div>
+  <div class="svc-list" id="svcList"></div>
 
   <div class="section-title">История</div>
   <div class="history-list" id="globalHistory" style="background: var(--panel); padding: 0 16px; border-radius: 16px; border: 1px solid var(--border);"></div>
@@ -159,7 +146,13 @@
 <script src="js/domain/finance-api.js"></script>
 <script>
   Theme.init();
-  
+
+  const $ = id => document.getElementById(id);
+  const esc = UI.esc;
+  const fmtDate = ds => String(ds || "").split("-").reverse().join(".");
+  const money = x => UI.fmt(UI.r2(+x || 0));
+  const fuelSum = f => +(f.total != null ? f.total : f.amount) || 0; // старые записи хранят сумму в amount
+
   const COMPONENTS = [
     { id: 'oil', title: '🛢 Масло', interval: 2000 },
     { id: 'air_filter', title: '💨 Воздушный фильтр', interval: 3000 },
@@ -180,149 +173,214 @@
       .filter(o => o && /Скутер|Топливо/.test(o.cat || ""));
   }
 
-  // Возвращает HTML для выпадающего списка кошельков (только те, с которых платили за скутер)
   function walletSelectHtml(onlyScooter = false) {
     const wallets = State.getWallets();
     let keys = Object.keys(wallets);
-    
     if (onlyScooter) {
-      // Ищем уникальные кошельки из операций по скутеру (оба формата)
-      const scooterOps = getScooterOps();
-      const usedWallets = [...new Set(scooterOps.map(o => o.wallet))];
-      // Если таких нет, показываем все
-      if (usedWallets.length > 0) keys = usedWallets;
+      const used = [...new Set(getScooterOps().map(o => o.wallet))];
+      if (used.length > 0) keys = used;
     }
-
-    return keys.map(w => `<option value="${UI.esc(w)}">${UI.esc(w)} (${wallets[w] || 0} лей)</option>`).join("");
+    return keys.map(w => `<option value="${esc(w)}">${esc(w)} (${wallets[w] || 0} лей)</option>`).join("");
   }
 
+  // ---------- История замен: сбор записей ----------
+  function serviceEntries() {
+    const out = [];
+    COMPONENTS.forEach(c => {
+      (State.getComponent(c.id).history || []).forEach((h, idx) => out.push({
+        key: "comp:" + c.id, kind: "comp", id: c.id, idx, title: c.title,
+        date: h.date || "", km: +h.km || 0, cost: +h.cost || 0, wallet: h.wallet || "", note: h.note || ""
+      }));
+    });
+    OFFICIALS.forEach(o => {
+      (State.getOfficial(o.id).history || []).forEach((h, idx) => out.push({
+        key: "off:" + o.id, kind: "off", id: o.id, idx, title: o.title,
+        date: h.date || "", until: h.nextDate || "", cost: +h.cost || 0, wallet: h.wallet || "", note: ""
+      }));
+    });
+    return out;
+  }
+
+  function renderServiceHistory() {
+    const sel = $("svcFilter");
+    if (!sel.options.length) {
+      sel.innerHTML = `<option value="all">Все расходники и документы</option>` +
+        COMPONENTS.map(c => `<option value="comp:${c.id}">${esc(c.title)}</option>`).join("") +
+        OFFICIALS.map(o => `<option value="off:${o.id}">${esc(o.title)}</option>`).join("");
+    }
+    const filter = sel.value || "all";
+    const all = serviceEntries();
+    const list = all.filter(e => filter === "all" || e.key === filter)
+      .sort((a, b) => b.date.localeCompare(a.date) || b.idx - a.idx);
+
+    const year = UI.date.local().slice(0, 4);
+    const total = list.reduce((s, e) => s + e.cost, 0);
+    const thisYear = list.filter(e => e.date.startsWith(year)).reduce((s, e) => s + e.cost, 0);
+    const fuels = State.getFuel();
+    const fuelTotal = fuels.reduce((s, f) => s + fuelSum(f), 0);
+
+    let html = `Записей: <b>${list.length}</b> · потрачено: <b>${money(total)} лей</b><br>В этом году: <b>${money(thisYear)} лей</b>`;
+    if (filter.startsWith("comp:") && list.length) {
+      const byKm = list.slice().sort((a, b) => a.km - b.km);
+      html += `<br>Последняя замена: <b>${fmtDate(list[0].date)}</b> на <b>${Math.round(byKm[byKm.length - 1].km)} км</b>`;
+      if (byKm.length >= 2) {
+        const avg = (byKm[byKm.length - 1].km - byKm[0].km) / (byKm.length - 1);
+        html += `<br>Средний пробег между заменами: <b>${Math.round(avg)} км</b>`;
+      }
+      if (list.length >= 1 && total > 0) html += `<br>Средняя цена замены: <b>${money(total / list.filter(e => e.cost > 0).length)} лей</b>`;
+    }
+    if (filter === "all") {
+      html += `<br>⛽ Топливо за всё время: <b>${money(fuelTotal)} лей</b>`;
+      html += `<br>Итого на скутер (ТО + топливо): <b>${money(total + fuelTotal)} лей</b>`;
+    }
+    $("svcSummary").innerHTML = html;
+
+    $("svcList").innerHTML = list.length ? list.map(e => `
+      <div class="svc-row">
+        <div>
+          <b>${esc(e.title)}</b>
+          <div class="svc-sub">${fmtDate(e.date)} · ${e.kind === "comp" ? Math.round(e.km) + " км" : (e.until ? "до " + fmtDate(e.until) : "")}${e.wallet ? " · " + esc(e.wallet) : ""}${e.note ? " · " + esc(e.note) : ""}</div>
+        </div>
+        <div class="svc-right"><b>${e.cost ? money(e.cost) + " лей" : "—"}</b><button class="del-btn" onclick="deleteService('${e.kind}','${e.id}',${e.idx})">🗑</button></div>
+      </div>`).join("") : `<div class="empty-note">Записей пока нет. Добавьте замену в блоке выше.</div>`;
+  }
+
+  function deleteService(kind, id, idx) {
+    const data = kind === "comp" ? State.getComponent(id) : State.getOfficial(id);
+    const h = (data.history || [])[idx];
+    if (!h) return;
+    if (!confirm(`Удалить запись от ${fmtDate(h.date)}?`)) return;
+    if (h.opId != null && +h.cost > 0 && confirm(`Вернуть ${money(h.cost)} лей на кошелёк «${h.wallet || ""}»?`)) {
+      try { FinanceAPI.undo(h.opId); } catch (e) { Notify.error(e.message); }
+    }
+    data.history.splice(idx, 1);
+    if (kind === "comp") {
+      const last = data.history.slice().sort((a, b) => (+a.km || 0) - (+b.km || 0)).pop();
+      data.lastKm = last ? +last.km : 0;
+      data.lastDate = last ? last.date : "";
+      State.setComponent(id, data);
+    } else {
+      const last = data.history.slice().sort((a, b) => String(a.date).localeCompare(String(b.date))).pop();
+      data.lastDate = last ? last.date : "";
+      data.nextDate = last ? last.nextDate : "";
+      data.cost = last ? +last.cost || 0 : 0;
+      State.setOfficial(id, data);
+    }
+    render();
+    Notify.show("🗑 Запись удалена");
+  }
+
+  // ---------- Рендер ----------
   function render() {
     const wallets = State.getWallets();
 
-    // Отображение кошельков, связанных со скутером (оба формата)
     const scooterOps = getScooterOps();
     const usedWallets = [...new Set(scooterOps.map(o => o.wallet))];
-    
     if (usedWallets.length > 0) {
-      document.getElementById("scooterWallets").style.display = "block";
-      document.getElementById("noScooterWallets").style.display = "none";
-      document.getElementById("scooterWallets").innerHTML = usedWallets.map(w => `
+      $("scooterWallets").style.display = "block";
+      $("noScooterWallets").style.display = "none";
+      $("scooterWallets").innerHTML = usedWallets.map(w => `
         <div class="history-item" style="padding: 12px 0; border-bottom: 1px solid var(--border);">
-          <span>${UI.esc(w)}</span>
+          <span>${esc(w)}</span>
           <b style="color: var(--green);">${wallets[w] || 0} лей</b>
-        </div>
-      `).join("");
+        </div>`).join("");
     } else {
-      document.getElementById("scooterWallets").style.display = "none";
-      document.getElementById("noScooterWallets").style.display = "block";
+      $("scooterWallets").style.display = "none";
+      $("noScooterWallets").style.display = "block";
     }
 
-    // Заполняем селекты (не трогаем, пока форма открыта, чтобы не сбить выбор)
-    if (document.getElementById("fuelFormContainer").style.display === "none") document.getElementById("f_wall").innerHTML = walletSelectHtml();
-    if (document.getElementById("expFormContainer").style.display === "none") document.getElementById("x_wall").innerHTML = walletSelectHtml();
+    $("f_wall").innerHTML = walletSelectHtml();
 
     const scooter = State.getScooter();
     const fuels = State.getFuel();
     const totalKm = Math.max(scooter.currentKm - scooter.startKm, 0);
-    document.getElementById("statKm").innerText = totalKm.toFixed(1) + " км";
+    $("statKm").innerText = totalKm.toFixed(1) + " км";
+    const totalLiters = fuels.reduce((s, f) => s + (+f.liters || 0), 0);
+    $("statConsumption").innerText = (totalKm > 0 ? (totalLiters / totalKm * 100) : 0).toFixed(2) + " л/100км";
 
-    const totalLiters = fuels.reduce((s, f) => s + f.liters, 0);
-    document.getElementById("statConsumption").innerText = (totalKm > 0 ? (totalLiters / totalKm * 100) : 0).toFixed(2) + " л/100км";
+    const today = UI.date.local();
+    // Раскрытые блоки не сворачиваем при перерисовке
+    const openIds = [...document.querySelectorAll("details.acc[open]")].map(d => d.id);
 
-    // Компоненты
-    document.getElementById("componentsList").innerHTML = COMPONENTS.map(c => {
+    $("componentsList").innerHTML = COMPONENTS.map(c => {
       const data = State.getComponent(c.id);
       const nextKm = data.lastKm ? data.lastKm + data.intervalKm : 0;
-      const left = nextKm ? nextKm - scooter.currentKm : null;
+      const left = nextKm ? Math.round(nextKm - scooter.currentKm) : null;
       let status = "Не задано. Нажми чтобы настроить.";
       if (data.lastKm > 0) {
-        if (left <= 0) { status = `⚠️ Пора менять! (просрочено на ${Math.abs(left)} км)`; }
-        else { status = `Осталось ${left} км (до ${nextKm})`; }
+        status = left <= 0 ? `⚠️ Пора менять! (просрочено на ${Math.abs(left)} км)` : `Осталось ${left} км (до ${Math.round(nextKm)})`;
+        if (data.lastDate) status += ` · была ${fmtDate(data.lastDate)}`;
       }
-      const hist = data.history.length ? `<div class="history-list"><b>📜 История замен:</b>${data.history.map(h => `<div class="history-item"><span>${h.date} — ${h.km} км</span><b>${h.cost ? h.cost + ' лей' : ''}</b></div>`).join("")}</div>` : "";
       return `
-      <details class="acc">
+      <details class="acc" id="acc_${c.id}">
         <summary><div><div>${c.title}</div><div style="font-size:12px;font-weight:400;color:var(--text-dim);margin-top:4px">${status}</div></div></summary>
         <div class="acc-body">
           <div class="input-row">
-            <div><label>Пробег (км)</label><input type="number" id="c_km_${c.id}" class="form-control" value="${scooter.currentKm}"></div>
-            <div><label>Интервал (км)</label><input type="number" id="c_int_${c.id}" class="form-control" value="${data.intervalKm || c.interval}"></div>
+            <div><label>Дата замены</label><input type="date" id="c_date_${c.id}" class="form-control" value="${today}"></div>
+            <div><label>Пробег (км)</label><input type="number" id="c_km_${c.id}" class="form-control" value="${Math.round(scooter.currentKm)}"></div>
           </div>
-          <div style="margin-bottom: 10px;"><label>Стоимость (лей)</label><input type="number" id="c_cost_${c.id}" class="form-control" placeholder="0"></div>
+          <div class="input-row">
+            <div><label>Интервал (км)</label><input type="number" id="c_int_${c.id}" class="form-control" value="${data.intervalKm || c.interval}"></div>
+            <div><label>Стоимость (лей)</label><input type="number" id="c_cost_${c.id}" class="form-control" placeholder="0"></div>
+          </div>
           <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="c_wall_${c.id}" class="form-control">${walletSelectHtml()}</select></div>
+          <label class="check-row"><input type="checkbox" id="c_skip_${c.id}"> Не списывать с кошелька (старая запись)</label>
+          <div style="margin-bottom: 10px;"><label>Заметка</label><input type="text" id="c_note_${c.id}" class="form-control" placeholder="Например: масло 10W-40"></div>
           <button class="save-btn" onclick="saveComponent('${c.id}', '${c.title}')">💾 ЗАПИСАТЬ ЗАМЕНУ</button>
-          ${hist}
+          <div class="hint" style="margin-top:8px">Все замены — в блоке «История замен и учёт» ниже.</div>
         </div>
       </details>`;
     }).join("");
 
-    // Документы
-    document.getElementById("officialList").innerHTML = OFFICIALS.map(o => {
+    $("officialList").innerHTML = OFFICIALS.map(o => {
       const data = State.getOfficial(o.id);
-      let status = data.nextDate ? `Действует до: ${data.nextDate} (${data.cost} лей)` : "Нет данных";
-      const hist = data.history.length ? `<div class="history-list"><b>📜 История:</b>${data.history.map(h => `<div class="history-item"><span>${h.date} — до ${h.nextDate}</span><b>${h.cost ? h.cost + ' лей' : ''}</b></div>`).join("")}</div>` : "";
+      const status = data.nextDate ? `Действует до: ${fmtDate(data.nextDate)} (${data.cost} лей)` : "Нет данных";
       return `
-      <details class="acc">
+      <details class="acc" id="acc_off_${o.id}">
         <summary><div><div>${o.title}</div><div style="font-size:12px;font-weight:400;color:var(--text-dim);margin-top:4px">${status}</div></div></summary>
         <div class="acc-body">
-          <div style="margin-bottom: 10px;"><label>Дата прохождения</label><input type="date" id="o_date_${o.id}" class="form-control" value="${UI.date.local()}"></div>
+          <div style="margin-bottom: 10px;"><label>Дата прохождения</label><input type="date" id="o_date_${o.id}" class="form-control" value="${today}"></div>
           <div style="margin-bottom: 10px;"><label>Действует до</label><input type="date" id="o_next_${o.id}" class="form-control" value="${data.nextDate || ""}"></div>
           <div style="margin-bottom: 10px;"><label>Стоимость (лей)</label><input type="number" id="o_cost_${o.id}" class="form-control" placeholder="0"></div>
           <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="o_wall_${o.id}" class="form-control">${walletSelectHtml()}</select></div>
+          <label class="check-row"><input type="checkbox" id="o_skip_${o.id}"> Не списывать с кошелька (старая запись)</label>
           <button class="save-btn" onclick="saveOfficial('${o.id}', '${o.title}')">💾 СОХРАНИТЬ</button>
-          ${hist}
         </div>
       </details>`;
     }).join("");
 
-    // История
+    openIds.forEach(id => { const d = $(id); if (d) d.open = true; });
+
+    renderServiceHistory();
+
     let historyHtml = "";
-    State.getMileageLog().slice().reverse().slice(0, 5).forEach(m => historyHtml += `<div class="history-item"><span>📏 Пробег</span><span>${m.date}: <b>${m.km} км</b>${m.trip ? ` (+${m.trip})` : ""}</span></div>`);
-    fuels.slice().reverse().slice(0, 5).forEach(f => historyHtml += `<div class="history-item"><span>⛽ Заправка</span><span>${f.date}: <b>${f.total} лей</b> (${f.liters.toFixed(2)} л)</span></div>`);
-    State.getScooterExpenses().slice().reverse().slice(0, 5).forEach(e => historyHtml += `<div class="history-item"><span>${UI.esc(e.type || "🧼 Расход")}${e.note ? " · " + UI.esc(e.note) : ""}</span><span>${e.date}: <b>${e.cost} лей</b></span></div>`);
-    document.getElementById("globalHistory").innerHTML = historyHtml || `<div class="history-item">Нет записей</div>`;
+    State.getMileageLog().slice().reverse().slice(0, 5).forEach(m => historyHtml += `<div class="history-item"><span>📏 Пробег</span><span>${m.date}: <b>${m.km} км</b></span></div>`);
+    fuels.slice().reverse().slice(0, 5).forEach(f => historyHtml += `<div class="history-item"><span>⛽ Заправка</span><span>${f.date}: <b>${money(fuelSum(f))} лей</b> (${(+f.liters || 0).toFixed(2)} л)</span></div>`);
+    $("globalHistory").innerHTML = historyHtml || `<div class="history-item">Нет записей</div>`;
   }
 
   function toggleFuelForm() {
-    const c = document.getElementById("fuelFormContainer");
+    const c = $("fuelFormContainer");
     c.style.display = c.style.display === "none" ? "block" : "none";
-    if (c.style.display === "block") document.getElementById("f_total").focus();
-  }
-  function mileModeChanged() {
-    const day = document.getElementById("m_mode").value === "day";
-    document.getElementById("m_label").innerText = day ? "Пробег за день (км)" : "Показание одометра (км)";
-    document.getElementById("m_km").value = "";
+    if (c.style.display === "block") $("f_total").focus();
   }
   function toggleMileageForm() {
-    const c = document.getElementById("mileageFormContainer");
+    const c = $("mileageFormContainer");
     c.style.display = c.style.display === "none" ? "block" : "none";
-    if (c.style.display === "block") {
-      document.getElementById("m_date").value = UI.date.local();
-      document.getElementById("m_hint").innerText = "Сейчас на одометре: " + State.getScooter().currentKm + " км";
-      document.getElementById("m_km").focus();
-    }
-  }
-  function toggleExpForm() {
-    const c = document.getElementById("expFormContainer");
-    c.style.display = c.style.display === "none" ? "block" : "none";
-    if (c.style.display === "block") {
-      document.getElementById("x_wall").innerHTML = walletSelectHtml();
-      document.getElementById("x_cost").focus();
-    }
+    if (c.style.display === "block") $("m_km").focus();
   }
 
   function saveFuel() {
     if (!guardAction("saveFuel")) return;
     try {
-      const totalCost = UI.num(document.getElementById("f_total").value);
-      const price = UI.num(document.getElementById("f_price").value);
-      const wallet = document.getElementById("f_wall").value;
-      
+      const totalCost = UI.num($("f_total").value);
+      const price = UI.num($("f_price").value);
+      const wallet = $("f_wall").value;
+
       if (!wallet) throw new Error("Кошелёк не выбран");
       if (totalCost <= 0 || price <= 0) throw new Error("Заполните сумму и цену");
-      
+
       const liters = UI.r2(totalCost / price);
-      
       FinanceAPI.spend({ wallet, amount: totalCost, category: "Топливо (Скутер)", note: `${liters}л` });
       State.setFuel([...State.getFuel(), { date: UI.date.local(), liters, price, total: totalCost }]);
       toggleFuelForm();
@@ -335,57 +393,16 @@
     if (!guardAction("saveMileage")) return;
     try {
       const scooter = State.getScooter();
-      const day = document.getElementById("m_mode").value === "day";
-      const val = UI.num(document.getElementById("m_km").value);
-      const date = document.getElementById("m_date").value || UI.date.local();
-      if (!(val > 0)) throw new Error("Введите пробег");
+      const km = UI.num($("m_km").value);
+      if (km < scooter.currentKm) throw new Error("Пробег не может уменьшаться");
 
-      let km, trip;
-      if (day) {
-        // Пробег за день прибавляется к текущему показанию одометра
-        km = UI.r2(scooter.currentKm + val);
-        trip = val;
-      } else {
-        km = val;
-        if (km < scooter.currentKm) throw new Error("Пробег не может уменьшаться");
-        trip = scooter.currentKm > 0 ? UI.r2(km - scooter.currentKm) : 0;
-      }
-
-      const entry = { date, km };
-      if (trip > 0) entry.trip = trip;
-      State.setMileageLog([...State.getMileageLog(), entry]);
-      // Начальное значение фиксируем только при самом первом вводе показаний одометра
-      if (!day && scooter.startKm === 0 && scooter.currentKm === 0) scooter.startKm = km;
+      State.setMileageLog([...State.getMileageLog(), { date: UI.date.local(), km }]);
       scooter.currentKm = km;
+      if (scooter.startKm === 0) scooter.startKm = km;
       State.setScooter(scooter);
-
-      document.getElementById("m_km").value = "";
       toggleMileageForm();
       render();
-      Notify.show(day ? `✅ +${val} км, всего на одометре ${km}` : "✅ Пробег обновлен");
-    } catch (e) { Notify.error(e.message); }
-  }
-
-  function saveExpense() {
-    if (!guardAction("saveExp")) return;
-    try {
-      const type = document.getElementById("x_type").value;
-      const cost = UI.num(document.getElementById("x_cost").value);
-      const wallet = document.getElementById("x_wall").value;
-      const note = document.getElementById("x_note").value.trim();
-
-      if (!wallet) throw new Error("Кошелёк не выбран");
-      if (cost <= 0) throw new Error("Введите сумму");
-
-      // Категория содержит «Скутер» — так трата попадает в отчёты («Мойка / ТО»)
-      FinanceAPI.spend({ wallet, amount: cost, category: "Скутер: " + type, note: note || type });
-      State.setScooterExpenses([...State.getScooterExpenses(), { date: UI.date.local(), type, cost, wallet, note }]);
-
-      document.getElementById("x_cost").value = "";
-      document.getElementById("x_note").value = "";
-      toggleExpForm();
-      render();
-      Notify.show(`✅ ${type}: списано ${cost} лей`);
+      Notify.show("✅ Пробег обновлен");
     } catch (e) { Notify.error(e.message); }
   }
 
@@ -393,16 +410,29 @@
     if (!guardAction("saveComp")) return;
     try {
       const data = State.getComponent(id);
-      const km = UI.num(document.getElementById(`c_km_${id}`).value);
-      const interval = UI.num(document.getElementById(`c_int_${id}`).value);
-      const cost = UI.num(document.getElementById(`c_cost_${id}`).value);
-      const wallet = document.getElementById(`c_wall_${id}`).value;
-      
+      if (!Array.isArray(data.history)) data.history = [];
+      const date = $(`c_date_${id}`).value;
+      const km = UI.num($(`c_km_${id}`).value);
+      const interval = UI.num($(`c_int_${id}`).value);
+      const cost = UI.num($(`c_cost_${id}`).value);
+      const wallet = $(`c_wall_${id}`).value;
+      const skip = $(`c_skip_${id}`).checked;
+      const note = $(`c_note_${id}`).value.trim();
+
+      if (!date) throw new Error("Укажите дату замены");
       if (km <= 0 || interval <= 0) throw new Error("Заполните км и интервал");
-      if (cost > 0) FinanceAPI.spend({ wallet, amount: cost, category: `Скутер: ${title}`, note: `Замена на ${km} км` });
-      
-      data.lastKm = km; data.intervalKm = interval; data.lastDate = UI.date.local();
-      data.history.push({ date: data.lastDate, km, cost }); State.setComponent(id, data);
+
+      let opId = null;
+      if (cost > 0 && !skip) {
+        opId = FinanceAPI.spend({ date, wallet, amount: cost, category: `Скутер: ${title}`, note: note || `Замена на ${km} км` });
+      }
+
+      data.intervalKm = interval;
+      // Старую запись не считаем «последней», если уже есть более свежая замена
+      if (!data.lastKm || km >= data.lastKm) { data.lastKm = km; data.lastDate = date; }
+      data.history.push({ date, km, cost, wallet: cost > 0 && !skip ? wallet : "", opId, note });
+      data.history.sort((a, b) => String(a.date).localeCompare(String(b.date)) || (+a.km || 0) - (+b.km || 0));
+      State.setComponent(id, data);
       render();
       Notify.show(`✅ Замена ${title} записана`);
     } catch (err) { Notify.error(err.message); }
@@ -412,16 +442,23 @@
     if (!guardAction("saveOff")) return;
     try {
       const data = State.getOfficial(id);
-      const date = document.getElementById(`o_date_${id}`).value;
-      const next = document.getElementById(`o_next_${id}`).value;
-      const cost = UI.num(document.getElementById(`o_cost_${id}`).value);
-      const wallet = document.getElementById(`o_wall_${id}`).value;
-      
+      if (!Array.isArray(data.history)) data.history = [];
+      const date = $(`o_date_${id}`).value;
+      const next = $(`o_next_${id}`).value;
+      const cost = UI.num($(`o_cost_${id}`).value);
+      const wallet = $(`o_wall_${id}`).value;
+      const skip = $(`o_skip_${id}`).checked;
+
       if (!date || !next) throw new Error("Укажите даты");
-      if (cost > 0) FinanceAPI.spend({ wallet, amount: cost, category: `Скутер: ${title}`, note: `Оплата до ${next}` });
-      
-      data.lastDate = date; data.nextDate = next; data.cost = cost;
-      data.history.push({ date, nextDate: next, cost });
+
+      let opId = null;
+      if (cost > 0 && !skip) {
+        opId = FinanceAPI.spend({ date, wallet, amount: cost, category: `Скутер: ${title}`, note: `Оплата до ${next}` });
+      }
+
+      if (!data.lastDate || date >= data.lastDate) { data.lastDate = date; data.nextDate = next; data.cost = cost; }
+      data.history.push({ date, nextDate: next, cost, wallet: cost > 0 && !skip ? wallet : "", opId });
+      data.history.sort((a, b) => String(a.date).localeCompare(String(b.date)));
       State.setOfficial(id, data);
       render();
       Notify.show(`✅ ${title} записан`);
