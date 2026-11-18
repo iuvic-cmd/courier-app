@@ -8,8 +8,17 @@
   <link rel="stylesheet" href="css/components.css">
   <style>
     .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-top: 16px; padding-bottom: 90px; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .header h1 { font-size: 24px; cursor: pointer; }
+    .monthbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .mb-arrow { width: 48px; height: 48px; flex: 0 0 auto; border-radius: 12px; border: 1px solid var(--border); background: var(--panel); color: var(--accent); font-size: 20px; cursor: pointer; }
+    .mb-title { flex: 1; text-align: center; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 6px 8px; cursor: pointer; min-width: 0; }
+    .mb-title b { display: block; font-size: 18px; }
+    .mb-title small { display: block; font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+    .tocur { width: 100%; margin-bottom: 12px; padding: 10px; border: 1px dashed var(--accent); border-radius: 10px; background: transparent; color: var(--accent); font-size: 14px; font-weight: 600; cursor: pointer; }
+    .mrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; margin-top: 8px; cursor: pointer; }
+    .mrow.on { border-color: var(--accent); background: var(--help-bg); }
+    .mrow b { font-size: 16px; }
+    .mrow-r { text-align: right; font-weight: 600; font-size: 14px; white-space: nowrap; }
+    .src-tag.carry { color: var(--orange); background: transparent; border: 1px solid var(--orange); }
 
     .goal-banner { background: var(--warn-bg); border-left: 5px solid #ffb800; padding: 14px 16px; margin-bottom: 16px; border-radius: 0 8px 8px 0; font-size: 14px; white-space: pre-line; cursor: pointer; min-height: 20px; color: #8a5a00; }
     :root[data-theme="dark"] .goal-banner { color: #ffcf80; }
@@ -23,21 +32,7 @@
     .tot.diff b { color: var(--red); }
     .tot.diff.plus b { color: var(--green); }
 
-    .calc-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
-    .calc-tabs button { flex: 1; padding: 9px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-size: 14px; font-weight: 600; cursor: pointer; }
-    .calc-tabs button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .calc-disp { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; text-align: right; margin-bottom: 10px; min-height: 64px; overflow: hidden; }
-    .calc-disp small { display: block; font-size: 14px; color: var(--text-dim); min-height: 18px; overflow-wrap: anywhere; }
-    .calc-disp b { display: block; font-size: 30px; margin-top: 2px; overflow-wrap: anywhere; }
-    .calc-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-    .calc-keys button { padding: 14px 0; font-size: 20px; font-weight: 600; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--text); cursor: pointer; }
-    .calc-keys button:active { transform: scale(0.96); }
-    .calc-keys button.op { background: var(--help-bg); color: var(--accent); }
-    .calc-keys button.eq { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .calc-keys button.wide { grid-column: span 2; }
-    .calc-out { background: var(--help-bg); border-radius: 12px; padding: 12px 14px; margin-top: 12px; font-size: 14px; line-height: 1.7; }
-    .calc-out b { font-size: 17px; }
-    .toolbar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 16px; }
+    .toolbar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 16px; }
     .toolbar button { padding: 10px 4px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; background: var(--panel); color: var(--text); border: 1px solid var(--border); line-height: 1.3; }
     .toolbar button.pri { background: var(--accent); color: #fff; border-color: var(--accent); }
 
@@ -90,23 +85,25 @@
 <body>
 
 <div class="container">
-  <div class="header">
-    <h1 id="planTitle" onclick="openSettings()">📋 План и факт</h1>
+  <div class="monthbar">
+    <button class="mb-arrow" onclick="shiftMonth(-1)" aria-label="Предыдущий месяц">◀</button>
+    <div class="mb-title" onclick="openMonths()"><b id="mName">—</b><small id="mSub"></small></div>
+    <button class="mb-arrow" onclick="shiftMonth(1)" aria-label="Следующий месяц">▶</button>
   </div>
+  <button class="tocur" id="toCur" onclick="goCurrent()" style="display:none">↩ К текущему месяцу</button>
 
   <div class="goal-banner" id="goalBanner" onclick="openSettings()"></div>
 
   <div class="totals">
     <div class="tot plan"><small>План</small><b id="totPlan">0</b></div>
     <div class="tot fact"><small>Факт</small><b id="totFact">0</b></div>
-    <div class="tot diff" id="totDiffWrap"><small>Остаток</small><b id="totDiff">0</b></div>
+    <div class="tot diff" id="totDiffWrap"><small>Разница</small><b id="totDiff">0</b></div>
   </div>
 
   <div class="toolbar">
     <button class="pri" onclick="openTaskModal(null)">➕<br>Задача</button>
     <button onclick="openBulk()">📋<br>Списком</button>
-    <button onclick="openCalc(false)">🧮<br>Счёт</button>
-    <button onclick="newMonth()">🆕<br>Новый месяц</button>
+    <button onclick="openMonths()">📅<br>Месяцы</button>
     <button onclick="toggleEdit()" id="editBtn">✏<br>Режим</button>
   </div>
 
@@ -137,14 +134,12 @@
     <textarea id="tNote" placeholder="Детали..."></textarea>
     <label>План (лей)</label>
     <input id="tPlan" inputmode="decimal" placeholder="0">
-    <button type="button" class="link" onclick="openCalc(true)">🧮 Посчитать сумму</button>
     <label>Откуда брать факт</label>
     <select id="tSrc" onchange="srcChanged()">
       <option value="manual">✍ Вручную</option>
       <option value="lombard">🥇 Платежи по ломбарду (из «Финансов»)</option>
       <option value="credit">🏛 Платежи по кредитам (из «Финансов»)</option>
       <option value="card">💳 Платежи по кредиткам (из «Финансов»)</option>
-      <option value="inst">🧾 Платежи по рассрочкам (из «Финансов»)</option>
       <option value="cat">🗂 Траты по категории</option>
     </select>
     <div id="tCatWrap" style="display:none">
@@ -183,14 +178,21 @@
   </div>
 </div>
 
+<!-- Модалка месяцев -->
+<div id="monthsModal" class="modal">
+  <div class="modal-box">
+    <h3>📅 Месяцы</h3>
+    <div class="hint">Нажмите на месяц, чтобы открыть. Невыполненные дела сами переходят в новый месяц, а прошлый остаётся в истории.</div>
+    <div id="monthsList"></div>
+    <button class="link" onclick="createNext()">➕ Создать следующий месяц</button>
+    <div class="row"><button class="no" onclick="closeMonths()">Закрыть</button></div>
+  </div>
+</div>
+
 <!-- Модалка настроек плана -->
 <div id="setModal" class="modal">
   <div class="modal-box">
     <h3>Настройки плана</h3>
-    <label>Название месяца</label>
-    <input id="sMonth" placeholder="Ноябрь 2026">
-    <label>Период для факта из «Финансов»</label>
-    <input id="sYm" type="month">
     <label>Цель (жёлтый баннер)</label>
     <textarea id="sGoal" placeholder="Главная цель..."></textarea>
     <label>Итоги (внизу)</label>
@@ -201,35 +203,6 @@
       <button class="ok" onclick="saveSettings()">💾 Сохранить</button>
       <button class="no" onclick="closeSettings()">Отмена</button>
     </div>
-  </div>
-</div>
-
-<!-- Модалка калькулятора -->
-<div id="calcModal" class="modal">
-  <div class="modal-box">
-    <h3>🧮 Калькулятор</h3>
-    <div class="calc-tabs">
-      <button id="cTab0" class="on" onclick="calcTab(0)">Счёт</button>
-      <button id="cTab1" onclick="calcTab(1)">Финансы</button>
-    </div>
-    <div id="calcP0">
-      <div class="calc-disp"><small id="cExpr"></small><b id="cRes">0</b></div>
-      <div class="calc-keys" id="cKeys"></div>
-      <div class="hint">Считает слева направо. Проценты как на телефоне: 1000 + 10% = 1100, 1000 × 10% = 100.</div>
-    </div>
-    <div id="calcP1" style="display:none">
-      <label>Что считаем</label>
-      <select id="fMode" onchange="fcalcMode()">
-        <option value="pawn">🥇 Проценты по займу (ломбард)</option>
-        <option value="loan">🏛 Платёж по кредиту (аннуитет)</option>
-        <option value="save">🎯 Сколько откладывать в месяц</option>
-        <option value="pct">％ Процент от суммы</option>
-      </select>
-      <div id="fFields"></div>
-      <div class="calc-out" id="fOut">—</div>
-    </div>
-    <button class="link" id="cUse" style="display:none" onclick="calcUse()">↪ Подставить в «План»</button>
-    <div class="row"><button class="no" onclick="closeCalc()">Закрыть</button></div>
   </div>
 </div>
 
@@ -257,21 +230,44 @@
     const y = (low.match(/20\d\d/) || [new Date().getFullYear()])[0];
     return y + "-" + String(i + 1).padStart(2, "0");
   }
+  const addMonth = (ym, n) => {
+    const [y, m] = ym.split("-").map(Number);
+    const d = new Date(y, m - 1 + n, 1);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+  };
+  const monthLabel = ym => MONTHS[+ym.slice(5, 7) - 1] + " " + ym.slice(0, 4);
+  const blankPlan = ym => ({ month: monthLabel(ym), ym, goal: "", checkpoint: "", sections: [{ key: "main", title: "📋 Мой план на месяц", tasks: [] }] });
 
-  function loadPlan() {
-    let p = AppStorage.get("plan", null);
-    if (!p || !Array.isArray(p.sections)) {
-      p = { month: MONTHS[new Date().getMonth()] + " " + new Date().getFullYear(), goal: "", checkpoint: "", sections: [{ key: "main", title: "📋 Мой план на месяц", tasks: [] }] };
+  // Все месяцы: { "2026-11": {month, ym, goal, checkpoint, sections}, ... }
+  function loadAll() {
+    let pl = AppStorage.get("plans", null);
+    if (!pl || typeof pl !== "object" || Array.isArray(pl)) {
+      pl = {};
+      // Перенос из старого формата: один план (plan) + архив (plan_archive)
+      const arch = AppStorage.get("plan_archive", {}) || {};
+      Object.keys(arch).forEach(k => {
+        const a = arch[k];
+        if (a && Array.isArray(a.sections) && a.sections.some(s => (s.tasks || []).length)) pl[k] = a;
+      });
+      const old = AppStorage.get("plan", null);
+      if (old && Array.isArray(old.sections)) {
+        const ym = old.ym || ymFromLabel(old.month) || curYm();
+        pl[ym] = old;
+      }
+      if (!Object.keys(pl).length) pl[curYm()] = blankPlan(curYm());
     }
-    if (!p.ym) p.ym = ymFromLabel(p.month) || curYm();
-    return p;
+    Object.keys(pl).forEach(k => { pl[k].ym = k; if (!pl[k].month) pl[k].month = monthLabel(k); });
+    return pl;
   }
-  let P = loadPlan();
+  let plans = loadAll();
+  let viewYm = curYm();
+  let P = null;
   let editingTaskId = null;
   let editMode = false;
   let OPS = [];
 
-  function persist() { AppStorage.set("plan", P); }
+  function persist() { plans[viewYm] = P; AppStorage.set("plans", plans); }
+  function saveAll() { AppStorage.set("plans", plans); }
 
   // ---- Факт из «Финансов» (поддерживает оба формата журнала) ----
   function planOps() {
@@ -287,7 +283,6 @@
         }
         if (o.tip === "Кредит" && o.napr === "платёж") return { date, type: "credit", s };
         if (o.tip === "Ломбард" && o.napr === "платёж") return { date, type: "lombard", s };
-        if (o.tip === "Рассрочка" && o.napr === "платёж") return { date, type: "inst", s };
         return null;
       }
       if (o.kind === "expense" && !/корректиров/i.test(o.cat || "")) return { date, type: "exp", cat: o.cat || "", s: Math.abs(+o.amount || 0) };
@@ -295,21 +290,20 @@
     }).filter(Boolean);
   }
   const isAuto = t => !!t.src && t.src !== "manual";
-  function autoFact(src) {
-    const inM = OPS.filter(o => o.date.startsWith(P.ym));
-    if (src === "lombard" || src === "credit" || src === "card" || src === "inst") return inM.filter(o => o.type === src).reduce((a, o) => a + o.s, 0);
+  function autoFact(src, ym) {
+    const inM = OPS.filter(o => o.date.startsWith(ym));
+    if (src === "lombard" || src === "credit" || src === "card") return inM.filter(o => o.type === src).reduce((a, o) => a + o.s, 0);
     if (src.startsWith("cat:")) {
       const name = src.slice(4).toLowerCase();
       return inM.filter(o => o.type === "exp" && o.cat.toLowerCase().includes(name)).reduce((a, o) => a + o.s, 0);
     }
     return 0;
   }
-  const factOf = t => isAuto(t) ? Math.round(autoFact(t.src)) : num(t.fact);
-  const srcLabel = s => s === "lombard" ? "ломбард" : s === "credit" ? "кредиты" : s === "card" ? "кредитки" : s === "inst" ? "рассрочки" : s.startsWith("cat:") ? s.slice(4) : "";
+  const factOf = (t, ym) => isAuto(t) ? Math.round(autoFact(t.src, ym || (P && P.ym) || curYm())) : num(t.fact);
+  const srcLabel = s => s === "lombard" ? "ломбард" : s === "credit" ? "кредиты" : s === "card" ? "кредитки" : s.startsWith("cat:") ? s.slice(4) : "";
   function detectSrc(title) {
     const l = String(title).toLowerCase();
     if (l.includes("ломбард")) return "lombard";
-    if (l.includes("рассрочк")) return "inst";
     if (l.includes("кредитк")) return "card";
     if (l.includes("кредит")) return "credit";
     if (/бензин|топлив/.test(l)) return "cat:Топлив";
@@ -319,7 +313,12 @@
   // ---- Рендер ----
   function render() {
     OPS = planOps();
-    $("planTitle").textContent = `📋 ${P.month}`;
+    if (!plans[viewYm]) viewYm = curYm();
+    P = plans[viewYm];
+    const cur = curYm();
+    $("mName").textContent = monthLabel(viewYm);
+    $("mSub").textContent = viewYm === cur ? "текущий месяц" : viewYm < cur ? "📚 история" : "🔮 впереди";
+    $("toCur").style.display = viewYm === cur ? "none" : "block";
     $("goalBanner").textContent = P.goal || "Нажмите здесь, чтобы добавить цель...";
     $("checkpoint").textContent = P.checkpoint || "Нажмите здесь, чтобы добавить итоги...";
 
@@ -345,6 +344,8 @@
         <div class="task-title ${checked ? "done" : ""}" onclick="openTaskModal('${esc(t.id)}')">
           ${esc(t.title)}
           ${auto ? `<div><span class="src-tag">авто · ${esc(srcLabel(t.src))}</span></div>` : ""}
+          ${t.from ? `<div><span class="src-tag carry">↪ из ${esc(monthLabel(t.from))}</span></div>` : ""}
+          ${t.carried ? `<div><span class="src-tag carry">➡ перенесено дальше</span></div>` : ""}
           ${t.note ? `<div class="task-note">${esc(t.note)}</div>` : ""}
         </div>
         ${editMode ? `<div class="task-actions"><button onclick="removeTask('${esc(t.id)}')">🗑</button></div>` : ""}
@@ -352,17 +353,16 @@
       <div class="task-nums">
         <div class="task-num"><small>План</small><input type="number" inputmode="decimal" value="${t.plan || ""}" onchange="setNum('${esc(t.id)}','plan',this)"></div>
         <div class="task-num fact ${auto ? "auto" : ""}"><small>Факт</small><input type="number" inputmode="decimal" value="${f || ""}" ${auto ? "readonly" : ""} onchange="setNum('${esc(t.id)}','fact',this)"></div>
-        <div class="task-num diff"><small>Остаток</small><b data-diff="${esc(t.id)}"></b></div>
+        <div class="task-num diff"><small>Разница</small><b data-diff="${esc(t.id)}"></b></div>
       </div>
     </div>`;
   }
 
-  // Остаток = план − факт: перерасход показывается минусом (красный), экономия — плюсом (зелёный)
   function updateTotals() {
     const all = P.sections.flatMap(s => s.tasks);
     const p = all.reduce((a, t) => a + num(t.plan), 0);
     const f = all.reduce((a, t) => a + factOf(t), 0);
-    const d = p - f;
+    const d = f - p;
     $("totPlan").textContent = fmt(p) + " лей";
     $("totFact").textContent = fmt(f) + " лей";
     $("totDiff").textContent = (d > 0 ? "+" : "") + fmt(d) + " лей";
@@ -374,7 +374,7 @@
       sec.tasks.forEach(t => {
         const diffEl = document.querySelector(`[data-diff="${t.id}"]`);
         if (diffEl) {
-          const td = num(t.plan) - factOf(t);
+          const td = factOf(t) - num(t.plan);
           diffEl.textContent = (td > 0 ? "+" : "") + fmt(td);
           diffEl.className = td < 0 ? "diff-neg" : td > 0 ? "diff-pos" : "";
         }
@@ -517,26 +517,90 @@
     Notify.show(`✅ Добавлено задач: ${items.length}`);
   }
 
-  // ---- Новый месяц ----
-  function newMonth() {
-    const [y, m] = P.ym.split("-").map(Number);
-    const d = new Date(y, m, 1); // следующий месяц
-    const label = MONTHS[d.getMonth()] + " " + d.getFullYear();
-    if (!confirm(`Начать «${label}»?\nПланы и привязки сохранятся, факты и галочки обнулятся. Текущий месяц сохранится в архиве.`)) return;
-    const arch = AppStorage.get("plan_archive", {}) || {};
-    arch[P.ym] = clone(P);
-    AppStorage.set("plan_archive", arch);
-    P.ym = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
-    P.month = label;
-    P.sections.forEach(s => s.tasks.forEach(t => { t.done = false; t.fact = 0; }));
-    persist(); render();
-    Notify.show("✅ Новый месяц: " + label);
+  // ---- Месяцы: переключение, перенос невыполненного ----
+  function carryTask(t, prev) {
+    const p = num(t.plan), f = factOf(t, prev.ym);
+    const finished = t.done || (p > 0 && f >= p);
+    if (finished) return null;
+    t.carried = true; // в прошлом месяце остаётся пометка
+    const rest = p > 0 && f > 0 && f < p ? p - f : p;
+    return { id: newId(), title: t.title, note: t.note || "", plan: Math.round(rest), fact: 0, done: false, src: t.src || "manual", from: prev.ym };
+  }
+  function carryOver(prev, ym) {
+    return {
+      month: monthLabel(ym), ym,
+      goal: prev.goal || "", checkpoint: prev.checkpoint || "",
+      sections: prev.sections.map(sec => ({ key: sec.key, title: sec.title, tasks: sec.tasks.map(t => carryTask(t, prev)).filter(Boolean) }))
+    };
+  }
+  // Если наступил новый месяц, а плана на него нет — создаём и переносим невыполненное
+  function ensureRollover() {
+    const cur = curYm();
+    if (plans[cur]) return false;
+    const before = Object.keys(plans).filter(k => k < cur).sort();
+    if (!before.length) { plans[cur] = blankPlan(cur); return true; }
+    let ym = before[before.length - 1];
+    while (ym < cur) {
+      const next = addMonth(ym, 1);
+      if (!plans[next]) plans[next] = carryOver(plans[ym], next);
+      ym = next;
+    }
+    return true;
+  }
+  function createMonth(ym) {
+    if (!plans[ym]) {
+      OPS = planOps();
+      const prevKeys = Object.keys(plans).filter(k => k < ym).sort();
+      plans[ym] = prevKeys.length ? carryOver(plans[prevKeys[prevKeys.length - 1]], ym) : blankPlan(ym);
+      saveAll();
+    }
+    viewYm = ym;
+    render();
+  }
+  function shiftMonth(dir) {
+    const keys = Object.keys(plans).sort();
+    const i = keys.indexOf(viewYm), t = keys[i + dir];
+    if (t) { viewYm = t; render(); window.scrollTo(0, 0); return; }
+    if (dir > 0) {
+      const next = addMonth(viewYm, 1);
+      if (confirm(`Создать «${monthLabel(next)}»?\nНевыполненные дела перенесутся в него.`)) createMonth(next);
+    } else {
+      Notify.show("Раньше месяцев нет");
+    }
+  }
+  function goCurrent() { viewYm = curYm(); render(); window.scrollTo(0, 0); }
+
+  function planStats(pl) {
+    let n = 0, d = 0, p = 0, f = 0;
+    pl.sections.forEach(s => s.tasks.forEach(t => {
+      const fa = factOf(t, pl.ym), pp = num(t.plan);
+      n++; p += pp; f += fa;
+      if (t.done || (isAuto(t) && pp > 0 && fa >= pp)) d++;
+    }));
+    return { n, d, p, f };
+  }
+  function openMonths() {
+    OPS = planOps();
+    const cur = curYm();
+    $("monthsList").innerHTML = Object.keys(plans).sort().reverse().map(k => {
+      const st = planStats(plans[k]);
+      const tag = k === cur ? "текущий" : k < cur ? "история" : "впереди";
+      return `<div class="mrow ${k === viewYm ? "on" : ""}" onclick="openMonth('${k}')">
+        <div><b>${esc(monthLabel(k))}</b><div class="hint">${tag} · выполнено ${st.d} из ${st.n}</div></div>
+        <div class="mrow-r">${fmt(st.f)} / ${fmt(st.p)}</div></div>`;
+    }).join("");
+    $("monthsModal").classList.add("on");
+  }
+  function closeMonths() { $("monthsModal").classList.remove("on"); }
+  function openMonth(k) { viewYm = k; closeMonths(); render(); window.scrollTo(0, 0); }
+  function createNext() {
+    const latest = Object.keys(plans).sort().pop();
+    const next = addMonth(latest, 1);
+    if (confirm(`Создать «${monthLabel(next)}»?\nНевыполненные дела перенесутся в него.`)) { closeMonths(); createMonth(next); }
   }
 
   // ---- Настройки ----
   function openSettings() {
-    $("sMonth").value = P.month || "";
-    $("sYm").value = P.ym || curYm();
     $("sGoal").value = P.goal || "";
     $("sCheck").value = P.checkpoint || "";
     $("sErr").textContent = "";
@@ -544,10 +608,6 @@
   }
   function closeSettings() { $("setModal").classList.remove("on"); }
   function saveSettings() {
-    const m = $("sMonth").value.trim();
-    if (!m) { $("sErr").textContent = "Укажите название месяца"; return; }
-    P.month = m;
-    P.ym = $("sYm").value || ymFromLabel(m) || curYm();
     P.goal = $("sGoal").value; P.checkpoint = $("sCheck").value;
     persist(); closeSettings(); render();
   }
@@ -562,140 +622,23 @@
     $("sErr").textContent = n ? `Привязано задач: ${n}` : "Подходящих задач не найдено";
   }
 
-  // ---- Калькулятор ----
-  let cExpr = "", calcOut = 0, calcFromTask = false;
-  const fmtD = x => (+x || 0).toLocaleString("ru-RU", { maximumFractionDigits: 2 });
-  const CKEYS = [["C","C","op"],["⌫","B","op"],["%","%","op"],["÷","/","op"],
-    ["7","7"],["8","8"],["9","9"],["×","*","op"],
-    ["4","4"],["5","5"],["6","6"],["−","-","op"],
-    ["1","1"],["2","2"],["3","3"],["+","+","op"],
-    ["0","0","wide"],[",","."],["=","=","eq"]];
-
-  // Вычисление слева направо, проценты как на телефоне
-  function calcEval(s) {
-    const t = [], re = /(\d+\.?\d*|\.\d+)(%?)|([+\-*/])/g;
-    let m, pos = 0;
-    while ((m = re.exec(s))) {
-      if (m.index !== pos) return null;
-      pos = re.lastIndex;
-      t.push(m[3] ? { op: m[3] } : { n: parseFloat(m[1]), p: !!m[2] });
-    }
-    if (pos !== s.length || !t.length) return null;
-    if (t[0].op === "-" && t[1] && t[1].n !== undefined) { t[1].n = -t[1].n; t.shift(); }
-    if (t[0].n === undefined) return null;
-    if (t[t.length - 1].op) t.pop();
-    let acc = t[0].p ? t[0].n / 100 : t[0].n;
-    for (let i = 1; i < t.length; i += 2) {
-      const op = t[i].op, b = t[i + 1];
-      if (!op || !b || b.n === undefined) return null;
-      let v = b.n;
-      if (b.p) v = (op === "+" || op === "-") ? acc * b.n / 100 : b.n / 100;
-      if (op === "+") acc += v; else if (op === "-") acc -= v; else if (op === "*") acc *= v;
-      else { if (v === 0) return null; acc /= v; }
-    }
-    return isFinite(acc) ? Math.round(acc * 1e6) / 1e6 : null;
-  }
-
-  function calcShow() {
-    $("cExpr").textContent = cExpr.replace(/\*/g, "×").replace(/\//g, "÷").replace(/-/g, "−").replace(/\./g, ",") || " ";
-    const r = calcEval(cExpr);
-    $("cRes").textContent = r === null ? "0" : fmtD(r);
-    if (r !== null) calcOut = Math.round(r * 100) / 100;
-  }
-
-  function calcKey(k) {
-    const last = cExpr.slice(-1), isOp = c => "+-*/".includes(c);
-    if (k === "C") cExpr = "";
-    else if (k === "B") cExpr = cExpr.slice(0, -1);
-    else if (k === "=") {
-      const r = calcEval(cExpr);
-      if (r !== null) cExpr = String(Math.round(r * 100) / 100);
-    }
-    else if (k === "%") { if (/\d/.test(last)) cExpr += "%"; }
-    else if ("+-*/".includes(k)) {
-      if (!cExpr) { if (k === "-") cExpr = "-"; }
-      else if (last === "%") cExpr += k;
-      else if (isOp(last)) { if (cExpr.length > 1) cExpr = cExpr.slice(0, -1) + k; }
-      else cExpr += k;
-    }
-    else if (k === ".") {
-      const cur = cExpr.split(/[+\-*/]/).pop();
-      if (cur.includes("%")) return;
-      if (!cur.includes(".")) cExpr += cur ? "." : "0.";
-    }
-    else { if (last === "%") cExpr += "*"; cExpr += k; }
-    calcShow();
-  }
-
-  function calcTab(i) {
-    $("calcP0").style.display = i === 0 ? "block" : "none";
-    $("calcP1").style.display = i === 1 ? "block" : "none";
-    $("cTab0").classList.toggle("on", i === 0);
-    $("cTab1").classList.toggle("on", i === 1);
-    if (i === 1) fcalcMode(); else calcShow();
-  }
-
-  const FMODES = {
-    pawn: [["fA", "Сумма займа (лей)", "77000"], ["fB", "Ставка, % в месяц", "3"], ["fC", "Месяцев", "1"]],
-    loan: [["fA", "Сумма кредита (лей)", "50000"], ["fB", "Ставка, % годовых", "15"], ["fC", "Срок, месяцев", "12"]],
-    save: [["fA", "Цель (лей)", "10000"], ["fB", "Уже накоплено (лей)", "0"], ["fC", "За сколько месяцев", "6"]],
-    pct: [["fA", "Сумма", "1000"], ["fB", "Процент, %", "10"]]
-  };
-  function fcalcMode() {
-    $("fFields").innerHTML = FMODES[$("fMode").value].map(([id, label, ph]) =>
-      `<label>${label}</label><input id="${id}" inputmode="decimal" placeholder="${ph}" oninput="fcalc()">`).join("");
-    fcalc();
-  }
-  function fcalc() {
-    const mode = $("fMode").value, g = id => $(id) ? num($(id).value) : 0;
-    const a = g("fA"), b = g("fB"), c = g("fC");
-    let html = "—", out = 0;
-    if (mode === "pawn" && a > 0) {
-      const m = a * b / 100, n = Math.max(1, Math.round(c) || 1);
-      out = m * n;
-      html = `В месяц: <b>${fmtD(m)}</b> лей<br>За ${n} мес.: <b>${fmtD(out)}</b> лей`;
-    } else if (mode === "loan" && a > 0 && c > 0) {
-      const r = b / 1200, n = Math.round(c);
-      const pay = r ? a * r / (1 - Math.pow(1 + r, -n)) : a / n;
-      out = pay;
-      html = `Платёж в месяц: <b>${fmtD(pay)}</b> лей<br>Всего выплатите: ${fmtD(pay * n)} лей<br>Переплата: <b>${fmtD(pay * n - a)}</b> лей`;
-    } else if (mode === "save" && a > 0 && c > 0) {
-      const left = Math.max(0, a - b), n = Math.max(1, Math.round(c));
-      out = left / n;
-      html = `Осталось накопить: ${fmtD(left)} лей<br>Откладывать в месяц: <b>${fmtD(out)}</b> лей`;
-    } else if (mode === "pct" && a !== 0) {
-      out = a * b / 100;
-      html = `${fmtD(b)}% от ${fmtD(a)} = <b>${fmtD(out)}</b><br>Сумма + ${fmtD(b)}%: ${fmtD(a + out)}<br>Сумма − ${fmtD(b)}%: ${fmtD(a - out)}`;
-    }
-    calcOut = Math.round(out * 100) / 100;
-    $("fOut").innerHTML = html;
-  }
-
-  function openCalc(fromTask) {
-    calcFromTask = !!fromTask;
-    $("cUse").style.display = calcFromTask ? "block" : "none";
-    $("cKeys").innerHTML = CKEYS.map(([l, k, cls]) =>
-      `<button class="${cls || ""}" onclick="calcKey('${k}')">${l}</button>`).join("");
-    cExpr = "";
-    calcTab(0);
-    $("calcModal").classList.add("on");
-  }
-  function closeCalc() { $("calcModal").classList.remove("on"); }
-  function calcUse() {
-    if (!(calcOut > 0)) { Notify.error("Сначала посчитайте сумму"); return; }
-    $("tPlan").value = Math.round(calcOut);
-    closeCalc();
-    Notify.show("✅ В план: " + fmt(calcOut));
-  }
-
   // Закрытие модалок по клику вне
-  ["taskModal", "bulkModal", "setModal", "calcModal"].forEach(id =>
+  ["taskModal", "bulkModal", "setModal", "monthsModal"].forEach(id =>
     $(id).addEventListener("click", e => { if (e.target.id === id) $(id).classList.remove("on"); }));
 
   // Обновлять факт при возврате на страницу (данные могли измениться в «Финансах»)
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
-  window.addEventListener("pageshow", e => { if (e.persisted) render(); });
+  function refresh() {
+    OPS = planOps();
+    if (ensureRollover()) saveAll();
+    render();
+  }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+  window.addEventListener("pageshow", e => { if (e.persisted) refresh(); });
 
+  OPS = planOps();
+  ensureRollover();
+  saveAll(); // сразу сохраняем в новом формате (plans)
+  viewYm = curYm();
   render();
 </script>
 </body>
