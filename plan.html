@@ -18,6 +18,8 @@
     .mrow.on { border-color: var(--accent); background: var(--help-bg); }
     .mrow b { font-size: 16px; }
     .mrow-r { text-align: right; font-weight: 600; font-size: 14px; white-space: nowrap; }
+    .modal-box .big-ok { width: 100%; margin-top: 14px; padding: 12px; border: none; border-radius: 10px; background: var(--accent); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .mdel { background: none; border: none; font-size: 18px; cursor: pointer; margin-left: 6px; }
     .src-tag.carry { color: var(--orange); background: transparent; border: 1px solid var(--orange); }
 
     .goal-banner { background: var(--warn-bg); border-left: 5px solid #ffb800; padding: 14px 16px; margin-bottom: 16px; border-radius: 0 8px 8px 0; font-size: 14px; white-space: pre-line; cursor: pointer; min-height: 20px; color: #8a5a00; }
@@ -175,6 +177,17 @@
       <button class="ok" onclick="saveBulk()">✅ Добавить</button>
       <button class="no" onclick="closeBulk()">Отмена</button>
     </div>
+  </div>
+</div>
+
+<!-- Модалка создания месяца -->
+<div id="createModal" class="modal">
+  <div class="modal-box">
+    <h3 id="createTitle">Новый месяц</h3>
+    <div class="hint">Что сделать с невыполненными делами прошлого месяца?</div>
+    <button class="big-ok" onclick="doCreate(true)">↪ Перенести невыполненное</button>
+    <button class="link" onclick="doCreate(false)">📄 Пустой месяц (только блоки, без дел и сумм)</button>
+    <div class="row"><button class="no" onclick="closeCreate()">Отмена</button></div>
   </div>
 </div>
 
@@ -526,11 +539,11 @@
     const rest = p > 0 && f > 0 && f < p ? p - f : p;
     return { id: newId(), title: t.title, note: t.note || "", plan: Math.round(rest), fact: 0, done: false, src: t.src || "manual", from: prev.ym };
   }
-  function carryOver(prev, ym) {
+  function carryOver(prev, ym, withTasks = true) {
     return {
       month: monthLabel(ym), ym,
       goal: prev.goal || "", checkpoint: prev.checkpoint || "",
-      sections: prev.sections.map(sec => ({ key: sec.key, title: sec.title, tasks: sec.tasks.map(t => carryTask(t, prev)).filter(Boolean) }))
+      sections: prev.sections.map(sec => ({ key: sec.key, title: sec.title, tasks: withTasks ? sec.tasks.map(t => carryTask(t, prev)).filter(Boolean) : [] }))
     };
   }
   // Если наступил новый месяц, а плана на него нет — создаём и переносим невыполненное
@@ -547,11 +560,11 @@
     }
     return true;
   }
-  function createMonth(ym) {
+  function createMonth(ym, carry = true) {
     if (!plans[ym]) {
       OPS = planOps();
       const prevKeys = Object.keys(plans).filter(k => k < ym).sort();
-      plans[ym] = prevKeys.length ? carryOver(plans[prevKeys[prevKeys.length - 1]], ym) : blankPlan(ym);
+      plans[ym] = prevKeys.length ? carryOver(plans[prevKeys[prevKeys.length - 1]], ym, carry) : blankPlan(ym);
       saveAll();
     }
     viewYm = ym;
@@ -562,8 +575,7 @@
     const i = keys.indexOf(viewYm), t = keys[i + dir];
     if (t) { viewYm = t; render(); window.scrollTo(0, 0); return; }
     if (dir > 0) {
-      const next = addMonth(viewYm, 1);
-      if (confirm(`Создать «${monthLabel(next)}»?\nНевыполненные дела перенесутся в него.`)) createMonth(next);
+      askCreate(addMonth(viewYm, 1));
     } else {
       Notify.show("Раньше месяцев нет");
     }
@@ -587,7 +599,7 @@
       const tag = k === cur ? "текущий" : k < cur ? "история" : "впереди";
       return `<div class="mrow ${k === viewYm ? "on" : ""}" onclick="openMonth('${k}')">
         <div><b>${esc(monthLabel(k))}</b><div class="hint">${tag} · выполнено ${st.d} из ${st.n}</div></div>
-        <div class="mrow-r">${fmt(st.f)} / ${fmt(st.p)}</div></div>`;
+        <div class="mrow-r">${fmt(st.f)} / ${fmt(st.p)}${k !== cur ? `<button class="mdel" onclick="event.stopPropagation();deleteMonth('${k}')">🗑</button>` : ""}</div></div>`;
     }).join("");
     $("monthsModal").classList.add("on");
   }
@@ -595,8 +607,38 @@
   function openMonth(k) { viewYm = k; closeMonths(); render(); window.scrollTo(0, 0); }
   function createNext() {
     const latest = Object.keys(plans).sort().pop();
-    const next = addMonth(latest, 1);
-    if (confirm(`Создать «${monthLabel(next)}»?\nНевыполненные дела перенесутся в него.`)) { closeMonths(); createMonth(next); }
+    askCreate(addMonth(latest, 1));
+  }
+  let pendingYm = null;
+  function askCreate(ym) {
+    pendingYm = ym;
+    $("createTitle").textContent = `Создать «${monthLabel(ym)}»`;
+    $("createModal").classList.add("on");
+  }
+  function closeCreate() { $("createModal").classList.remove("on"); pendingYm = null; }
+  function doCreate(carry) {
+    const ym = pendingYm;
+    closeCreate(); closeMonths();
+    if (ym) createMonth(ym, carry);
+  }
+
+  // Пометка «перенесено дальше» остаётся, только если в следующих месяцах есть такая задача
+  function refreshCarried() {
+    const keys = Object.keys(plans).sort();
+    keys.forEach(k => plans[k].sections.forEach(sec => sec.tasks.forEach(t => {
+      if (!t.carried) return;
+      const found = keys.some(n => n > k && plans[n].sections.some(s2 => s2.tasks.some(x => x.from === k && x.title === t.title)));
+      if (!found) delete t.carried;
+    })));
+  }
+  function deleteMonth(k) {
+    if (k === curYm()) { alert("Текущий месяц удалить нельзя. Можно удалить его задачи."); return; }
+    if (!confirm(`Удалить «${monthLabel(k)}» со всеми делами?\nЭто нельзя отменить.`)) return;
+    delete plans[k];
+    refreshCarried();
+    saveAll();
+    if (viewYm === k) viewYm = curYm();
+    openMonths(); render();
   }
 
   // ---- Настройки ----
@@ -623,7 +665,7 @@
   }
 
   // Закрытие модалок по клику вне
-  ["taskModal", "bulkModal", "setModal", "monthsModal"].forEach(id =>
+  ["taskModal", "bulkModal", "setModal", "monthsModal", "createModal"].forEach(id =>
     $(id).addEventListener("click", e => { if (e.target.id === id) $(id).classList.remove("on"); }));
 
   // Обновлять факт при возврате на страницу (данные могли измениться в «Финансах»)
