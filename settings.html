@@ -23,9 +23,6 @@
     .file-label { display: block; padding: 14px; background: var(--accent); color: #fff; text-align: center; border-radius: 12px; font-weight: 700; cursor: pointer; margin-top: 10px; }
     .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
     .btn-sm-reset { padding: 12px; font-size: 13px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; color: #fff; }
-    .theme-seg { display: flex; gap: 8px; }
-    .theme-seg button { flex: 1; padding: 14px 6px; border: 1.5px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--text); font-size: 15px; font-weight: 600; cursor: pointer; }
-    .theme-seg button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
     .theme-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
     .theme-seg button { padding: 14px 6px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--bg); color: var(--text); font-size: 14px; font-weight: 600; cursor: pointer; line-height: 1.4; }
     .theme-seg button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
@@ -36,17 +33,6 @@
 <div class="container">
   <div class="header">
     <h1>⚙ Настройки</h1>
-  </div>
-
-  <!-- Тема -->
-  <div class="card">
-    <h3>🎨 Тема оформления</h3>
-    <div class="theme-seg" id="themeSeg">
-      <button data-mode="auto" onclick="setTheme('auto')">🌗 Авто</button>
-      <button data-mode="light" onclick="setTheme('light')">☀️ Светлая</button>
-      <button data-mode="dark" onclick="setTheme('dark')">🌙 Тёмная</button>
-    </div>
-    <p class="hint" style="margin: 10px 0 0;">«Авто» — как в настройках телефона. Выбор действует на всех страницах.</p>
   </div>
 
   <!-- Тема -->
@@ -154,14 +140,6 @@
   }
   function setTheme(mode) { Theme.set(mode); refreshThemeButtons(); }
   refreshThemeButtons();
-
-  // --- Тема ---
-  function markTheme() {
-    const mode = Theme.get();
-    document.querySelectorAll("#themeSeg button").forEach(b => b.classList.toggle("on", b.dataset.mode === mode));
-  }
-  function setTheme(mode) { Theme.set(mode); markTheme(); }
-  markTheme();
 
   // --- PIN ---
   function savePin() {
