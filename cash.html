@@ -270,8 +270,30 @@
     Notify.show("🗑 Запись удалена");
   }
 
+  // Прежние данные хранили только «последнюю замену» (lastKm/lastDate) без истории.
+  // Переносим её в историю, чтобы новая запись не затирала старую, а дописывалась.
+  function migrateLegacyHistory() {
+    COMPONENTS.forEach(c => {
+      const d = State.getComponent(c.id);
+      if (!Array.isArray(d.history)) d.history = [];
+      if (d.history.length === 0 && +d.lastKm > 0) {
+        d.history.push({ date: d.lastDate || "", km: +d.lastKm, cost: 0, wallet: "", opId: null, note: "из прежних данных" });
+        State.setComponent(c.id, d);
+      }
+    });
+    OFFICIALS.forEach(o => {
+      const d = State.getOfficial(o.id);
+      if (!Array.isArray(d.history)) d.history = [];
+      if (d.history.length === 0 && d.lastDate) {
+        d.history.push({ date: d.lastDate, nextDate: d.nextDate || "", cost: +d.cost || 0, wallet: "", opId: null });
+        State.setOfficial(o.id, d);
+      }
+    });
+  }
+
   // ---------- Рендер ----------
   function render() {
+    migrateLegacyHistory();
     const wallets = State.getWallets();
 
     const scooterOps = getScooterOps();
