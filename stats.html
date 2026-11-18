@@ -38,6 +38,8 @@
     .list-row.muted { color: var(--text-dim); }
     .neg { color: var(--red, #c62828); }
     .pos { color: var(--green, #2e7d32); }
+    .total-row { font-size: 16px; border-top: 2px solid var(--border); margin-top: 4px; }
+    .total-row b { color: var(--red, #c62828); }
     .note { font-size: 12px; color: var(--text-dim); margin-top: 10px; line-height: 1.4; }
 
     /* Календарь */
@@ -163,7 +165,9 @@
     <h3>🛵 Скутер за месяц</h3>
     <div class="stat-grid">
       <div class="stat-item"><span class="stat-label">⛽ Топливо (лей)</span><span class="stat-val" id="statFuelCost">0</span></div>
-      <div class="stat-item"><span class="stat-label">🧼 Мойка / ТО (лей)</span><span class="stat-val" id="statMaintCost">0</span></div>
+      <div class="stat-item"><span class="stat-label">🧼 Мойка (лей)</span><span class="stat-val" id="statWashCost">0</span></div>
+      <div class="stat-item"><span class="stat-label">🔧 ТО и расходники (лей)</span><span class="stat-val" id="statServiceCost">0</span></div>
+      <div class="stat-item blue"><span class="stat-label">🛵 Всего на скутер (лей)</span><span class="stat-val" id="statScooterTotal">0</span></div>
       <div class="stat-item"><span class="stat-label">⛽ Цена литра (ср.)</span><span class="stat-val" id="statPrice">0</span></div>
       <div class="stat-item"><span class="stat-label" id="statKmLabel">🛵 Пробег</span><span class="stat-val" id="statKm">0</span></div>
       <div class="stat-item"><span class="stat-label">⛽ Расход</span><span class="stat-val" id="statCons">0</span></div>
@@ -433,7 +437,10 @@
     const fuelFromLog = fuels.reduce((s, f) => s + num(f.total != null ? f.total : f.amount), 0);
     const fuelCost = fuelFromLog > 0 ? fuelFromLog : sumAbs(monthExp.filter(o => catHas(o, "Топливо")));
     // «Топливо (Скутер)» тоже содержит слово «Скутер» — исключаем, чтобы не считать дважды
-    const maintCost = sumAbs(monthExp.filter(o => catHas(o, "Скутер") && !catHas(o, "Топливо")));
+    const scooterNonFuel = monthExp.filter(o => catHas(o, "Скутер") && !catHas(o, "Топливо"));
+    const maintCost = sumAbs(scooterNonFuel);
+    const washCost = sumAbs(scooterNonFuel.filter(o => /мойк/i.test(String(o.cat || ""))));
+    const serviceCost = maintCost - washCost; // масло, фильтры, ремень, колодки, документы
     const incomeOps = monthOps.filter(isIncome);
     const income = sumAbs(incomeOps);
     const net = salary + income - expenses;
@@ -450,7 +457,9 @@
     }
     setText("statNote", note);
     setText("statFuelCost", fmt(fuelCost));
-    setText("statMaintCost", fmt(maintCost));
+    setText("statWashCost", fmt(washCost));
+    setText("statServiceCost", fmt(serviceCost));
+    setText("statScooterTotal", fmt(fuelCost + maintCost));
 
     // === 3. Эффективность ===
     const avgDay = workDays ? salary / workDays : 0;
@@ -603,8 +612,10 @@
       cats[c] = (cats[c] || 0) + Math.abs(num(o.amount));
     });
     const sortedC = Object.entries(cats).sort((a, b) => b[1] - a[1]);
+    const catTotal = sortedC.reduce((a, [, v]) => a + v, 0);
     $("categoryList").innerHTML = sortedC.length
-      ? sortedC.map(([c, v]) => `<div class="list-row"><span>${esc(c)}</span><b>${fmt(v)} лей</b></div>`).join("")
+      ? sortedC.map(([c, v]) => `<div class="list-row"><span>${esc(c)}</span><b>${fmt(v)} лей</b></div>`).join("") +
+        `<div class="list-row total-row"><span>Итого</span><b>${fmt(catTotal)} лей</b></div>`
       : `<div class="list-row muted">Нет расходов</div>`;
   }
 
