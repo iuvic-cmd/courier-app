@@ -3,495 +3,684 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>🛵 Скутер</title>
+  <title>📋 План и факт</title>
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/components.css">
   <style>
     .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-top: 16px; padding-bottom: 90px; }
-    .header { margin-bottom: 12px; }
+    .monthbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .mb-arrow { width: 48px; height: 48px; flex: 0 0 auto; border-radius: 12px; border: 1px solid var(--border); background: var(--panel); color: var(--accent); font-size: 20px; cursor: pointer; }
+    .mb-title { flex: 1; text-align: center; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 6px 8px; cursor: pointer; min-width: 0; }
+    .mb-title b { display: block; font-size: 18px; }
+    .mb-title small { display: block; font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+    .tocur { width: 100%; margin-bottom: 12px; padding: 10px; border: 1px dashed var(--accent); border-radius: 10px; background: transparent; color: var(--accent); font-size: 14px; font-weight: 600; cursor: pointer; }
+    .mrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; margin-top: 8px; cursor: pointer; }
+    .mrow.on { border-color: var(--accent); background: var(--help-bg); }
+    .mrow b { font-size: 16px; }
+    .mrow-r { text-align: right; font-weight: 600; font-size: 14px; white-space: nowrap; }
+    .modal-box .big-ok { width: 100%; margin-top: 14px; padding: 12px; border: none; border-radius: 10px; background: var(--accent); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .mdel { background: none; border: none; font-size: 18px; cursor: pointer; margin-left: 6px; }
+    .src-tag.carry { color: var(--orange); background: transparent; border: 1px solid var(--orange); }
 
-    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
-    .stat-card { background: var(--panel); padding: 12px; border-radius: 12px; text-align: center; border-left: 3px solid var(--accent); }
-    .stat-label { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; display: block; }
-    .stat-value { font-size: 18px; font-weight: 700; }
+    .goal-banner { background: var(--warn-bg); border-left: 5px solid #ffb800; padding: 14px 16px; margin-bottom: 16px; border-radius: 0 8px 8px 0; font-size: 14px; white-space: pre-line; cursor: pointer; min-height: 20px; color: #8a5a00; }
+    :root[data-theme="dark"] .goal-banner { color: #ffcf80; }
 
-    .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 24px; }
-    .action-grid .btn { padding: 14px; font-size: 14px; }
+    .totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+    .tot { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 10px; text-align: center; min-width: 0; }
+    .tot small { display: block; font-size: 11px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; }
+    .tot b { display: block; font-size: 18px; margin-top: 4px; overflow-wrap: anywhere; }
+    .tot.plan b { color: var(--accent); }
+    .tot.fact b { color: var(--green); }
+    .tot.diff b { color: var(--red); }
+    .tot.diff.plus b { color: var(--green); }
 
-    details.acc { margin-bottom: 12px; }
-    details.acc > summary {
-      list-style: none; background: var(--panel); border: 1px solid var(--border);
-      border-radius: 16px; padding: 16px; cursor: pointer; font-weight: 600;
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    details.acc > summary::-webkit-details-marker { display: none; }
-    details.acc > summary::after { content: "▼"; font-size: 12px; color: var(--text-dim); }
-    details.acc[open] > summary::after { content: "▲"; }
+    .toolbar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 16px; }
+    .toolbar button { padding: 10px 4px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; background: var(--panel); color: var(--text); border: 1px solid var(--border); line-height: 1.3; }
+    .toolbar button.pri { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-    .acc-body {
-      background: var(--panel); border: 1px solid var(--border); border-top: none;
-      border-radius: 0 0 16px 16px; padding: 16px; margin-top: -4px;
-    }
+    .section { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .section h2 { color: var(--accent); font-size: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; cursor: pointer; }
+    .section h2 small { font-size: 12px; color: var(--text-dim); font-weight: 600; }
+    .sec-del { background: none; border: none; font-size: 16px; cursor: pointer; }
 
-    .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
-    .input-row > div { flex: 1; min-width: 0; }
-    .input-row label, .acc-body label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+    .task { padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+    .task:last-of-type { border-bottom: 0; }
+    .task-row1 { display: flex; align-items: flex-start; gap: 10px; }
+    .task-row1 input[type="checkbox"] { width: 22px; height: 22px; flex: 0 0 auto; margin-top: 1px; accent-color: var(--accent); }
+    .task-title { flex: 1; font-weight: 600; cursor: pointer; }
+    .task-title.done { text-decoration: line-through; color: var(--text-dim); }
+    .task-note { font-size: 12px; color: var(--text-dim); margin-top: 2px; white-space: pre-line; font-weight: 400; }
+    .src-tag { display: inline-block; font-size: 11px; font-weight: 600; color: var(--accent); background: var(--help-bg); border-radius: 6px; padding: 1px 6px; margin-top: 3px; }
+    .task-actions button { background: none; border: none; font-size: 16px; cursor: pointer; padding: 4px; }
 
-    .history-list { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
-    .history-item { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; color: var(--text-dim); }
-    .section-title { font-size: 14px; font-weight: 700; margin: 24px 0 10px; color: var(--text-dim); text-transform: uppercase; }
+    .task-nums { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-left: 32px; }
+    .task-num { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; min-width: 0; }
+    .task-num small { display: block; font-size: 10px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; }
+    .task-num input { width: 100%; border: none; background: transparent; color: var(--text); font-size: 16px; font-weight: 700; padding: 0; margin-top: 2px; outline: none; }
+    .task-num.fact input { color: var(--green); }
+    .task-num.auto { background: var(--help-bg); }
+    .task-num.diff b { display: block; font-size: 16px; margin-top: 2px; }
+    .diff-neg { color: var(--red); }
+    .diff-pos { color: var(--green); }
 
-    .save-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; transition: 0.2s; }
-    .save-btn:active { background: #2e7d32; transform: scale(0.98); }
-    .cancel-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--border); color: var(--text); border: none; font-weight: 700; margin-top: 8px; cursor: pointer; }
+    .addhere { width: 100%; margin-top: 10px; padding: 10px; border: 1px dashed var(--border); border-radius: 10px; background: transparent; color: var(--accent); font-size: 14px; font-weight: 600; cursor: pointer; }
+    .empty { color: var(--text-dim); font-size: 14px; padding: 8px 0; }
+    .footer { text-align: center; margin-top: 20px; font-size: 14px; color: var(--text-dim); white-space: pre-line; cursor: pointer; min-height: 20px; }
 
-    .check-row { display: flex !important; align-items: center; gap: 8px; font-size: 14px !important; color: var(--text) !important; margin: 4px 0 10px; }
-    .check-row input { width: 20px; height: 20px; accent-color: var(--accent); }
-
-    .svc-summary { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; font-size: 14px; line-height: 1.7; }
-    .svc-summary b { font-weight: 700; }
-    .svc-list { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 0 16px; margin-top: 10px; }
-    .svc-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--border); }
-    .svc-row:last-child { border-bottom: none; }
-    .svc-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
-    .svc-right { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-    .del-btn { background: none; border: none; font-size: 18px; cursor: pointer; padding: 4px; }
-    .empty-note { color: var(--text-dim); font-size: 13px; padding: 14px 0; text-align: center; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 3000; overflow-y: auto; }
+    .modal.on { display: block; }
+    .modal-box { background: var(--panel); color: var(--text); margin: calc(5vh + env(safe-area-inset-top, 0px)) auto 24px; padding: 20px; border-radius: 16px; width: 90%; max-width: 400px; }
+    .modal-box h3 { font-size: 18px; margin-bottom: 12px; text-align: center; }
+    .modal-box label { display: block; font-size: 13px; color: var(--text-dim); margin-top: 10px; }
+    .modal-box input, .modal-box textarea, .modal-box select { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 16px; background: var(--bg); color: var(--text); font-family: inherit; margin-top: 4px; }
+    .modal-box textarea { min-height: 80px; resize: vertical; }
+    .modal-box textarea.big { min-height: 150px; }
+    .modal-box .row { display: flex; gap: 8px; margin-top: 16px; }
+    .modal-box .row button { flex: 1; padding: 12px; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .modal-box .ok { background: var(--accent); color: #fff; }
+    .modal-box .no { background: var(--border); color: var(--text); }
+    .modal-box .link { width: 100%; margin-top: 12px; padding: 10px; border: 1px dashed var(--border); border-radius: 10px; background: transparent; color: var(--accent); font-size: 14px; font-weight: 600; cursor: pointer; }
+    .hint { font-size: 12px; color: var(--text-dim); margin-top: 6px; line-height: 1.4; }
+    .err { color: var(--red); font-size: 13px; min-height: 18px; margin-top: 6px; }
   </style>
 </head>
 <body>
+
 <div class="container">
-  <div class="header">
-    <h1>🛵 Скутер</h1>
+  <div class="monthbar">
+    <button class="mb-arrow" onclick="shiftMonth(-1)" aria-label="Предыдущий месяц">◀</button>
+    <div class="mb-title" onclick="openMonths()"><b id="mName">—</b><small id="mSub"></small></div>
+    <button class="mb-arrow" onclick="shiftMonth(1)" aria-label="Следующий месяц">▶</button>
+  </div>
+  <button class="tocur" id="toCur" onclick="goCurrent()" style="display:none">↩ К текущему месяцу</button>
+
+  <div class="goal-banner" id="goalBanner" onclick="openSettings()"></div>
+
+  <div class="totals">
+    <div class="tot plan"><small>План</small><b id="totPlan">0</b></div>
+    <div class="tot fact"><small>Факт</small><b id="totFact">0</b></div>
+    <div class="tot diff" id="totDiffWrap"><small>Разница</small><b id="totDiff">0</b></div>
   </div>
 
-  <div class="stats-grid">
-    <div class="stat-card">
-      <span class="stat-label">📊 Общий пробег</span>
-      <span class="stat-value" id="statKm">0 км</span>
-    </div>
-    <div class="stat-card" style="border-left-color: var(--orange);">
-      <span class="stat-label">⛽ Расход топлива</span>
-      <span class="stat-value" id="statConsumption">0 л/100км</span>
-    </div>
+  <div class="toolbar">
+    <button class="pri" onclick="openTaskModal(null)">➕<br>Задача</button>
+    <button onclick="openBulk()">📋<br>Списком</button>
+    <button onclick="openMonths()">📅<br>Месяцы</button>
+    <button onclick="toggleEdit()" id="editBtn">✏<br>Режим</button>
   </div>
 
-  <div class="action-grid">
-    <button class="btn btn-primary" onclick="toggleFuelForm()"><span>⛽</span> Заправка</button>
-    <button class="btn btn-green" onclick="toggleMileageForm()"><span>📏</span> Пробег</button>
-  </div>
+  <div id="sections"></div>
+  <button class="addhere" onclick="addSection()">📂 Добавить блок</button>
 
-  <!-- Кошельки для скутера -->
-  <div class="section-title" style="margin-top: 0;">💰 Мои кошельки для скутера</div>
-  <div id="scooterWallets" style="background: var(--panel); border-radius: 16px; padding: 0 16px; border: 1px solid var(--border); margin-bottom: 16px; display: none;"></div>
-  <div class="hint" id="noScooterWallets" style="text-align: center; margin-bottom: 16px;">Пока нет оплат с кошельков. Сделай первую заправку или ТО.</div>
-
-  <!-- Форма заправки -->
-  <div id="fuelFormContainer" style="display: none; margin-bottom: 20px;">
-    <div style="background: var(--panel); border: 2px solid var(--accent); border-radius: 16px; padding: 16px;">
-      <h3 style="margin-bottom: 12px; font-size: 16px;">⛽ Новая заправка</h3>
-      <div class="input-row">
-        <div><label>Сумма по чеку</label><input type="number" id="f_total" class="form-control" placeholder="0" inputmode="decimal"></div>
-        <div><label>Цена за литр</label><input type="number" id="f_price" class="form-control" placeholder="0" inputmode="decimal"></div>
-      </div>
-      <div style="margin-bottom: 12px;"><label>Кошелёк</label><select id="f_wall" class="form-control"></select></div>
-      <button class="save-btn" onclick="saveFuel()">💾 СОХРАНИТЬ</button>
-      <button class="cancel-btn" onclick="toggleFuelForm()">Отмена</button>
-    </div>
-  </div>
-
-  <!-- Форма пробега -->
-  <div id="mileageFormContainer" style="display: none; margin-bottom: 20px;">
-    <div style="background: var(--panel); border: 2px solid var(--green); border-radius: 16px; padding: 16px;">
-      <h3 style="margin-bottom: 12px; font-size: 16px;">📏 Обновить пробег</h3>
-      <div style="margin-bottom: 12px;"><label>Текущий пробег (км)</label><input type="number" id="m_km" class="form-control" value="" inputmode="numeric"></div>
-      <button class="save-btn" onclick="saveMileage()">💾 СОХРАНИТЬ</button>
-      <button class="cancel-btn" onclick="toggleMileageForm()">Отмена</button>
-    </div>
-  </div>
-
-  <div class="section-title">ТО и Расходники</div>
-  <div id="componentsList"></div>
-
-  <div class="section-title">Официальные документы</div>
-  <div id="officialList"></div>
-
-  <!-- История замен и учёт -->
-  <div class="section-title">🧾 История замен и учёт</div>
-  <select id="svcFilter" class="form-control" onchange="renderServiceHistory()" style="margin-bottom: 10px;"></select>
-  <div class="svc-summary" id="svcSummary"></div>
-  <div class="svc-list" id="svcList"></div>
-
-  <div class="section-title">История</div>
-  <div class="history-list" id="globalHistory" style="background: var(--panel); padding: 0 16px; border-radius: 16px; border: 1px solid var(--border);"></div>
+  <div class="footer" id="checkpoint" onclick="openSettings()"></div>
 </div>
 
 <nav class="tabbar">
   <div class="in">
     <a href="index.html"><span>📦</span>Учёт</a>
     <a href="fin.html"><span>💼</span>Финансы</a>
-    <a href="cash.html" class="active"><span>🛵</span>Скутер</a>
+    <a href="cash.html"><span>🛵</span>Скутер</a>
     <a href="stats.html"><span>📈</span>Отчёты</a>
-    <a href="plan.html"><span>📋</span>План</a>
+    <a href="plan.html" class="active"><span>📋</span>План</a>
     <a href="settings.html"><span>⚙</span>Настройки</a>
   </div>
 </nav>
 
+<!-- Модалка задачи -->
+<div id="taskModal" class="modal">
+  <div class="modal-box">
+    <h3 id="taskModalTitle">Новая задача</h3>
+    <label>Заголовок</label>
+    <input id="tTitle" placeholder="Например: Оплатить интернет">
+    <label>Описание</label>
+    <textarea id="tNote" placeholder="Детали..."></textarea>
+    <label>План (лей)</label>
+    <input id="tPlan" inputmode="decimal" placeholder="0">
+    <label>Откуда брать факт</label>
+    <select id="tSrc" onchange="srcChanged()">
+      <option value="manual">✍ Вручную</option>
+      <option value="lombard">🥇 Платежи по ломбарду (из «Финансов»)</option>
+      <option value="credit">🏛 Платежи по кредитам (из «Финансов»)</option>
+      <option value="card">💳 Платежи по кредиткам (из «Финансов»)</option>
+      <option value="cat">🗂 Траты по категории</option>
+    </select>
+    <div id="tCatWrap" style="display:none">
+      <input id="tCat" list="catList" placeholder="Категория, например Топливо">
+      <datalist id="catList"></datalist>
+      <div class="hint">Берутся все траты за месяц, в названии категории которых есть этот текст.</div>
+    </div>
+    <div id="tFactWrap">
+      <label>Факт (лей)</label>
+      <input id="tFact" inputmode="decimal" placeholder="0">
+    </div>
+    <label>Раздел</label>
+    <select id="tSection"></select>
+    <div class="err" id="tErr"></div>
+    <div class="row">
+      <button class="ok" onclick="saveTask()">💾 Сохранить</button>
+      <button class="no" onclick="closeTaskModal()">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка «списком» -->
+<div id="bulkModal" class="modal">
+  <div class="modal-box">
+    <h3>📋 Добавить списком</h3>
+    <div class="hint">Одна задача на строку: «Название — сумма». Например:<br>Ломбард — 4620<br>Бензин 800<br>Интернет: 150</div>
+    <textarea id="bText" class="big" placeholder="Ломбард — 4620&#10;Кредит Consum — 1201&#10;Бензин — 800"></textarea>
+    <label>В раздел</label>
+    <select id="bSection"></select>
+    <div class="hint">Для «ломбард», «кредит», «кредитка», «бензин/топливо» факт подключится автоматически.</div>
+    <div class="err" id="bErr"></div>
+    <div class="row">
+      <button class="ok" onclick="saveBulk()">✅ Добавить</button>
+      <button class="no" onclick="closeBulk()">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка создания месяца -->
+<div id="createModal" class="modal">
+  <div class="modal-box">
+    <h3 id="createTitle">Новый месяц</h3>
+    <div class="hint">Что сделать с невыполненными делами прошлого месяца?</div>
+    <button class="big-ok" onclick="doCreate(true)">↪ Перенести невыполненное</button>
+    <button class="link" onclick="doCreate(false)">📄 Пустой месяц (только блоки, без дел и сумм)</button>
+    <div class="row"><button class="no" onclick="closeCreate()">Отмена</button></div>
+  </div>
+</div>
+
+<!-- Модалка месяцев -->
+<div id="monthsModal" class="modal">
+  <div class="modal-box">
+    <h3>📅 Месяцы</h3>
+    <div class="hint">Нажмите на месяц, чтобы открыть. Невыполненные дела сами переходят в новый месяц, а прошлый остаётся в истории.</div>
+    <div id="monthsList"></div>
+    <button class="link" onclick="createNext()">➕ Создать следующий месяц</button>
+    <div class="row"><button class="no" onclick="closeMonths()">Закрыть</button></div>
+  </div>
+</div>
+
+<!-- Модалка настроек плана -->
+<div id="setModal" class="modal">
+  <div class="modal-box">
+    <h3>Настройки плана</h3>
+    <label>Цель (жёлтый баннер)</label>
+    <textarea id="sGoal" placeholder="Главная цель..."></textarea>
+    <label>Итоги (внизу)</label>
+    <textarea id="sCheck" placeholder="Что должно быть сделано..."></textarea>
+    <button class="link" onclick="autoLink()">🔗 Привязать факт по названиям задач</button>
+    <div class="err" id="sErr"></div>
+    <div class="row">
+      <button class="ok" onclick="saveSettings()">💾 Сохранить</button>
+      <button class="no" onclick="closeSettings()">Отмена</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/lib/storage.js"></script>
 <script src="js/lib/ui.js"></script>
 <script src="js/lib/notify.js"></script>
-<script src="js/lib/guard.js"></script>
 <script src="js/lib/theme.js"></script>
 <script src="js/domain/state.js"></script>
-<script src="js/domain/finance-api.js"></script>
 <script>
   Theme.init();
-
   const $ = id => document.getElementById(id);
   const esc = UI.esc;
-  const fmtDate = ds => String(ds || "").split("-").reverse().join(".");
-  const money = x => UI.fmt(UI.r2(+x || 0));
-  const fuelSum = f => +(f.total != null ? f.total : f.amount) || 0; // старые записи хранят сумму в amount
+  const fmt = x => (+x || 0).toLocaleString("ru-RU", { maximumFractionDigits: 0 });
+  const num = v => parseFloat(String(v || "").replace(/\s/g, "").replace(",", ".")) || 0;
+  const newId = () => "t_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const clone = x => JSON.parse(JSON.stringify(x));
+  const MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+  const MN = ["январ", "феврал", "март", "апрел", "май", "июн", "июл", "август", "сентябр", "октябр", "ноябр", "декабр"];
+  const curYm = () => UI.date.local().slice(0, 7);
 
-  const COMPONENTS = [
-    { id: 'oil', title: '🛢 Масло', interval: 2000 },
-    { id: 'air_filter', title: '💨 Воздушный фильтр', interval: 3000 },
-    { id: 'belt', title: '⚙ Ремень', interval: 10000 },
-    { id: 'brakes', title: '🛑 Колодки', interval: 5000 }
-  ];
-  const OFFICIALS = [
-    { id: 'tech', title: '🛠 Техосмотр' },
-    { id: 'tax', title: '💰 Налог на дорогу' },
-    { id: 'insurance', title: '🛡 Страховка' }
-  ];
-
-  // Читает и старый (kind/expense), и новый (tip: Трата) формат операций,
-  // возвращая только записи, связанные со скутером (Скутер/Топливо).
-  function getScooterOps() {
-    return State.getOps()
-      .map(o => o.tip ? (o.tip === "Трата" ? { cat: o.kat, wallet: o.koshel } : null) : (o.kind === "expense" ? o : null))
-      .filter(o => o && /Скутер|Топливо/.test(o.cat || ""));
+  function ymFromLabel(label) {
+    const low = String(label || "").toLowerCase();
+    const i = MN.findIndex(m => low.includes(m));
+    if (i < 0) return "";
+    const y = (low.match(/20\d\d/) || [new Date().getFullYear()])[0];
+    return y + "-" + String(i + 1).padStart(2, "0");
   }
+  const addMonth = (ym, n) => {
+    const [y, m] = ym.split("-").map(Number);
+    const d = new Date(y, m - 1 + n, 1);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+  };
+  const monthLabel = ym => MONTHS[+ym.slice(5, 7) - 1] + " " + ym.slice(0, 4);
+  const blankPlan = ym => ({ month: monthLabel(ym), ym, goal: "", checkpoint: "", sections: [{ key: "main", title: "📋 Мой план на месяц", tasks: [] }] });
 
-  function walletSelectHtml(onlyScooter = false) {
-    const wallets = State.getWallets();
-    let keys = Object.keys(wallets);
-    if (onlyScooter) {
-      const used = [...new Set(getScooterOps().map(o => o.wallet))];
-      if (used.length > 0) keys = used;
-    }
-    return keys.map(w => `<option value="${esc(w)}">${esc(w)} (${wallets[w] || 0} лей)</option>`).join("");
-  }
-
-  // ---------- История замен: сбор записей ----------
-  function serviceEntries() {
-    const out = [];
-    COMPONENTS.forEach(c => {
-      (State.getComponent(c.id).history || []).forEach((h, idx) => out.push({
-        key: "comp:" + c.id, kind: "comp", id: c.id, idx, title: c.title,
-        date: h.date || "", km: +h.km || 0, cost: +h.cost || 0, wallet: h.wallet || "", note: h.note || ""
-      }));
-    });
-    OFFICIALS.forEach(o => {
-      (State.getOfficial(o.id).history || []).forEach((h, idx) => out.push({
-        key: "off:" + o.id, kind: "off", id: o.id, idx, title: o.title,
-        date: h.date || "", until: h.nextDate || "", cost: +h.cost || 0, wallet: h.wallet || "", note: ""
-      }));
-    });
-    return out;
-  }
-
-  function renderServiceHistory() {
-    const sel = $("svcFilter");
-    if (!sel.options.length) {
-      sel.innerHTML = `<option value="all">Все расходники и документы</option>` +
-        COMPONENTS.map(c => `<option value="comp:${c.id}">${esc(c.title)}</option>`).join("") +
-        OFFICIALS.map(o => `<option value="off:${o.id}">${esc(o.title)}</option>`).join("");
-    }
-    const filter = sel.value || "all";
-    const all = serviceEntries();
-    const list = all.filter(e => filter === "all" || e.key === filter)
-      .sort((a, b) => b.date.localeCompare(a.date) || b.idx - a.idx);
-
-    const year = UI.date.local().slice(0, 4);
-    const total = list.reduce((s, e) => s + e.cost, 0);
-    const thisYear = list.filter(e => e.date.startsWith(year)).reduce((s, e) => s + e.cost, 0);
-    const fuels = State.getFuel();
-    const fuelTotal = fuels.reduce((s, f) => s + fuelSum(f), 0);
-
-    let html = `Записей: <b>${list.length}</b> · потрачено: <b>${money(total)} лей</b><br>В этом году: <b>${money(thisYear)} лей</b>`;
-    if (filter.startsWith("comp:") && list.length) {
-      const byKm = list.slice().sort((a, b) => a.km - b.km);
-      html += `<br>Последняя замена: <b>${fmtDate(list[0].date)}</b> на <b>${Math.round(byKm[byKm.length - 1].km)} км</b>`;
-      if (byKm.length >= 2) {
-        const avg = (byKm[byKm.length - 1].km - byKm[0].km) / (byKm.length - 1);
-        html += `<br>Средний пробег между заменами: <b>${Math.round(avg)} км</b>`;
+  // Все месяцы: { "2026-11": {month, ym, goal, checkpoint, sections}, ... }
+  function loadAll() {
+    let pl = AppStorage.get("plans", null);
+    if (!pl || typeof pl !== "object" || Array.isArray(pl)) {
+      pl = {};
+      // Перенос из старого формата: один план (plan) + архив (plan_archive)
+      const arch = AppStorage.get("plan_archive", {}) || {};
+      Object.keys(arch).forEach(k => {
+        const a = arch[k];
+        if (a && Array.isArray(a.sections) && a.sections.some(s => (s.tasks || []).length)) pl[k] = a;
+      });
+      const old = AppStorage.get("plan", null);
+      if (old && Array.isArray(old.sections)) {
+        const ym = old.ym || ymFromLabel(old.month) || curYm();
+        pl[ym] = old;
       }
-      if (list.length >= 1 && total > 0) html += `<br>Средняя цена замены: <b>${money(total / list.filter(e => e.cost > 0).length)} лей</b>`;
+      if (!Object.keys(pl).length) pl[curYm()] = blankPlan(curYm());
     }
-    if (filter === "all") {
-      html += `<br>⛽ Топливо за всё время: <b>${money(fuelTotal)} лей</b>`;
-      html += `<br>Итого на скутер (ТО + топливо): <b>${money(total + fuelTotal)} лей</b>`;
-    }
-    $("svcSummary").innerHTML = html;
-
-    $("svcList").innerHTML = list.length ? list.map(e => `
-      <div class="svc-row">
-        <div>
-          <b>${esc(e.title)}</b>
-          <div class="svc-sub">${fmtDate(e.date)} · ${e.kind === "comp" ? Math.round(e.km) + " км" : (e.until ? "до " + fmtDate(e.until) : "")}${e.wallet ? " · " + esc(e.wallet) : ""}${e.note ? " · " + esc(e.note) : ""}</div>
-        </div>
-        <div class="svc-right"><b>${e.cost ? money(e.cost) + " лей" : "—"}</b><button class="del-btn" onclick="deleteService('${e.kind}','${e.id}',${e.idx})">🗑</button></div>
-      </div>`).join("") : `<div class="empty-note">Записей пока нет. Добавьте замену в блоке выше.</div>`;
+    Object.keys(pl).forEach(k => { pl[k].ym = k; if (!pl[k].month) pl[k].month = monthLabel(k); });
+    return pl;
   }
+  let plans = loadAll();
+  let viewYm = curYm();
+  let P = null;
+  let editingTaskId = null;
+  let editMode = false;
+  let OPS = [];
 
-  function deleteService(kind, id, idx) {
-    const data = kind === "comp" ? State.getComponent(id) : State.getOfficial(id);
-    const h = (data.history || [])[idx];
-    if (!h) return;
-    if (!confirm(`Удалить запись от ${fmtDate(h.date)}?`)) return;
-    if (h.opId != null && +h.cost > 0 && confirm(`Вернуть ${money(h.cost)} лей на кошелёк «${h.wallet || ""}»?`)) {
-      try { FinanceAPI.undo(h.opId); } catch (e) { Notify.error(e.message); }
-    }
-    data.history.splice(idx, 1);
-    if (kind === "comp") {
-      const last = data.history.slice().sort((a, b) => (+a.km || 0) - (+b.km || 0)).pop();
-      data.lastKm = last ? +last.km : 0;
-      data.lastDate = last ? last.date : "";
-      State.setComponent(id, data);
-    } else {
-      const last = data.history.slice().sort((a, b) => String(a.date).localeCompare(String(b.date))).pop();
-      data.lastDate = last ? last.date : "";
-      data.nextDate = last ? last.nextDate : "";
-      data.cost = last ? +last.cost || 0 : 0;
-      State.setOfficial(id, data);
-    }
-    render();
-    Notify.show("🗑 Запись удалена");
-  }
+  function persist() { plans[viewYm] = P; AppStorage.set("plans", plans); }
+  function saveAll() { AppStorage.set("plans", plans); }
 
-  // Прежние данные хранили только «последнюю замену» (lastKm/lastDate) без истории.
-  // Переносим её в историю, чтобы новая запись не затирала старую, а дописывалась.
-  function migrateLegacyHistory() {
-    COMPONENTS.forEach(c => {
-      const d = State.getComponent(c.id);
-      if (!Array.isArray(d.history)) d.history = [];
-      if (d.history.length === 0 && +d.lastKm > 0) {
-        d.history.push({ date: d.lastDate || "", km: +d.lastKm, cost: 0, wallet: "", opId: null, note: "из прежних данных" });
-        State.setComponent(c.id, d);
+  // ---- Факт из «Финансов» (поддерживает оба формата журнала) ----
+  function planOps() {
+    return State.getOps().map(o => {
+      const date = String(o.data || o.date || "").slice(0, 10);
+      if (o.tip) {
+        const base = Math.abs(+(o.baz != null ? o.baz : o.summa) || 0), s = Math.abs(+o.summa || 0);
+        if (o.tip === "Трата") return { date, type: "exp", cat: o.kat || "", s: base };
+        if (o.tip === "Кредитка") {
+          if (o.napr === "покупка") return { date, type: "exp", cat: o.kat || "", s };
+          if (o.napr === "платёж") return { date, type: "card", s };
+          return null;
+        }
+        if (o.tip === "Кредит" && o.napr === "платёж") return { date, type: "credit", s };
+        if (o.tip === "Ломбард" && o.napr === "платёж") return { date, type: "lombard", s };
+        return null;
       }
-    });
-    OFFICIALS.forEach(o => {
-      const d = State.getOfficial(o.id);
-      if (!Array.isArray(d.history)) d.history = [];
-      if (d.history.length === 0 && d.lastDate) {
-        d.history.push({ date: d.lastDate, nextDate: d.nextDate || "", cost: +d.cost || 0, wallet: "", opId: null });
-        State.setOfficial(o.id, d);
-      }
-    });
+      if (o.kind === "expense" && !/корректиров/i.test(o.cat || "")) return { date, type: "exp", cat: o.cat || "", s: Math.abs(+o.amount || 0) };
+      return null;
+    }).filter(Boolean);
+  }
+  const isAuto = t => !!t.src && t.src !== "manual";
+  function autoFact(src, ym) {
+    const inM = OPS.filter(o => o.date.startsWith(ym));
+    if (src === "lombard" || src === "credit" || src === "card") return inM.filter(o => o.type === src).reduce((a, o) => a + o.s, 0);
+    if (src.startsWith("cat:")) {
+      const name = src.slice(4).toLowerCase();
+      return inM.filter(o => o.type === "exp" && o.cat.toLowerCase().includes(name)).reduce((a, o) => a + o.s, 0);
+    }
+    return 0;
+  }
+  const factOf = (t, ym) => isAuto(t) ? Math.round(autoFact(t.src, ym || (P && P.ym) || curYm())) : num(t.fact);
+  const srcLabel = s => s === "lombard" ? "ломбард" : s === "credit" ? "кредиты" : s === "card" ? "кредитки" : s.startsWith("cat:") ? s.slice(4) : "";
+  function detectSrc(title) {
+    const l = String(title).toLowerCase();
+    if (l.includes("ломбард")) return "lombard";
+    if (l.includes("кредитк")) return "card";
+    if (l.includes("кредит")) return "credit";
+    if (/бензин|топлив/.test(l)) return "cat:Топлив";
+    return "manual";
   }
 
-  // ---------- Рендер ----------
+  // ---- Рендер ----
   function render() {
-    migrateLegacyHistory();
-    const wallets = State.getWallets();
+    OPS = planOps();
+    if (!plans[viewYm]) viewYm = curYm();
+    P = plans[viewYm];
+    const cur = curYm();
+    $("mName").textContent = monthLabel(viewYm);
+    $("mSub").textContent = viewYm === cur ? "текущий месяц" : viewYm < cur ? "📚 история" : "🔮 впереди";
+    $("toCur").style.display = viewYm === cur ? "none" : "block";
+    $("goalBanner").textContent = P.goal || "Нажмите здесь, чтобы добавить цель...";
+    $("checkpoint").textContent = P.checkpoint || "Нажмите здесь, чтобы добавить итоги...";
 
-    const scooterOps = getScooterOps();
-    const usedWallets = [...new Set(scooterOps.map(o => o.wallet))];
-    if (usedWallets.length > 0) {
-      $("scooterWallets").style.display = "block";
-      $("noScooterWallets").style.display = "none";
-      $("scooterWallets").innerHTML = usedWallets.map(w => `
-        <div class="history-item" style="padding: 12px 0; border-bottom: 1px solid var(--border);">
-          <span>${esc(w)}</span>
-          <b style="color: var(--green);">${wallets[w] || 0} лей</b>
-        </div>`).join("");
-    } else {
-      $("scooterWallets").style.display = "none";
-      $("noScooterWallets").style.display = "block";
+    $("sections").innerHTML = P.sections.map(sec => `<div class="section">
+        <h2><span onclick="editSection('${esc(sec.key)}')">${esc(sec.title)}</span>
+          ${editMode ? `<button class="sec-del" onclick="delSection('${esc(sec.key)}')">🗑</button>` : ""}
+          <small data-sec="${esc(sec.key)}"></small></h2>
+        ${sec.tasks.map(taskHtml).join("") || `<div class="empty">Задач нет</div>`}
+        <button class="addhere" onclick="openTaskModal(null, '${esc(sec.key)}')">➕ Задача в этот блок</button>
+      </div>`).join("");
+
+    $("editBtn").innerHTML = editMode ? "✅<br>Готово" : "✏<br>Режим";
+    updateTotals();
+  }
+
+  function taskHtml(t) {
+    const auto = isAuto(t), f = factOf(t), p = num(t.plan);
+    const autoDone = auto && p > 0 && f >= p;
+    const checked = t.done || autoDone;
+    return `<div class="task">
+      <div class="task-row1">
+        <input type="checkbox" ${checked ? "checked" : ""} ${autoDone ? "disabled" : ""} onchange="toggleDone('${esc(t.id)}', this.checked)">
+        <div class="task-title ${checked ? "done" : ""}" onclick="openTaskModal('${esc(t.id)}')">
+          ${esc(t.title)}
+          ${auto ? `<div><span class="src-tag">авто · ${esc(srcLabel(t.src))}</span></div>` : ""}
+          ${t.from ? `<div><span class="src-tag carry">↪ из ${esc(monthLabel(t.from))}</span></div>` : ""}
+          ${t.carried ? `<div><span class="src-tag carry">➡ перенесено дальше</span></div>` : ""}
+          ${t.note ? `<div class="task-note">${esc(t.note)}</div>` : ""}
+        </div>
+        ${editMode ? `<div class="task-actions"><button onclick="removeTask('${esc(t.id)}')">🗑</button></div>` : ""}
+      </div>
+      <div class="task-nums">
+        <div class="task-num"><small>План</small><input type="number" inputmode="decimal" value="${t.plan || ""}" onchange="setNum('${esc(t.id)}','plan',this)"></div>
+        <div class="task-num fact ${auto ? "auto" : ""}"><small>Факт</small><input type="number" inputmode="decimal" value="${f || ""}" ${auto ? "readonly" : ""} onchange="setNum('${esc(t.id)}','fact',this)"></div>
+        <div class="task-num diff"><small>Разница</small><b data-diff="${esc(t.id)}"></b></div>
+      </div>
+    </div>`;
+  }
+
+  function updateTotals() {
+    const all = P.sections.flatMap(s => s.tasks);
+    const p = all.reduce((a, t) => a + num(t.plan), 0);
+    const f = all.reduce((a, t) => a + factOf(t), 0);
+    const d = f - p;
+    $("totPlan").textContent = fmt(p) + " лей";
+    $("totFact").textContent = fmt(f) + " лей";
+    $("totDiff").textContent = (d > 0 ? "+" : "") + fmt(d) + " лей";
+    $("totDiffWrap").classList.toggle("plus", d >= 0);
+
+    P.sections.forEach(sec => {
+      const el = document.querySelector(`[data-sec="${sec.key}"]`);
+      if (el) el.textContent = `План ${fmt(sec.tasks.reduce((a, t) => a + num(t.plan), 0))} · Факт ${fmt(sec.tasks.reduce((a, t) => a + factOf(t), 0))}`;
+      sec.tasks.forEach(t => {
+        const diffEl = document.querySelector(`[data-diff="${t.id}"]`);
+        if (diffEl) {
+          const td = factOf(t) - num(t.plan);
+          diffEl.textContent = (td > 0 ? "+" : "") + fmt(td);
+          diffEl.className = td < 0 ? "diff-neg" : td > 0 ? "diff-pos" : "";
+        }
+      });
+    });
+  }
+
+  function findTask(id) {
+    for (const s of P.sections) {
+      const i = s.tasks.findIndex(t => t.id === id);
+      if (i >= 0) return { sec: s, task: s.tasks[i], idx: i };
     }
+    return null;
+  }
 
-    $("f_wall").innerHTML = walletSelectHtml();
+  // Галочка: если факт вводится вручную и пуст — ставим факт = плану
+  function toggleDone(id, val) {
+    const f = findTask(id);
+    if (!f) return;
+    f.task.done = val;
+    if (val && !isAuto(f.task) && !num(f.task.fact) && num(f.task.plan) > 0) f.task.fact = num(f.task.plan);
+    persist(); render();
+  }
 
-    const scooter = State.getScooter();
-    const fuels = State.getFuel();
-    const totalKm = Math.max(scooter.currentKm - scooter.startKm, 0);
-    $("statKm").innerText = totalKm.toFixed(1) + " км";
-    const totalLiters = fuels.reduce((s, f) => s + (+f.liters || 0), 0);
-    $("statConsumption").innerText = (totalKm > 0 ? (totalLiters / totalKm * 100) : 0).toFixed(2) + " л/100км";
+  function setNum(id, field, input) {
+    const f = findTask(id);
+    if (!f || (field === "fact" && isAuto(f.task))) return;
+    f.task[field] = Math.max(0, Math.round(num(input.value)));
+    input.value = f.task[field] || "";
+    persist();
+    updateTotals();
+  }
 
-    const today = UI.date.local();
-    // Раскрытые блоки не сворачиваем при перерисовке
-    const openIds = [...document.querySelectorAll("details.acc[open]")].map(d => d.id);
+  function toggleEdit() { editMode = !editMode; render(); }
 
-    $("componentsList").innerHTML = COMPONENTS.map(c => {
-      const data = State.getComponent(c.id);
-      const nextKm = data.lastKm ? data.lastKm + data.intervalKm : 0;
-      const left = nextKm ? Math.round(nextKm - scooter.currentKm) : null;
-      let status = "Не задано. Нажми чтобы настроить.";
-      if (data.lastKm > 0) {
-        // Отсчёт всегда идёт от пробега ПОСЛЕДНЕЙ замены, даже если прошлую поменяли раньше срока
-        const driven = Math.max(Math.round(scooter.currentKm - data.lastKm), 0);
-        status = left <= 0
-          ? `⚠️ Пора менять! (просрочено на ${Math.abs(left)} км)`
-          : `Осталось ${left} км · следующая на ${Math.round(nextKm)} км`;
-        status += ` · с замены проехано ${driven} из ${data.intervalKm} км`;
-        if (data.lastDate) status += ` · замена ${fmtDate(data.lastDate)} на ${Math.round(data.lastKm)} км`;
-      }
-      return `
-      <details class="acc" id="acc_${c.id}">
-        <summary><div><div>${c.title}</div><div style="font-size:12px;font-weight:400;color:var(--text-dim);margin-top:4px">${status}</div></div></summary>
-        <div class="acc-body">
-          <div class="input-row">
-            <div><label>Дата замены</label><input type="date" id="c_date_${c.id}" class="form-control" value="${today}"></div>
-            <div><label>Пробег (км)</label><input type="number" id="c_km_${c.id}" class="form-control" value="${Math.round(scooter.currentKm)}"></div>
-          </div>
-          <div class="input-row">
-            <div><label>Интервал (км)</label><input type="number" id="c_int_${c.id}" class="form-control" value="${data.intervalKm || c.interval}"></div>
-            <div><label>Стоимость (лей)</label><input type="number" id="c_cost_${c.id}" class="form-control" placeholder="0"></div>
-          </div>
-          <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="c_wall_${c.id}" class="form-control">${walletSelectHtml()}</select></div>
-          <label class="check-row"><input type="checkbox" id="c_skip_${c.id}"> Не списывать с кошелька (старая запись)</label>
-          <div style="margin-bottom: 10px;"><label>Заметка</label><input type="text" id="c_note_${c.id}" class="form-control" placeholder="Например: масло 10W-40"></div>
-          <button class="save-btn" onclick="saveComponent('${c.id}', '${c.title}')">💾 ЗАПИСАТЬ ЗАМЕНУ</button>
-          <div class="hint" style="margin-top:8px">Все замены — в блоке «История замен и учёт» ниже.</div>
-        </div>
-      </details>`;
+  function removeTask(id) {
+    const f = findTask(id);
+    if (f && confirm("Удалить задачу?")) { f.sec.tasks.splice(f.idx, 1); persist(); render(); }
+  }
+
+  function addSection() {
+    const title = prompt("Название нового блока:");
+    if (title && title.trim()) { P.sections.push({ key: "s_" + Date.now(), title: title.trim(), tasks: [] }); persist(); render(); }
+  }
+  function editSection(key) {
+    const sec = P.sections.find(s => s.key === key);
+    if (!sec) return;
+    const t = prompt("Переименовать блок:", sec.title);
+    if (t !== null && t.trim()) { sec.title = t.trim(); persist(); render(); }
+  }
+  function delSection(key) {
+    const sec = P.sections.find(s => s.key === key);
+    if (!sec || P.sections.length < 2) return alert("Нельзя удалить последний блок");
+    if (confirm(`Удалить блок «${sec.title}» и ${sec.tasks.length} задач в нём?`)) {
+      P.sections = P.sections.filter(s => s.key !== key); persist(); render();
+    }
+  }
+
+  // ---- Задача ----
+  function fillSections(selId, selected) {
+    $(selId).innerHTML = P.sections.map(s => `<option value="${esc(s.key)}"${s.key === selected ? " selected" : ""}>${esc(s.title)}</option>`).join("");
+  }
+  function srcChanged() {
+    const v = $("tSrc").value;
+    $("tCatWrap").style.display = v === "cat" ? "block" : "none";
+    $("tFactWrap").style.display = v === "manual" ? "block" : "none";
+  }
+  function openTaskModal(id, secKey) {
+    editingTaskId = id;
+    const f = id ? findTask(id) : null;
+    if (id && !f) return;
+    const cats = (State.getCategories() || {}).expense || [];
+    $("catList").innerHTML = cats.concat(["Топливо"]).map(c => `<option value="${esc(c)}">`).join("");
+
+    $("taskModalTitle").textContent = id ? "Изменить задачу" : "Новая задача";
+    $("tTitle").value = f ? f.task.title : "";
+    $("tNote").value = f ? (f.task.note || "") : "";
+    $("tPlan").value = f ? (f.task.plan || "") : "";
+    $("tFact").value = f ? (f.task.fact || "") : "";
+    const src = f && f.task.src ? f.task.src : "manual";
+    $("tSrc").value = src.startsWith("cat:") ? "cat" : src;
+    $("tCat").value = src.startsWith("cat:") ? src.slice(4) : "";
+    srcChanged();
+    fillSections("tSection", f ? f.sec.key : (secKey || P.sections[0].key));
+    $("tErr").textContent = "";
+    $("taskModal").classList.add("on");
+    if (!id) setTimeout(() => $("tTitle").focus(), 100);
+  }
+  function closeTaskModal() { $("taskModal").classList.remove("on"); editingTaskId = null; }
+
+  function saveTask() {
+    const title = $("tTitle").value.trim();
+    if (!title) { $("tErr").textContent = "Введите заголовок"; return; }
+    let src = $("tSrc").value;
+    if (src === "cat") {
+      const c = $("tCat").value.trim();
+      if (!c) { $("tErr").textContent = "Укажите категорию"; return; }
+      src = "cat:" + c;
+    }
+    const data = {
+      title, src,
+      note: $("tNote").value.trim(),
+      plan: Math.max(0, Math.round(num($("tPlan").value))),
+      fact: src === "manual" ? Math.max(0, Math.round(num($("tFact").value))) : 0
+    };
+    const sec = P.sections.find(s => s.key === $("tSection").value);
+
+    if (editingTaskId) {
+      const f = findTask(editingTaskId);
+      if (f.sec !== sec) { f.sec.tasks.splice(f.idx, 1); sec.tasks.push({ ...f.task, ...data }); }
+      else Object.assign(f.task, data);
+    } else {
+      sec.tasks.push({ id: newId(), done: false, ...data });
+    }
+    persist(); closeTaskModal(); render();
+  }
+
+  // ---- Добавить списком ----
+  function openBulk() {
+    $("bText").value = "";
+    $("bErr").textContent = "";
+    fillSections("bSection", P.sections[0].key);
+    $("bulkModal").classList.add("on");
+    setTimeout(() => $("bText").focus(), 100);
+  }
+  function closeBulk() { $("bulkModal").classList.remove("on"); }
+  function parseLine(line) {
+    const s = line.trim();
+    if (!s) return null;
+    const m = s.match(/^(.*?)[\s\-–—:=]*(\d[\d\s]*(?:[.,]\d+)?)\s*(?:лей|lei|mdl|l)?\s*$/i);
+    if (m && m[1].trim()) return { title: m[1].trim(), plan: Math.round(num(m[2])) };
+    return { title: s, plan: 0 };
+  }
+  function saveBulk() {
+    const sec = P.sections.find(s => s.key === $("bSection").value);
+    const items = $("bText").value.split("\n").map(parseLine).filter(Boolean);
+    if (!items.length) { $("bErr").textContent = "Введите хотя бы одну строку"; return; }
+    items.forEach(it => sec.tasks.push({ id: newId(), title: it.title, note: "", plan: it.plan, fact: 0, done: false, src: detectSrc(it.title) }));
+    persist(); closeBulk(); render();
+    Notify.show(`✅ Добавлено задач: ${items.length}`);
+  }
+
+  // ---- Месяцы: переключение, перенос невыполненного ----
+  function carryTask(t, prev) {
+    const p = num(t.plan), f = factOf(t, prev.ym);
+    const finished = t.done || (p > 0 && f >= p);
+    if (finished) return null;
+    t.carried = true; // в прошлом месяце остаётся пометка
+    const rest = p > 0 && f > 0 && f < p ? p - f : p;
+    return { id: newId(), title: t.title, note: t.note || "", plan: Math.round(rest), fact: 0, done: false, src: t.src || "manual", from: prev.ym };
+  }
+  function carryOver(prev, ym, withTasks = true) {
+    return {
+      month: monthLabel(ym), ym,
+      goal: prev.goal || "", checkpoint: prev.checkpoint || "",
+      sections: prev.sections.map(sec => ({ key: sec.key, title: sec.title, tasks: withTasks ? sec.tasks.map(t => carryTask(t, prev)).filter(Boolean) : [] }))
+    };
+  }
+  // Если наступил новый месяц, а плана на него нет — создаём и переносим невыполненное
+  function ensureRollover() {
+    const cur = curYm();
+    if (plans[cur]) return false;
+    const before = Object.keys(plans).filter(k => k < cur).sort();
+    if (!before.length) { plans[cur] = blankPlan(cur); return true; }
+    let ym = before[before.length - 1];
+    while (ym < cur) {
+      const next = addMonth(ym, 1);
+      if (!plans[next]) plans[next] = carryOver(plans[ym], next);
+      ym = next;
+    }
+    return true;
+  }
+  function createMonth(ym, carry = true) {
+    if (!plans[ym]) {
+      OPS = planOps();
+      const prevKeys = Object.keys(plans).filter(k => k < ym).sort();
+      plans[ym] = prevKeys.length ? carryOver(plans[prevKeys[prevKeys.length - 1]], ym, carry) : blankPlan(ym);
+      saveAll();
+    }
+    viewYm = ym;
+    render();
+  }
+  function shiftMonth(dir) {
+    const keys = Object.keys(plans).sort();
+    const i = keys.indexOf(viewYm), t = keys[i + dir];
+    if (t) { viewYm = t; render(); window.scrollTo(0, 0); return; }
+    if (dir > 0) {
+      askCreate(addMonth(viewYm, 1));
+    } else {
+      Notify.show("Раньше месяцев нет");
+    }
+  }
+  function goCurrent() { viewYm = curYm(); render(); window.scrollTo(0, 0); }
+
+  function planStats(pl) {
+    let n = 0, d = 0, p = 0, f = 0;
+    pl.sections.forEach(s => s.tasks.forEach(t => {
+      const fa = factOf(t, pl.ym), pp = num(t.plan);
+      n++; p += pp; f += fa;
+      if (t.done || (isAuto(t) && pp > 0 && fa >= pp)) d++;
+    }));
+    return { n, d, p, f };
+  }
+  function openMonths() {
+    OPS = planOps();
+    const cur = curYm();
+    $("monthsList").innerHTML = Object.keys(plans).sort().reverse().map(k => {
+      const st = planStats(plans[k]);
+      const tag = k === cur ? "текущий" : k < cur ? "история" : "впереди";
+      return `<div class="mrow ${k === viewYm ? "on" : ""}" onclick="openMonth('${k}')">
+        <div><b>${esc(monthLabel(k))}</b><div class="hint">${tag} · выполнено ${st.d} из ${st.n}</div></div>
+        <div class="mrow-r">${fmt(st.f)} / ${fmt(st.p)}${k !== cur ? `<button class="mdel" onclick="event.stopPropagation();deleteMonth('${k}')">🗑</button>` : ""}</div></div>`;
     }).join("");
-
-    $("officialList").innerHTML = OFFICIALS.map(o => {
-      const data = State.getOfficial(o.id);
-      const status = data.nextDate ? `Действует до: ${fmtDate(data.nextDate)} (${data.cost} лей)` : "Нет данных";
-      return `
-      <details class="acc" id="acc_off_${o.id}">
-        <summary><div><div>${o.title}</div><div style="font-size:12px;font-weight:400;color:var(--text-dim);margin-top:4px">${status}</div></div></summary>
-        <div class="acc-body">
-          <div style="margin-bottom: 10px;"><label>Дата прохождения</label><input type="date" id="o_date_${o.id}" class="form-control" value="${today}"></div>
-          <div style="margin-bottom: 10px;"><label>Действует до</label><input type="date" id="o_next_${o.id}" class="form-control" value="${data.nextDate || ""}"></div>
-          <div style="margin-bottom: 10px;"><label>Стоимость (лей)</label><input type="number" id="o_cost_${o.id}" class="form-control" placeholder="0"></div>
-          <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="o_wall_${o.id}" class="form-control">${walletSelectHtml()}</select></div>
-          <label class="check-row"><input type="checkbox" id="o_skip_${o.id}"> Не списывать с кошелька (старая запись)</label>
-          <button class="save-btn" onclick="saveOfficial('${o.id}', '${o.title}')">💾 СОХРАНИТЬ</button>
-        </div>
-      </details>`;
-    }).join("");
-
-    openIds.forEach(id => { const d = $(id); if (d) d.open = true; });
-
-    renderServiceHistory();
-
-    let historyHtml = "";
-    State.getMileageLog().slice().reverse().slice(0, 5).forEach(m => historyHtml += `<div class="history-item"><span>📏 Пробег</span><span>${m.date}: <b>${m.km} км</b></span></div>`);
-    fuels.slice().reverse().slice(0, 5).forEach(f => historyHtml += `<div class="history-item"><span>⛽ Заправка</span><span>${f.date}: <b>${money(fuelSum(f))} лей</b> (${(+f.liters || 0).toFixed(2)} л)</span></div>`);
-    $("globalHistory").innerHTML = historyHtml || `<div class="history-item">Нет записей</div>`;
+    $("monthsModal").classList.add("on");
+  }
+  function closeMonths() { $("monthsModal").classList.remove("on"); }
+  function openMonth(k) { viewYm = k; closeMonths(); render(); window.scrollTo(0, 0); }
+  function createNext() {
+    const latest = Object.keys(plans).sort().pop();
+    askCreate(addMonth(latest, 1));
+  }
+  let pendingYm = null;
+  function askCreate(ym) {
+    pendingYm = ym;
+    $("createTitle").textContent = `Создать «${monthLabel(ym)}»`;
+    $("createModal").classList.add("on");
+  }
+  function closeCreate() { $("createModal").classList.remove("on"); pendingYm = null; }
+  function doCreate(carry) {
+    const ym = pendingYm;
+    closeCreate(); closeMonths();
+    if (ym) createMonth(ym, carry);
   }
 
-  function toggleFuelForm() {
-    const c = $("fuelFormContainer");
-    c.style.display = c.style.display === "none" ? "block" : "none";
-    if (c.style.display === "block") $("f_total").focus();
+  // Пометка «перенесено дальше» остаётся, только если в следующих месяцах есть такая задача
+  function refreshCarried() {
+    const keys = Object.keys(plans).sort();
+    keys.forEach(k => plans[k].sections.forEach(sec => sec.tasks.forEach(t => {
+      if (!t.carried) return;
+      const found = keys.some(n => n > k && plans[n].sections.some(s2 => s2.tasks.some(x => x.from === k && x.title === t.title)));
+      if (!found) delete t.carried;
+    })));
   }
-  function toggleMileageForm() {
-    const c = $("mileageFormContainer");
-    c.style.display = c.style.display === "none" ? "block" : "none";
-    if (c.style.display === "block") $("m_km").focus();
-  }
-
-  function saveFuel() {
-    if (!guardAction("saveFuel")) return;
-    try {
-      const totalCost = UI.num($("f_total").value);
-      const price = UI.num($("f_price").value);
-      const wallet = $("f_wall").value;
-
-      if (!wallet) throw new Error("Кошелёк не выбран");
-      if (totalCost <= 0 || price <= 0) throw new Error("Заполните сумму и цену");
-
-      const liters = UI.r2(totalCost / price);
-      FinanceAPI.spend({ wallet, amount: totalCost, category: "Топливо (Скутер)", note: `${liters}л` });
-      State.setFuel([...State.getFuel(), { date: UI.date.local(), liters, price, total: totalCost }]);
-      toggleFuelForm();
-      render();
-      Notify.show(`✅ ${liters} л. Списано ${totalCost} лей`);
-    } catch (e) { Notify.error(e.message); }
+  function deleteMonth(k) {
+    if (k === curYm()) { alert("Текущий месяц удалить нельзя. Можно удалить его задачи."); return; }
+    if (!confirm(`Удалить «${monthLabel(k)}» со всеми делами?\nЭто нельзя отменить.`)) return;
+    delete plans[k];
+    refreshCarried();
+    saveAll();
+    if (viewYm === k) viewYm = curYm();
+    openMonths(); render();
   }
 
-  function saveMileage() {
-    if (!guardAction("saveMileage")) return;
-    try {
-      const scooter = State.getScooter();
-      const km = UI.num($("m_km").value);
-      if (km < scooter.currentKm) throw new Error("Пробег не может уменьшаться");
-
-      State.setMileageLog([...State.getMileageLog(), { date: UI.date.local(), km }]);
-      scooter.currentKm = km;
-      if (scooter.startKm === 0) scooter.startKm = km;
-      State.setScooter(scooter);
-      toggleMileageForm();
-      render();
-      Notify.show("✅ Пробег обновлен");
-    } catch (e) { Notify.error(e.message); }
+  // ---- Настройки ----
+  function openSettings() {
+    $("sGoal").value = P.goal || "";
+    $("sCheck").value = P.checkpoint || "";
+    $("sErr").textContent = "";
+    $("setModal").classList.add("on");
+  }
+  function closeSettings() { $("setModal").classList.remove("on"); }
+  function saveSettings() {
+    P.goal = $("sGoal").value; P.checkpoint = $("sCheck").value;
+    persist(); closeSettings(); render();
+  }
+  function autoLink() {
+    let n = 0;
+    P.sections.forEach(s => s.tasks.forEach(t => {
+      if (isAuto(t)) return;
+      const src = detectSrc(t.title);
+      if (src !== "manual") { t.src = src; n++; }
+    }));
+    persist(); render();
+    $("sErr").textContent = n ? `Привязано задач: ${n}` : "Подходящих задач не найдено";
   }
 
-  function saveComponent(id, title) {
-    if (!guardAction("saveComp")) return;
-    try {
-      const data = State.getComponent(id);
-      if (!Array.isArray(data.history)) data.history = [];
-      const date = $(`c_date_${id}`).value;
-      const km = UI.num($(`c_km_${id}`).value);
-      const interval = UI.num($(`c_int_${id}`).value);
-      const cost = UI.num($(`c_cost_${id}`).value);
-      const wallet = $(`c_wall_${id}`).value;
-      const skip = $(`c_skip_${id}`).checked;
-      const note = $(`c_note_${id}`).value.trim();
+  // Закрытие модалок по клику вне
+  ["taskModal", "bulkModal", "setModal", "monthsModal", "createModal"].forEach(id =>
+    $(id).addEventListener("click", e => { if (e.target.id === id) $(id).classList.remove("on"); }));
 
-      if (!date) throw new Error("Укажите дату замены");
-      if (km <= 0 || interval <= 0) throw new Error("Заполните км и интервал");
-
-      let opId = null;
-      if (cost > 0 && !skip) {
-        opId = FinanceAPI.spend({ date, wallet, amount: cost, category: `Скутер: ${title}`, note: note || `Замена на ${km} км` });
-      }
-
-      data.intervalKm = interval;
-      // Старую запись не считаем «последней», если уже есть более свежая замена
-      if (!data.lastKm || km >= data.lastKm) { data.lastKm = km; data.lastDate = date; }
-      data.history.push({ date, km, cost, wallet: cost > 0 && !skip ? wallet : "", opId, note });
-      data.history.sort((a, b) => String(a.date).localeCompare(String(b.date)) || (+a.km || 0) - (+b.km || 0));
-      State.setComponent(id, data);
-      render();
-      Notify.show(`✅ Замена ${title} записана`);
-    } catch (err) { Notify.error(err.message); }
+  // Обновлять факт при возврате на страницу (данные могли измениться в «Финансах»)
+  function refresh() {
+    OPS = planOps();
+    if (ensureRollover()) saveAll();
+    render();
   }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+  window.addEventListener("pageshow", e => { if (e.persisted) refresh(); });
 
-  function saveOfficial(id, title) {
-    if (!guardAction("saveOff")) return;
-    try {
-      const data = State.getOfficial(id);
-      if (!Array.isArray(data.history)) data.history = [];
-      const date = $(`o_date_${id}`).value;
-      const next = $(`o_next_${id}`).value;
-      const cost = UI.num($(`o_cost_${id}`).value);
-      const wallet = $(`o_wall_${id}`).value;
-      const skip = $(`o_skip_${id}`).checked;
-
-      if (!date || !next) throw new Error("Укажите даты");
-
-      let opId = null;
-      if (cost > 0 && !skip) {
-        opId = FinanceAPI.spend({ date, wallet, amount: cost, category: `Скутер: ${title}`, note: `Оплата до ${next}` });
-      }
-
-      if (!data.lastDate || date >= data.lastDate) { data.lastDate = date; data.nextDate = next; data.cost = cost; }
-      data.history.push({ date, nextDate: next, cost, wallet: cost > 0 && !skip ? wallet : "", opId });
-      data.history.sort((a, b) => String(a.date).localeCompare(String(b.date)));
-      State.setOfficial(id, data);
-      render();
-      Notify.show(`✅ ${title} записан`);
-    } catch (err) { Notify.error(err.message); }
-  }
-
+  OPS = planOps();
+  ensureRollover();
+  saveAll(); // сразу сохраняем в новом формате (plans)
+  viewYm = curYm();
   render();
 </script>
 </body>
