@@ -75,26 +75,30 @@
     <button class="btn-save" onclick="saveTariff()">💾 Применить тариф</button>
   </div>
 
-  <!-- Экспорт JSON -->
+  <!-- Экспорт -->
   <div class="card">
     <h3>📤 Экспорт данных</h3>
-    <p class="hint">Полная резервная копия всех данных приложения (учёт, финансы, скутер, план, настройки, PIN). Подходит для импорта ниже.</p>
-    <button class="btn-blue" onclick="downloadExport()">💾 Скачать файл JSON</button>
+    <p class="hint">Полная копия всех данных приложения (учёт, финансы, скутер, план, настройки, PIN). Выберите формат.</p>
+    <div class="theme-seg" id="fmtSeg" style="grid-template-columns: repeat(2, 1fr);">
+      <button data-fmt="py" onclick="setFmt('py')">🐍 Текст<br>(Python)</button>
+      <button data-fmt="json" onclick="setFmt('json')">{ }<br>JSON</button>
+    </div>
+    <button class="btn-blue" onclick="downloadExport()">💾 Скачать файл</button>
     <button class="btn-save" onclick="copyExport()">📋 Скопировать в буфер</button>
     <button class="btn-save" style="background: var(--text-dim);" onclick="showExport()">👁 Показать текст</button>
-    <textarea id="exportBox" readonly style="display:none" placeholder="Здесь появится JSON"></textarea>
+    <textarea id="exportBox" readonly style="display:none" placeholder="Здесь появится копия данных"></textarea>
     <div id="exportStatus" class="hint" style="margin-top:10px;"></div>
   </div>
 
-  <!-- Импорт JSON -->
+  <!-- Импорт -->
   <div class="card">
     <h3>📥 Импорт данных</h3>
-    <p class="hint">Вставь текст JSON в поле ниже или выбери файл. Существующие ключи будут перезаписаны.</p>
-    <textarea id="importBox" placeholder="Вставь JSON сюда"></textarea>
+    <p class="hint">Вставьте текст копии (Python-формат или JSON) или выберите файл. Формат определяется сам. Существующие данные с теми же ключами будут заменены.</p>
+    <textarea id="importBox" placeholder="Вставь копию данных сюда"></textarea>
     <button class="btn-save" onclick="importFromText()">📥 Импортировать</button>
-    
+
     <label for="fileInput" class="file-label">📂 Выбрать файл</label>
-    <input type="file" id="fileInput" class="file-input" accept=".json,application/json" onchange="handleFile(this)">
+    <input type="file" id="fileInput" class="file-input" accept=".json,.txt,.py,text/plain,application/json" onchange="handleFile(this)">
     <div id="importStatus" class="hint" style="margin-top:10px;"></div>
   </div>
 
@@ -161,29 +165,90 @@
     Notify.show(`✅ Тариф с ${date}: 🌙${night} / 📦${ap}`);
   }
 
-  // --- Экспорт ---
-  function buildExport() {
+  // --- Экспорт / импорт: Python-текст и JSON ---
+  let exportFmt = "py";
+  try { exportFmt = localStorage.getItem("export_fmt") === "json" ? "json" : "py"; } catch (e) {}
+  function setFmt(f) {
+    exportFmt = f;
+    try { localStorage.setItem("export_fmt", f); } catch (e) {}
+    refreshFmt();
+    document.getElementById("exportBox").style.display = "none";
+  }
+  function refreshFmt() {
+    document.querySelectorAll("#fmtSeg button").forEach(b => b.classList.toggle("on", b.dataset.fmt === exportFmt));
+  }
+  refreshFmt();
+
+  // Значение -> литерал Python (компактно, как в прежних копиях)
+  function py(v) {
+    if (v === null || v === undefined) return "None";
+    if (v === true) return "True";
+    if (v === false) return "False";
+    if (typeof v === "number") return String(v);
+    if (typeof v === "string") return "'" + v.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t") + "'";
+    if (Array.isArray(v)) return "[" + v.map(py).join(",") + "]";
+    return "{" + Object.keys(v).map(k => py(k) + ":" + py(v[k])).join(",") + "}";
+  }
+  // Литерал Python -> JSON
+  function decodePyStr(v) {
+    return v.replace(/\\([\s\S])/g, (m, c) => ({ n: "\n", t: "\t", r: "\r" })[c] || c);
+  }
+  function pyToJson(s) {
+    let o = "", seg = "", i = 0;
+    const flush = () => {
+      o += seg.replace(/\bTrue\b/g, "true").replace(/\bFalse\b/g, "false").replace(/\bNone\b/g, "null").replace(/,(\s*[}\]])/g, "$1");
+      seg = "";
+    };
+    while (i < s.length) {
+      const c = s[i];
+      if (c === "'" || c === '"') {
+        flush();
+        let j = i + 1, v = "";
+        while (j < s.length && s[j] !== c) {
+          if (s[j] === "\\" && j + 1 < s.length) { v += s[j] + s[j + 1]; j += 2; } else v += s[j++];
+        }
+        o += JSON.stringify(decodePyStr(v));
+        i = j + 1;
+      } else { seg += c; i++; }
+    }
+    flush();
+    return o;
+  }
+
+  function collectData() {
     const out = {};
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
       if (!k || !k.startsWith(PREFIX)) continue;
-      try { out[k] = JSON.parse(localStorage.getItem(k)); }
-      catch (e) { out[k] = localStorage.getItem(k); }
+      try { out[k.slice(PREFIX.length)] = JSON.parse(localStorage.getItem(k)); }
+      catch (e) { out[k.slice(PREFIX.length)] = localStorage.getItem(k); }
     }
-    return { json: JSON.stringify(out, null, 2), count: Object.keys(out).length };
+    return out;
+  }
+  function buildExport() {
+    const data = collectData();
+    const names = Object.keys(data).sort();
+    if (exportFmt === "json") {
+      const o = {};
+      names.forEach(k => o[PREFIX + k] = data[k]);
+      return { text: JSON.stringify(o, null, 2), count: names.length, ext: "json", mime: "application/json" };
+    }
+    const lines = [`# Копия данных «Учёт» ${UI.date.local()}`];
+    names.forEach(k => lines.push(`${k} = ${py(data[k])}`));
+    return { text: lines.join("\n") + "\n", count: names.length, ext: "txt", mime: "text/plain" };
   }
 
   function setExportStatus(msg) { document.getElementById("exportStatus").textContent = msg; }
 
   function downloadExport() {
-    const { json, count } = buildExport();
+    const { text, count, ext, mime } = buildExport();
     if (!count) return Notify.error("Нет данных для экспорта");
     try {
-      const blob = new Blob([json], { type: "application/json" });
+      const blob = new Blob([text], { type: mime + ";charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `uchot-backup-${UI.date.local()}.json`;
+      a.download = `uchot-backup-${UI.date.local()}.${ext}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -195,46 +260,64 @@
   }
 
   function showExport() {
-    const { json, count } = buildExport();
+    const { text, count } = buildExport();
     const box = document.getElementById("exportBox");
-    box.value = json;
+    box.value = text;
     box.style.display = "block";
     setExportStatus(`Ключей: ${count}`);
   }
 
   function copyExport() {
-    const { json, count } = buildExport();
+    const { text, count } = buildExport();
     if (!count) return Notify.error("Нет данных для экспорта");
     const box = document.getElementById("exportBox");
-    box.value = json;
+    box.value = text;
     box.style.display = "block";
-    const fallback = () => { box.select(); box.setSelectionRange(0, json.length); setExportStatus("Выдели текст и скопируй вручную."); };
+    const fallback = () => { box.select(); box.setSelectionRange(0, text.length); setExportStatus("Выдели текст и скопируй вручную."); };
     try {
-      navigator.clipboard.writeText(json).then(
+      navigator.clipboard.writeText(text).then(
         () => { Notify.show("✅ Скопировано"); setExportStatus(`Ключей: ${count}`); },
         fallback
       );
     } catch (e) { fallback(); }
   }
 
-  // --- Импорт ---
+  // Разбор копии: JSON ({"uchot.v2.ключ": ...}) или текст Python (ключ = значение)
+  function parseBackup(text) {
+    const t = text.trim();
+    const data = {}, failed = [];
+    if (t.startsWith("{")) {
+      const obj = JSON.parse(t);
+      for (const k in obj) if (k.startsWith(PREFIX)) data[k] = obj[k];
+      return { data, failed };
+    }
+    t.split(/\r?\n/).forEach(line => {
+      const m = line.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/);
+      if (!m) return;
+      try { data[PREFIX + m[1]] = JSON.parse(pyToJson(m[2].trim())); }
+      catch (e) { failed.push(m[1]); }
+    });
+    return { data, failed };
+  }
+
   function importFromText() {
     const text = document.getElementById("importBox").value.trim();
-    if (!text) return Notify.error("Вставь JSON");
+    if (!text) return Notify.error("Вставь данные");
+    if (text.includes("# >>> ДАННЫЕ НАЧАЛО")) {
+      return Notify.error("Это копия из «Финансов». Импортируй её там: Финансы → Ещё → Импорт.");
+    }
     try {
-      const data = JSON.parse(text);
-      let count = 0;
-      for (const key in data) {
-        if (key.startsWith(PREFIX)) {
-          localStorage.setItem(key, JSON.stringify(data[key]));
-          count++;
-        }
-      }
-      if (!count) return Notify.error("В данных нет ключей приложения");
-      Notify.show(`✅ Импортировано ключей: ${count}. Перезагрузка...`);
-      setTimeout(() => location.reload(), 1000);
+      const { data, failed } = parseBackup(text);
+      const keys = Object.keys(data);
+      if (!keys.length) return Notify.error("В данных нет ключей приложения");
+      if (!confirm(`Заменить текущие данные? Будет записано ключей: ${keys.length}.`)) return;
+      keys.forEach(k => localStorage.setItem(k, JSON.stringify(data[k])));
+      const warn = failed.length ? ` Не разобрано: ${failed.join(", ")}.` : "";
+      document.getElementById("importStatus").textContent = `Импортировано ключей: ${keys.length}.${warn}`;
+      Notify.show(`✅ Импортировано ключей: ${keys.length}. Перезагрузка...`);
+      setTimeout(() => location.reload(), failed.length ? 3500 : 1000);
     } catch (e) {
-      Notify.error("Ошибка JSON: " + e.message);
+      Notify.error("Ошибка разбора: " + e.message);
     }
   }
 
