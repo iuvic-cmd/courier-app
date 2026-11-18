@@ -3,222 +3,135 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>📈 Отчёты</title>
+  <title>🛵 Скутер</title>
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/components.css">
   <style>
     .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-top: 16px; padding-bottom: 90px; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .header h1 { font-size: 24px; }
+    .header { margin-bottom: 12px; }
 
-    .card { background: var(--panel); border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--border); }
-    .card h3 { font-size: 14px; margin-bottom: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
-    .card h4 { font-size: 13px; font-weight: 600; margin: 20px 0 10px; }
-    .card h4:first-of-type { margin-top: 0; }
-
-    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .stat-item { background: var(--bg); padding: 12px; border-radius: 12px; text-align: center; min-width: 0; }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .stat-card { background: var(--panel); padding: 12px; border-radius: 12px; text-align: center; border-left: 3px solid var(--accent); }
     .stat-label { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; display: block; }
-    .stat-val { font-size: 18px; font-weight: 700; overflow-wrap: anywhere; }
-    .stat-item.wide { grid-column: 1 / -1; }
-    .stat-item.wide .stat-val { font-size: 22px; }
+    .stat-value { font-size: 18px; font-weight: 700; }
 
-    .stat-item.green { background: #e8f5e9; color: #2e7d32; }
-    .stat-item.red { background: #ffebee; color: #c62828; }
-    .stat-item.blue { background: #e3f2fd; color: #1565c0; }
-    .stat-item.orange { background: #fff3e0; color: #e65100; }
-    .stat-item.green .stat-label, .stat-item.red .stat-label, .stat-item.blue .stat-label, .stat-item.orange .stat-label { color: inherit; opacity: .75; }
-    :root[data-theme="dark"] .stat-item.green { background: #1a2a1a; color: #66bb6a; }
-    :root[data-theme="dark"] .stat-item.red { background: #2a1414; color: #ef9a9a; }
-    :root[data-theme="dark"] .stat-item.blue { background: #1a2a3a; color: #90caf9; }
-    :root[data-theme="dark"] .stat-item.orange { background: #2a1a0a; color: #ffa726; }
+    .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 24px; }
+    .action-grid .btn { padding: 14px; font-size: 14px; }
 
-    .list-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
-    .list-row:last-child { border-bottom: none; }
-    .list-row.muted { color: var(--text-dim); }
-    .neg { color: var(--red, #c62828); }
-    .pos { color: var(--green, #2e7d32); }
-    .total-row { font-size: 16px; border-top: 2px solid var(--border); margin-top: 4px; }
-    .total-row b { color: var(--red, #c62828); }
-    .note { font-size: 12px; color: var(--text-dim); margin-top: 10px; line-height: 1.4; }
+    details.acc { margin-bottom: 12px; }
+    details.acc > summary {
+      list-style: none; background: var(--panel); border: 1px solid var(--border);
+      border-radius: 16px; padding: 16px; cursor: pointer; font-weight: 600;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    details.acc > summary::-webkit-details-marker { display: none; }
+    details.acc > summary::after { content: "▼"; font-size: 12px; color: var(--text-dim); }
+    details.acc[open] > summary::after { content: "▲"; }
 
-    /* Календарь */
-    .calendar-section { background: var(--panel); border-radius: 16px; padding: 16px 12px 12px; margin-bottom: 16px; border: 1px solid var(--border); }
-    .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px; }
-    .calendar-header h2 { font-size: 17px; font-weight: 600; margin: 0; }
-    .nav-btn { background: none; border: none; font-size: 20px; color: var(--accent); cursor: pointer; padding: 8px 12px; border-radius: 8px; width: auto; }
-    .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-    .day-name { padding: 6px 0; text-align: center; font-size: 11px; font-weight: 600; color: var(--text-dim); margin: 0; }
-    .day { background: var(--subtle-bg); padding: 4px 2px; text-align: center; border-radius: 10px; cursor: pointer; min-height: 56px; display: flex; flex-direction: column; justify-content: space-between; font-size: 12px; border: 2px solid transparent; min-width: 0; color: var(--text); transition: transform .1s; }
-    .day:active { transform: scale(0.95); }
-    .day.selected, .day.today { border-color: var(--accent) !important; box-shadow: 0 0 0 2px var(--accent); }
-    .day-number { font-weight: 600; font-size: 14px; line-height: 1.3; }
-    .day-label { font-size: 8px; font-weight: 600; opacity: .85; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .orders-info { font-size: 9px; opacity: .8; line-height: 1.2; }
-    .total-info { font-size: 10px; font-weight: 600; color: var(--accent); }
-    .day.empty { background: transparent; border: none; cursor: default; min-height: 30px; }
-    .day.work { background: #e8f5e9; border-color: #43a047; color: #2e7d32; }
-    .day.short { background: #fff3e0; border-color: #fb8c00; color: #e65100; }
-    .day.replace { background: #f3e5f5; border-color: #8e24aa; color: #7b1fa2; }
-    .day.short_replace { background: #fff8e1; border-color: #f9a825; color: #f57f17; border-style: dashed; }
-    .day.help { background: #e3f2fd; border-color: #1e88e5; color: #1565c0; }
-    .day.weekend { background: #f5f5f5; border-color: #bdbdbd; color: #616161; }
-    :root[data-theme="dark"] .day.work { background: #1a2a1a; border-color: #2e7d32; color: #66bb6a; }
-    :root[data-theme="dark"] .day.short { background: #2a1a0a; border-color: #e65100; color: #ffa726; }
-    :root[data-theme="dark"] .day.replace { background: #2a1a2a; border-color: #7b1fa2; color: #ab47bc; }
-    :root[data-theme="dark"] .day.short_replace { background: #2a2a0a; border-color: #f9a825; color: #ffca28; }
-    :root[data-theme="dark"] .day.help { background: #1a2a3a; border-color: #1565c0; color: #42a5f5; }
-    :root[data-theme="dark"] .day.weekend { background: #1c1c1e; border-color: #3a3a3c; color: #8e8e93; }
+    .acc-body {
+      background: var(--panel); border: 1px solid var(--border); border-top: none;
+      border-radius: 0 0 16px 16px; padding: 16px; margin-top: -4px;
+    }
 
-    /* Графики */
-    .chart-container { position: relative; height: 160px; display: flex; align-items: flex-end; gap: 4px; padding-top: 20px; overflow-x: auto; }
-    .chart-bar-wrap { flex: 1; min-width: 20px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
-    .chart-bar { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; transition: height 0.3s; min-height: 2px; }
-    .chart-val { font-size: 9px; color: var(--text-dim); margin-bottom: 2px; white-space: nowrap; }
-    .chart-label { font-size: 10px; color: var(--text-dim); margin-top: 4px; text-align: center; }
-    .chart-empty { color: var(--text-dim); text-align: center; padding: 20px; width: 100%; font-size: 14px; }
-    .pie-legend { display: flex; flex-wrap: wrap; gap: 8px 12px; margin-top: 10px; font-size: 12px; }
-    .pie-legend span { display: flex; align-items: center; gap: 4px; }
-    .pie-legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-    .pie { width: 150px; height: 150px; border-radius: 50%; margin: 0 auto; }
+    .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
+    .input-row > div { flex: 1; min-width: 0; }
+    .input-row label, .acc-body label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
 
-    .btn-close { width: 100%; padding: 12px; border-radius: 12px; background: var(--border); color: var(--text); border: none; font-weight: 600; margin-top: 10px; cursor: pointer; }
+    .history-list { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
+    .history-item { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; color: var(--text-dim); }
+    .section-title { font-size: 14px; font-weight: 700; margin: 24px 0 10px; color: var(--text-dim); text-transform: uppercase; }
+
+    .save-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; transition: 0.2s; }
+    .save-btn:active { background: #2e7d32; transform: scale(0.98); }
+    .cancel-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--border); color: var(--text); border: none; font-weight: 700; margin-top: 8px; cursor: pointer; }
+
+    .check-row { display: flex !important; align-items: center; gap: 8px; font-size: 14px !important; color: var(--text) !important; margin: 4px 0 10px; }
+    .check-row input { width: 20px; height: 20px; accent-color: var(--accent); }
+
+    .svc-summary { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; font-size: 14px; line-height: 1.7; }
+    .svc-summary b { font-weight: 700; }
+    .svc-list { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 0 16px; margin-top: 10px; }
+    .svc-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .svc-row:last-child { border-bottom: none; }
+    .svc-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+    .svc-right { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .del-btn { background: none; border: none; font-size: 18px; cursor: pointer; padding: 4px; }
+    .empty-note { color: var(--text-dim); font-size: 13px; padding: 14px 0; text-align: center; }
   </style>
 </head>
 <body>
 <div class="container">
   <div class="header">
-    <h1>📈 Отчёты</h1>
+    <h1>🛵 Скутер</h1>
   </div>
 
-  <!-- Календарь -->
-  <div class="calendar-section">
-    <div class="calendar-header">
-      <button class="nav-btn" onclick="changeMonth(-1)" aria-label="Предыдущий месяц">◀</button>
-      <h2 id="currentMonth">—</h2>
-      <button class="nav-btn" onclick="changeMonth(1)" aria-label="Следующий месяц">▶</button>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-label">📊 Общий пробег</span>
+      <span class="stat-value" id="statKm">0 км</span>
     </div>
-    <div id="calendar" class="calendar"></div>
+    <div class="stat-card" style="border-left-color: var(--orange);">
+      <span class="stat-label">⛽ Расход топлива</span>
+      <span class="stat-value" id="statConsumption">0 л/100км</span>
+    </div>
   </div>
 
-  <!-- Статистика за день -->
-  <div id="dayStatsContainer" style="display: none;">
-    <div class="card" style="border: 2px solid var(--accent);">
-      <h3 id="dayStatsTitle" style="color: var(--accent);">Статистика за день</h3>
-      <div class="stat-grid" style="margin-bottom: 12px;">
-        <div class="stat-item green"><span class="stat-label">💼 Заработано</span><span class="stat-val" id="daySalary">0</span></div>
-        <div class="stat-item green"><span class="stat-label">💵 Чаевые и др. доходы</span><span class="stat-val" id="dayIncome">0</span></div>
-        <div class="stat-item red wide"><span class="stat-label">💸 Потрачено</span><span class="stat-val" id="dayExpenses">0</span></div>
-        <div class="stat-item blue wide"><span class="stat-label">Чистый доход</span><span class="stat-val" id="dayNet">0</span></div>
+  <div class="action-grid">
+    <button class="btn btn-primary" onclick="toggleFuelForm()"><span>⛽</span> Заправка</button>
+    <button class="btn btn-green" onclick="toggleMileageForm()"><span>📏</span> Пробег</button>
+  </div>
+
+  <!-- Кошельки для скутера -->
+  <div class="section-title" style="margin-top: 0;">💰 Мои кошельки для скутера</div>
+  <div id="scooterWallets" style="background: var(--panel); border-radius: 16px; padding: 0 16px; border: 1px solid var(--border); margin-bottom: 16px; display: none;"></div>
+  <div class="hint" id="noScooterWallets" style="text-align: center; margin-bottom: 16px;">Пока нет оплат с кошельков. Сделай первую заправку или ТО.</div>
+
+  <!-- Форма заправки -->
+  <div id="fuelFormContainer" style="display: none; margin-bottom: 20px;">
+    <div style="background: var(--panel); border: 2px solid var(--accent); border-radius: 16px; padding: 16px;">
+      <h3 style="margin-bottom: 12px; font-size: 16px;">⛽ Новая заправка</h3>
+      <div class="input-row">
+        <div><label>Сумма по чеку</label><input type="number" id="f_total" class="form-control" placeholder="0" inputmode="decimal"></div>
+        <div><label>Цена за литр</label><input type="number" id="f_price" class="form-control" placeholder="0" inputmode="decimal"></div>
       </div>
-      <div class="stat-grid">
-        <div class="stat-item"><span class="stat-label">🌙 Ночной</span><span class="stat-val" id="dayNight">0</span></div>
-        <div class="stat-item"><span class="stat-label">📦 Единый</span><span class="stat-val" id="dayAp">0</span></div>
-      </div>
-      <div style="margin-top: 12px;" id="dayOpsList"></div>
-      <button class="btn-close" onclick="closeDayStats()">Закрыть</button>
+      <div style="margin-bottom: 12px;"><label>Кошелёк</label><select id="f_wall" class="form-control"></select></div>
+      <button class="save-btn" onclick="saveFuel()">💾 СОХРАНИТЬ</button>
+      <button class="cancel-btn" onclick="toggleFuelForm()">Отмена</button>
     </div>
   </div>
 
-  <!-- Итоги месяца -->
-  <div class="card">
-    <h3>💰 Итоги за месяц</h3>
-    <div class="stat-grid">
-      <div class="stat-item green"><span class="stat-label">💼 Заработано</span><span class="stat-val" id="statSalary">0</span></div>
-      <div class="stat-item green"><span class="stat-label">💵 Чаевые и др. доходы</span><span class="stat-val" id="statIncome">0</span></div>
-      <div class="stat-item red wide"><span class="stat-label">💸 Потрачено</span><span class="stat-val" id="statExpenses">0</span></div>
-      <div class="stat-item blue wide"><span class="stat-label">Чистый доход</span><span class="stat-val" id="statNet">0</span></div>
-    </div>
-    <div class="note" id="statNote"></div>
-  </div>
-
-  <!-- Заказы и эффективность -->
-  <div class="card">
-    <h3>📦 Заказы и эффективность</h3>
-    <div class="stat-grid">
-      <div class="stat-item"><span class="stat-label">Всего заказов</span><span class="stat-val" id="statOrders">0</span></div>
-      <div class="stat-item"><span class="stat-label">Рабочих дней</span><span class="stat-val" id="statWorkDays">0</span></div>
-      <div class="stat-item"><span class="stat-label">Ср. доход в день</span><span class="stat-val" id="statAvgDay">0</span></div>
-      <div class="stat-item"><span class="stat-label">Доход за заказ</span><span class="stat-val" id="statAvgOrder">0</span></div>
+  <!-- Форма пробега -->
+  <div id="mileageFormContainer" style="display: none; margin-bottom: 20px;">
+    <div style="background: var(--panel); border: 2px solid var(--green); border-radius: 16px; padding: 16px;">
+      <h3 style="margin-bottom: 12px; font-size: 16px;">📏 Обновить пробег</h3>
+      <div style="margin-bottom: 12px;"><label>Текущий пробег (км)</label><input type="number" id="m_km" class="form-control" value="" inputmode="numeric"></div>
+      <button class="save-btn" onclick="saveMileage()">💾 СОХРАНИТЬ</button>
+      <button class="cancel-btn" onclick="toggleMileageForm()">Отмена</button>
     </div>
   </div>
 
-  <!-- Экономика заказа -->
-  <div class="card">
-    <h3>📊 Экономика заказа <span style="text-transform:none;letter-spacing:0">(топливо и скутер)</span></h3>
-    <div class="stat-grid">
-      <div class="stat-item green"><span class="stat-label">📊 КПД</span><span class="stat-val" id="ecoKpd">0%</span></div>
-      <div class="stat-item blue"><span class="stat-label">💰 Прибыль</span><span class="stat-val" id="ecoProfit">0</span></div>
-      <div class="stat-item"><span class="stat-label">📦 Доход на заказ</span><span class="stat-val" id="ecoIncPerOrder">0</span></div>
-      <div class="stat-item orange"><span class="stat-label">⛽ Топливо на заказ</span><span class="stat-val" id="ecoFuelPerOrder">0</span></div>
-      <div class="stat-item red"><span class="stat-label">💰 Расход на заказ</span><span class="stat-val" id="ecoExpPerOrder">0</span></div>
-      <div class="stat-item blue"><span class="stat-label">💎 Чистый на заказ</span><span class="stat-val" id="ecoNetPerOrder">0</span></div>
-      <div class="stat-item"><span class="stat-label">📅 Доход в день</span><span class="stat-val" id="ecoIncPerDay">0</span></div>
-      <div class="stat-item"><span class="stat-label">📅 Чистый в день</span><span class="stat-val" id="ecoNetPerDay">0</span></div>
-    </div>
-    <div class="list-row" style="margin-top:10px"><span>Состав заказов</span><span id="ecoMix" style="font-weight:600">—</span></div>
-    <div class="list-row"><span>Рекомендации</span><span id="ecoTips" style="font-size:12px;color:var(--text-dim);text-align:right">—</span></div>
-  </div>
+  <div class="section-title">ТО и Расходники</div>
+  <div id="componentsList"></div>
 
-  <!-- Скутер -->
-  <div class="card">
-    <h3>🛵 Скутер за месяц</h3>
-    <div class="stat-grid">
-      <div class="stat-item"><span class="stat-label">⛽ Топливо (лей)</span><span class="stat-val" id="statFuelCost">0</span></div>
-      <div class="stat-item"><span class="stat-label">🧼 Мойка (лей)</span><span class="stat-val" id="statWashCost">0</span></div>
-      <div class="stat-item"><span class="stat-label">🔧 ТО и расходники (лей)</span><span class="stat-val" id="statServiceCost">0</span></div>
-      <div class="stat-item blue"><span class="stat-label">🛵 Всего на скутер (лей)</span><span class="stat-val" id="statScooterTotal">0</span></div>
-      <div class="stat-item"><span class="stat-label">⛽ Цена литра (ср.)</span><span class="stat-val" id="statPrice">0</span></div>
-      <div class="stat-item"><span class="stat-label" id="statKmLabel">🛵 Пробег</span><span class="stat-val" id="statKm">0</span></div>
-      <div class="stat-item"><span class="stat-label">⛽ Расход</span><span class="stat-val" id="statCons">0</span></div>
-      <div class="stat-item"><span class="stat-label">💰 Стоимость 1 км</span><span class="stat-val" id="statCostKm">0</span></div>
-    </div>
-  </div>
+  <div class="section-title">Официальные документы</div>
+  <div id="officialList"></div>
 
-  <!-- Графики -->
-  <div class="card">
-    <h3>📊 Графики</h3>
-    <h4>Доход по месяцам</h4>
-    <div class="chart-container" id="chartMonths"></div>
+  <!-- История замен и учёт -->
+  <div class="section-title">🧾 История замен и учёт</div>
+  <select id="svcFilter" class="form-control" onchange="renderServiceHistory()" style="margin-bottom: 10px;"></select>
+  <div class="svc-summary" id="svcSummary"></div>
+  <div class="svc-list" id="svcList"></div>
 
-    <h4>🌙 vs 📦 (по дням)</h4>
-    <div class="chart-container" id="chartNightAp"></div>
-    <div class="pie-legend">
-      <span><i style="background:#007aff"></i> 🌙 Ночной</span>
-      <span><i style="background:#ff9500"></i> 📦 Единый</span>
-    </div>
-
-    <h4>Типы дней</h4>
-    <div id="pieTypes"></div>
-
-    <h4>🏆 Топ-5 дней</h4>
-    <div id="topDaysList"></div>
-  </div>
-
-  <!-- Прогноз -->
-  <div class="card">
-    <h3>🔮 Прогноз на месяц</h3>
-    <div class="stat-grid">
-      <div class="stat-item"><span class="stat-label">💼 Зарплата сейчас</span><span class="stat-val" id="forecastSalary">0</span></div>
-      <div class="stat-item"><span class="stat-label">📅 Дней</span><span class="stat-val" id="forecastDays">0/0</span></div>
-      <div class="stat-item blue"><span class="stat-label">📈 По типам дней</span><span class="stat-val" id="forecastByType">0</span></div>
-      <div class="stat-item blue"><span class="stat-label">📊 По среднему</span><span class="stat-val" id="forecastByAvg">0</span></div>
-    </div>
-  </div>
-
-  <!-- Категории расходов -->
-  <div class="card">
-    <h3>🗂 Расходы по категориям</h3>
-    <div id="categoryList"></div>
-  </div>
+  <div class="section-title">История</div>
+  <div class="history-list" id="globalHistory" style="background: var(--panel); padding: 0 16px; border-radius: 16px; border: 1px solid var(--border);"></div>
 </div>
 
 <nav class="tabbar">
   <div class="in">
     <a href="index.html"><span>📦</span>Учёт</a>
     <a href="fin.html"><span>💼</span>Финансы</a>
-    <a href="cash.html"><span>🛵</span>Скутер</a>
-    <a href="stats.html" class="active"><span>📈</span>Отчёты</a>
+    <a href="cash.html" class="active"><span>🛵</span>Скутер</a>
+    <a href="stats.html"><span>📈</span>Отчёты</a>
     <a href="plan.html"><span>📋</span>План</a>
     <a href="settings.html"><span>⚙</span>Настройки</a>
   </div>
@@ -226,397 +139,357 @@
 
 <script src="js/lib/storage.js"></script>
 <script src="js/lib/ui.js"></script>
+<script src="js/lib/notify.js"></script>
+<script src="js/lib/guard.js"></script>
 <script src="js/lib/theme.js"></script>
 <script src="js/domain/state.js"></script>
-<script src="js/domain/schedule.js"></script>
-<script src="js/domain/ledger.js"></script>
+<script src="js/domain/finance-api.js"></script>
 <script>
   Theme.init();
-  let currentDate = new Date();
-  let selectedDate = null;
 
-  const MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
-  const MONTHS_SHORT = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
-  const DAY_LABELS = { work: "Рабочий", help: "Подмога", short: "Короткий", replace: "Замена", short_replace: "Кор.замена", weekend: "Выходной" };
-
-  const getDayLabel = t => DAY_LABELS[t] || "";
-  const num = v => Number(v) || 0;
-  const fmt = v => UI.fmt(v);
-  const esc = s => UI.esc(String(s ?? ""));
   const $ = id => document.getElementById(id);
-  const setText = (id, v) => { const el = $(id); if (el) el.textContent = v; };
-  const pad = n => String(n).padStart(2, "0");
-  const fmtDate = ds => ds.split("-").reverse().join(".");
-  const isExpense = o => o && o.kind === "expense";
-  // Прочие доходы (чаевые и т.д.). «Зарплата» исключена — она уже учтена по дням.
-  const isIncome = o => o && o.kind === "income" && !String(o.cat || "").includes("Зарплата");
-  const catHas = (o, word) => String(o.cat || "").includes(word);
+  const esc = UI.esc;
+  const fmtDate = ds => String(ds || "").split("-").reverse().join(".");
+  const money = x => UI.fmt(UI.r2(+x || 0));
+  const fuelSum = f => +(f.total != null ? f.total : f.amount) || 0; // старые записи хранят сумму в amount
 
-  // Приводим операции к единому виду {date, kind, cat, amount}.
-  // Поддерживаются оба формата: старый (kind/cat/amount/date) и новый из fin.html (tip/kat/summa/data).
-  function normOp(o) {
-    if (!o || typeof o !== "object") return null;
-    const date = String(o.date || o.data || "").slice(0, 10);
-    if (o.kind) { // старый формат
-      const isAdj = o.kind === "expense" && String(o.cat || "").includes("Корректировка");
-      return { date, kind: isAdj ? "adjust" : o.kind, cat: o.cat, amount: o.amount };
+  const COMPONENTS = [
+    { id: 'oil', title: '🛢 Масло', interval: 2000 },
+    { id: 'air_filter', title: '💨 Воздушный фильтр', interval: 3000 },
+    { id: 'belt', title: '⚙ Ремень', interval: 10000 },
+    { id: 'brakes', title: '🛑 Колодки', interval: 5000 }
+  ];
+  const OFFICIALS = [
+    { id: 'tech', title: '🛠 Техосмотр' },
+    { id: 'tax', title: '💰 Налог на дорогу' },
+    { id: 'insurance', title: '🛡 Страховка' }
+  ];
+
+  // Читает и старый (kind/expense), и новый (tip: Трата) формат операций,
+  // возвращая только записи, связанные со скутером (Скутер/Топливо).
+  function getScooterOps() {
+    return State.getOps()
+      .map(o => o.tip ? (o.tip === "Трата" ? { cat: o.kat, wallet: o.koshel } : null) : (o.kind === "expense" ? o : null))
+      .filter(o => o && /Скутер|Топливо/.test(o.cat || ""));
+  }
+
+  function walletSelectHtml(onlyScooter = false) {
+    const wallets = State.getWallets();
+    let keys = Object.keys(wallets);
+    if (onlyScooter) {
+      const used = [...new Set(getScooterOps().map(o => o.wallet))];
+      if (used.length > 0) keys = used;
     }
-    const base = num(o.baz != null ? o.baz : o.summa);
-    switch (o.tip) {
-      case "Трата":
-        return { date, kind: "expense", cat: o.kat, amount: base };
-      case "Доход":
-        return { date, kind: "income", cat: o.kat, amount: base };
-      case "Кредитка":
-        if (o.napr === "покупка") return { date, kind: "expense", cat: o.kat, amount: num(o.summa) };
-        if (o.napr === "проценты") return { date, kind: "expense", cat: "💳 Проценты по кредиткам", amount: num(o.summa) };
-        return null;
-      case "Кредит":
-      case "Ломбард":
-        return o.napr === "платёж" && num(o.proc) > 0
-          ? { date, kind: "expense", cat: o.tip === "Кредит" ? "🏛 Проценты по кредитам" : "🥇 Проценты по ломбарду", amount: num(o.proc) }
-          : null;
-      default: // Корректировка, переводы, долги, цели — не расход и не доход
-        return null;
+    return keys.map(w => `<option value="${esc(w)}">${esc(w)} (${wallets[w] || 0} лей)</option>`).join("");
+  }
+
+  // ---------- История замен: сбор записей ----------
+  function serviceEntries() {
+    const out = [];
+    COMPONENTS.forEach(c => {
+      (State.getComponent(c.id).history || []).forEach((h, idx) => out.push({
+        key: "comp:" + c.id, kind: "comp", id: c.id, idx, title: c.title,
+        date: h.date || "", km: +h.km || 0, cost: +h.cost || 0, wallet: h.wallet || "", note: h.note || ""
+      }));
+    });
+    OFFICIALS.forEach(o => {
+      (State.getOfficial(o.id).history || []).forEach((h, idx) => out.push({
+        key: "off:" + o.id, kind: "off", id: o.id, idx, title: o.title,
+        date: h.date || "", until: h.nextDate || "", cost: +h.cost || 0, wallet: h.wallet || "", note: ""
+      }));
+    });
+    return out;
+  }
+
+  function renderServiceHistory() {
+    const sel = $("svcFilter");
+    if (!sel.options.length) {
+      sel.innerHTML = `<option value="all">Все расходники и документы</option>` +
+        COMPONENTS.map(c => `<option value="comp:${c.id}">${esc(c.title)}</option>`).join("") +
+        OFFICIALS.map(o => `<option value="off:${o.id}">${esc(o.title)}</option>`).join("");
     }
-  }
-  const getOps = () => State.getOps().map(normOp).filter(Boolean);
+    const filter = sel.value || "all";
+    const all = serviceEntries();
+    const list = all.filter(e => filter === "all" || e.key === filter)
+      .sort((a, b) => b.date.localeCompare(a.date) || b.idx - a.idx);
 
-  function changeMonth(dir) {
-    currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + dir, 1);
-    selectedDate = null;
-    $("dayStatsContainer").style.display = "none";
-    render();
-  }
+    const year = UI.date.local().slice(0, 4);
+    const total = list.reduce((s, e) => s + e.cost, 0);
+    const thisYear = list.filter(e => e.date.startsWith(year)).reduce((s, e) => s + e.cost, 0);
+    const fuels = State.getFuel();
+    const fuelTotal = fuels.reduce((s, f) => s + fuelSum(f), 0);
 
-  function closeDayStats() {
-    $("dayStatsContainer").style.display = "none";
-    selectedDate = null;
-    render();
-  }
+    let html = `Записей: <b>${list.length}</b> · потрачено: <b>${money(total)} лей</b><br>В этом году: <b>${money(thisYear)} лей</b>`;
+    if (filter.startsWith("comp:") && list.length) {
+      const byKm = list.slice().sort((a, b) => a.km - b.km);
+      html += `<br>Последняя замена: <b>${fmtDate(list[0].date)}</b> на <b>${Math.round(byKm[byKm.length - 1].km)} км</b>`;
+      if (byKm.length >= 2) {
+        const avg = (byKm[byKm.length - 1].km - byKm[0].km) / (byKm.length - 1);
+        html += `<br>Средний пробег между заменами: <b>${Math.round(avg)} км</b>`;
+      }
+      if (list.length >= 1 && total > 0) html += `<br>Средняя цена замены: <b>${money(total / list.filter(e => e.cost > 0).length)} лей</b>`;
+    }
+    if (filter === "all") {
+      html += `<br>⛽ Топливо за всё время: <b>${money(fuelTotal)} лей</b>`;
+      html += `<br>Итого на скутер (ТО + топливо): <b>${money(total + fuelTotal)} лей</b>`;
+    }
+    $("svcSummary").innerHTML = html;
 
-  function selectDay(ds) {
-    selectedDate = ds;
-    const rec = State.getDays()[ds] || { type: "weekend", night: 0, ap: 0, total: 0 };
-    const dayOps = getOps().filter(o => o.date === ds);
-    const ops = dayOps.filter(isExpense);
-    const incOps = dayOps.filter(isIncome);
-    const expenses = ops.reduce((s, o) => s + Math.abs(num(o.amount)), 0);
-    const income = incOps.reduce((s, o) => s + Math.abs(num(o.amount)), 0);
-    const salary = num(rec.total);
-    const net = salary + income - expenses;
-
-    setText("dayStatsTitle", `Статистика за ${fmtDate(ds)} (${getDayLabel(rec.type)})`);
-    setText("daySalary", fmt(salary));
-    setText("dayIncome", fmt(income));
-    setText("dayExpenses", fmt(expenses));
-    setText("dayNet", fmt(net));
-    setText("dayNight", num(rec.night));
-    setText("dayAp", num(rec.ap));
-
-    const rows = (list, cls, sign) => list.map(o =>
-      `<div class="list-row"><span>${esc(o.cat)}</span><b class="${cls}">${sign}${fmt(Math.abs(num(o.amount)))} лей</b></div>`).join("");
-    $("dayOpsList").innerHTML =
-      (incOps.length ? `<b>Доходы дня:</b>` + rows(incOps, "pos", "+") : "") +
-      (ops.length ? `<b style="display:block;margin-top:8px">Траты дня:</b>` + rows(ops, "neg", "−") : "") +
-      (!incOps.length && !ops.length ? `<div class="list-row muted">Нет доходов и трат</div>` : "");
-
-    $("dayStatsContainer").style.display = "block";
-    render();
-    $("dayStatsContainer").scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }
-
-  function drawBarChart(id, labels, values, color = "var(--accent)") {
-    const el = $(id);
-    if (!el) return;
-    if (!values.length) { el.innerHTML = `<div class="chart-empty">Нет данных</div>`; return; }
-    const max = Math.max(1, ...values);
-    el.innerHTML = labels.map((l, i) => {
-      const h = (values[i] / max) * 100;
-      return `<div class="chart-bar-wrap"><div class="chart-val">${fmt(values[i])}</div><div class="chart-bar" style="height:${h}%; background:${color}"></div><div class="chart-label">${esc(l)}</div></div>`;
-    }).join("");
-  }
-
-  function drawGroupedChart(id, labels, s1, s2) {
-    const el = $(id);
-    if (!el) return;
-    if (!labels.length) { el.innerHTML = `<div class="chart-empty">Нет данных</div>`; return; }
-    const max = Math.max(1, ...s1, ...s2);
-    el.innerHTML = labels.map((l, i) => {
-      const h1 = (s1[i] / max) * 100, h2 = (s2[i] / max) * 100;
-      return `<div class="chart-bar-wrap">
-        <div style="display:flex; gap:2px; width:100%; height:100%; align-items:flex-end">
-          <div class="chart-bar" style="height:${h1}%; background:#007aff"></div>
-          <div class="chart-bar" style="height:${h2}%; background:#ff9500"></div>
+    $("svcList").innerHTML = list.length ? list.map(e => `
+      <div class="svc-row">
+        <div>
+          <b>${esc(e.title)}</b>
+          <div class="svc-sub">${fmtDate(e.date)} · ${e.kind === "comp" ? Math.round(e.km) + " км" : (e.until ? "до " + fmtDate(e.until) : "")}${e.wallet ? " · " + esc(e.wallet) : ""}${e.note ? " · " + esc(e.note) : ""}</div>
         </div>
-        <div class="chart-label">${esc(l)}</div>
-      </div>`;
-    }).join("");
+        <div class="svc-right"><b>${e.cost ? money(e.cost) + " лей" : "—"}</b><button class="del-btn" onclick="deleteService('${e.kind}','${e.id}',${e.idx})">🗑</button></div>
+      </div>`).join("") : `<div class="empty-note">Записей пока нет. Добавьте замену в блоке выше.</div>`;
   }
 
-  function drawPie(id, data) {
-    const el = $(id);
-    if (!el) return;
-    data = data.filter(d => d.value > 0);
-    const total = data.reduce((s, d) => s + d.value, 0);
-    if (total === 0) { el.innerHTML = `<div class="chart-empty">Нет данных</div>`; return; }
-
-    let conic = [], angle = 0;
-    data.forEach(d => {
-      const deg = (d.value / total) * 360;
-      conic.push(`${d.color} ${angle}deg ${angle + deg}deg`);
-      angle += deg;
-    });
-
-    el.innerHTML = `
-      <div class="pie" style="background:conic-gradient(${conic.join(",")})"></div>
-      <div class="pie-legend">
-        ${data.map(d => `<span><i style="background:${d.color}"></i> ${esc(d.label)}: ${d.value}</span>`).join("")}
-      </div>`;
-  }
-
-  function render() {
-    const y = currentDate.getFullYear(), m = currentDate.getMonth();
-    const prefix = `${y}-${pad(m + 1)}`;
-    const days = State.getDays();
-    const allOps = getOps();
-    const today = UI.date.local();
-
-    // === 1. Календарь ===
-    const first = (new Date(y, m, 1).getDay() + 6) % 7;
-    const last = new Date(y, m + 1, 0).getDate();
-    setText("currentMonth", `${MONTHS[m]} ${y}`);
-
-    let html = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(n => `<div class="day-name">${n}</div>`).join("")
-      + '<div class="day empty"></div>'.repeat(first);
-    for (let d = 1; d <= last; d++) {
-      const ds = `${prefix}-${pad(d)}`;
-      const rec = days[ds];
-      const dow = new Date(y, m, d).getDay();
-      let cls = "day", label = "", info = "";
-      if (ds === today) cls += " today";
-      if (ds === selectedDate) cls += " selected";
-
-      if (rec) {
-        cls += " " + (rec.type || "work");
-        label = getDayLabel(rec.type);
-        const parts = [];
-        if (num(rec.night) > 0) parts.push("🌙" + num(rec.night));
-        if (num(rec.ap) > 0) parts.push("📦" + num(rec.ap));
-        info = `<div class="orders-info">${parts.join(" ") || "—"}</div>` + (num(rec.total) > 0 ? `<div class="total-info">${fmt(num(rec.total))}</div>` : "");
-      } else if (dow === 0 || dow === 6) {
-        cls += " weekend"; label = "Выходной";
-      }
-      html += `<div class="${cls}" data-date="${ds}"><div class="day-number">${d}</div>${label ? `<div class="day-label">${label}</div>` : ""}${info}</div>`;
+  function deleteService(kind, id, idx) {
+    const data = kind === "comp" ? State.getComponent(id) : State.getOfficial(id);
+    const h = (data.history || [])[idx];
+    if (!h) return;
+    if (!confirm(`Удалить запись от ${fmtDate(h.date)}?`)) return;
+    if (h.opId != null && +h.cost > 0 && confirm(`Вернуть ${money(h.cost)} лей на кошелёк «${h.wallet || ""}»?`)) {
+      try { FinanceAPI.undo(h.opId); } catch (e) { Notify.error(e.message); }
     }
-    $("calendar").innerHTML = html;
-    document.querySelectorAll(".day:not(.empty)").forEach(el => {
-      el.addEventListener("click", () => selectDay(el.dataset.date));
-    });
-
-    // === 2. Итоги месяца ===
-    // Сортируем ключи один раз — все графики используют один и тот же порядок
-    const monthKeys = Object.keys(days).filter(k => k.startsWith(prefix)).sort();
-    let salary = 0, totalOrders = 0, workDays = 0, nightSum = 0, apSum = 0;
-    monthKeys.forEach(k => {
-      const r = days[k];
-      const night = num(r.night), ap = num(r.ap), total = num(r.total);
-      salary += total;
-      nightSum += night;
-      apSum += ap;
-      totalOrders += night + ap;
-      if (night + ap > 0 || total > 0) workDays++;
-    });
-
-    const monthOps = allOps.filter(o => String(o.date || "").startsWith(prefix));
-    const monthExp = monthOps.filter(isExpense);
-    const sumAbs = list => list.reduce((s, o) => s + Math.abs(num(o.amount)), 0);
-    const expenses = sumAbs(monthExp);
-    // Заправки берём из журнала заправок (cash.html), если их нет — из расходов по категории
-    const fuels = State.getFuel().filter(f => String(f.date || "").startsWith(prefix));
-    const fuelFromLog = fuels.reduce((s, f) => s + num(f.total != null ? f.total : f.amount), 0);
-    const fuelCost = fuelFromLog > 0 ? fuelFromLog : sumAbs(monthExp.filter(o => catHas(o, "Топливо")));
-    // «Топливо (Скутер)» тоже содержит слово «Скутер» — исключаем, чтобы не считать дважды
-    const scooterNonFuel = monthExp.filter(o => catHas(o, "Скутер") && !catHas(o, "Топливо"));
-    const maintCost = sumAbs(scooterNonFuel);
-    const washCost = sumAbs(scooterNonFuel.filter(o => /мойк/i.test(String(o.cat || ""))));
-    const serviceCost = maintCost - washCost; // масло, фильтры, ремень, колодки, документы
-    const incomeOps = monthOps.filter(isIncome);
-    const income = sumAbs(incomeOps);
-    const net = salary + income - expenses;
-
-    setText("statSalary", fmt(salary));
-    setText("statIncome", fmt(income));
-    setText("statExpenses", fmt(expenses));
-    setText("statNet", fmt(net));
-    const firstEver = State.getOps().map(o => String(o.data || o.date || "").slice(0, 10)).filter(Boolean).sort()[0] || "";
-    let note = "";
-    if (firstEver) {
-      if (prefix < firstEver.slice(0, 7)) note = `ℹ Журнал операций начинается с ${fmtDate(firstEver)} — расходов и доходов за этот месяц нет.`;
-      else if (prefix === firstEver.slice(0, 7) && firstEver.slice(8) !== "01") note = `ℹ Расходы и доходы учтены с ${fmtDate(firstEver)} — раньше записей нет, итоги неполные.`;
-    }
-    setText("statNote", note);
-    setText("statFuelCost", fmt(fuelCost));
-    setText("statWashCost", fmt(washCost));
-    setText("statServiceCost", fmt(serviceCost));
-    setText("statScooterTotal", fmt(fuelCost + maintCost));
-
-    // === 3. Эффективность ===
-    const avgDay = workDays ? salary / workDays : 0;
-    const avgOrder = totalOrders ? salary / totalOrders : 0;
-    setText("statOrders", totalOrders);
-    setText("statWorkDays", workDays);
-    setText("statAvgDay", fmt(avgDay));
-    setText("statAvgOrder", fmt(avgOrder));
-
-    // === 4. Экономика заказа ===
-    // Рабочие расходы: топливо и скутер. Быт (газ, связь, продукты…) в экономику заказа не входит.
-    const workExp = fuelCost + maintCost;
-    const workNet = salary - workExp;
-    const kpd = salary > 0 ? (workNet / salary * 100) : 0;
-    setText("ecoKpd", kpd.toFixed(1) + "%");
-    setText("ecoProfit", fmt(workNet));
-    setText("ecoIncPerOrder", fmt(avgOrder));
-    setText("ecoFuelPerOrder", fmt(totalOrders ? fuelCost / totalOrders : 0));
-    setText("ecoExpPerOrder", fmt(totalOrders ? workExp / totalOrders : 0));
-    setText("ecoNetPerOrder", fmt(totalOrders ? workNet / totalOrders : 0));
-    setText("ecoIncPerDay", fmt(avgDay));
-    setText("ecoNetPerDay", fmt(workDays ? workNet / workDays : 0));
-
-    if (totalOrders > 0) {
-      const pN = Math.round(nightSum / totalOrders * 100);
-      setText("ecoMix", `🌙 ${nightSum} (${pN}%) · 📦 ${apSum} (${100 - pN}%)`);
+    data.history.splice(idx, 1);
+    if (kind === "comp") {
+      const last = data.history.slice().sort((a, b) => (+a.km || 0) - (+b.km || 0)).pop();
+      data.lastKm = last ? +last.km : 0;
+      data.lastDate = last ? last.date : "";
+      State.setComponent(id, data);
     } else {
-      setText("ecoMix", "—");
+      const last = data.history.slice().sort((a, b) => String(a.date).localeCompare(String(b.date))).pop();
+      data.lastDate = last ? last.date : "";
+      data.nextDate = last ? last.nextDate : "";
+      data.cost = last ? +last.cost || 0 : 0;
+      State.setOfficial(id, data);
     }
+    render();
+    Notify.show("🗑 Запись удалена");
+  }
 
-    const tips = [];
-    if (salary > 0) {
-      if (kpd < 40) tips.push("⚠ Низкий КПД, проверь расходы");
-      else if (kpd >= 60) tips.push("✅ Отличный КПД!");
-    }
-    setText("ecoTips", tips.join(" • ") || (salary > 0 ? "Держите курс!" : "—"));
-
-    // === 5. Скутер ===
-    const totalLiters = fuels.reduce((s, f) => s + num(f.liters), 0);
-    const price = totalLiters > 0 ? fuelCost / totalLiters : 0;
-
-    // Пробег за месяц. В журнале смешаны два формата: старый (км за день, меньше стартового
-    // показания) и новый (показание одометра, не меньше стартового). Восстанавливаем одометр.
-    const sc = State.getScooter() || {};
-    const startOdo = num(sc.startKm);
-    const mlog = State.getMileageLog().map(e => ({ date: String(e.date || ""), km: num(e.km) }))
-      .filter(e => e.km > 0 && e.date).sort((a, b) => a.date.localeCompare(b.date));
-    let odo = startOdo;
-    const track = mlog.map(e => {
-      if (e.km >= startOdo) odo = Math.max(odo, e.km); else odo += e.km;
-      return { date: e.date, odo };
-    });
-    const inMonthTrack = track.filter(t => t.date.startsWith(prefix));
-    let totalKm = 0, kmIsMonthly = false;
-    if (inMonthTrack.length) {
-      const endOdo = inMonthTrack[inMonthTrack.length - 1].odo;
-      const before = track.filter(t => t.date.slice(0, 7) < prefix).pop();
-      totalKm = Math.max(endOdo - (before ? before.odo : startOdo), 0);
-      kmIsMonthly = totalKm > 0;
-    }
-    if (!kmIsMonthly) totalKm = Math.max(num(sc.currentKm) - startOdo, 0);
-    setText("statKmLabel", kmIsMonthly ? "🛵 Пробег (за месяц)" : "🛵 Пробег (всего)");
-    const cons = totalKm > 0 && kmIsMonthly ? (totalLiters / totalKm * 100) : 0;
-    const costKm = totalKm > 0 && kmIsMonthly ? fuelCost / totalKm : 0;
-
-    setText("statPrice", fmt(price));
-    setText("statKm", fmt(Math.round(totalKm * 10) / 10));
-    setText("statCons", kmIsMonthly ? cons.toFixed(2) + " л/100км" : "—");
-    setText("statCostKm", kmIsMonthly ? fmt(costKm) : "—");
-
-    // === 6. Графики ===
-    const byMonth = {};
-    Object.keys(days).forEach(k => {
-      const mKey = k.slice(0, 7);
-      byMonth[mKey] = (byMonth[mKey] || 0) + num(days[k].total);
-    });
-    const nowYm = UI.date.local().slice(0, 7);
-    const sortedM = Object.keys(byMonth).filter(k => k <= nowYm && (byMonth[k] > 0 || k === nowYm)).sort().slice(-6);
-    const multiYear = new Set(sortedM.map(k => k.slice(0, 4))).size > 1;
-    drawBarChart("chartMonths", sortedM.map(k => MONTHS_SHORT[+k.slice(5, 7) - 1] + (multiYear ? " " + k.slice(2, 4) : "")), sortedM.map(k => byMonth[k]));
-
-    drawGroupedChart(
-      "chartNightAp",
-      monthKeys.map(k => k.slice(8, 10)),
-      monthKeys.map(k => num(days[k].night)),
-      monthKeys.map(k => num(days[k].ap))
-    );
-
-    const typeCnt = {};
-    monthKeys.forEach(k => {
-      const r = days[k];
-      if (num(r.total) > 0 || num(r.night) + num(r.ap) > 0) {
-        const t = r.type || "work";
-        typeCnt[t] = (typeCnt[t] || 0) + 1;
+  // Прежние данные хранили только «последнюю замену» (lastKm/lastDate) без истории.
+  // Переносим её в историю, чтобы новая запись не затирала старую, а дописывалась.
+  function migrateLegacyHistory() {
+    COMPONENTS.forEach(c => {
+      const d = State.getComponent(c.id);
+      if (!Array.isArray(d.history)) d.history = [];
+      if (d.history.length === 0 && +d.lastKm > 0) {
+        d.history.push({ date: d.lastDate || "", km: +d.lastKm, cost: 0, wallet: "", opId: null, note: "из прежних данных" });
+        State.setComponent(c.id, d);
       }
     });
-    drawPie("pieTypes", [
-      { label: "Рабочий", value: typeCnt.work || 0, color: "#34c759" },
-      { label: "Короткий", value: typeCnt.short || 0, color: "#ff9500" },
-      { label: "Подмога", value: typeCnt.help || 0, color: "#007aff" },
-      { label: "Замена", value: typeCnt.replace || 0, color: "#af52de" },
-      { label: "Кор.замена", value: typeCnt.short_replace || 0, color: "#ffcc00" },
-      { label: "Выходной", value: typeCnt.weekend || 0, color: "#8e8e93" }
-    ]);
-
-    const top = monthKeys.map(k => ({ date: k, total: num(days[k].total) }))
-      .filter(d => d.total > 0).sort((a, b) => b.total - a.total).slice(0, 5);
-    $("topDaysList").innerHTML = top.map((d, i) =>
-      `<div class="list-row"><span>${i + 1}. ${fmtDate(d.date)}</span><b>${fmt(d.total)} лей</b></div>`
-    ).join("") || `<div class="list-row muted">Нет данных</div>`;
-
-    // === 7. Прогноз ===
-    const now = new Date();
-    const dim = last;
-    const curKey = now.getFullYear() * 12 + now.getMonth();
-    const viewKey = y * 12 + m;
-    const passedDays = viewKey < curKey ? dim : viewKey > curKey ? 0 : now.getDate();
-    const remain = dim - passedDays;
-
-    // По среднему: средний доход за прошедший календарный день × оставшиеся дни
-    const byAvg = passedDays > 0 ? salary + (salary / passedDays) * remain : salary;
-
-    // По типам: для каждого типа дня — средний доход; оставшиеся дни без записи
-    // считаем «выходной» (Сб/Вс) или «рабочий» (остальные), записи в будущем берём по их типу.
-    const typeSum = {}, typeN = {};
-    monthKeys.forEach(k => {
-      const r = days[k], t = r.type || "work";
-      if (num(r.total) > 0) { typeSum[t] = (typeSum[t] || 0) + num(r.total); typeN[t] = (typeN[t] || 0) + 1; }
+    OFFICIALS.forEach(o => {
+      const d = State.getOfficial(o.id);
+      if (!Array.isArray(d.history)) d.history = [];
+      if (d.history.length === 0 && d.lastDate) {
+        d.history.push({ date: d.lastDate, nextDate: d.nextDate || "", cost: +d.cost || 0, wallet: "", opId: null });
+        State.setOfficial(o.id, d);
+      }
     });
-    const typeAvg = t => typeN[t] ? typeSum[t] / typeN[t] : 0;
-    let byType = salary;
-    for (let d = passedDays + 1; d <= dim; d++) {
-      const ds = `${prefix}-${pad(d)}`;
-      const dow = new Date(y, m, d).getDay();
-      const planned = days[ds];
-      if (planned && num(planned.total) > 0) { byType += 0; continue; } // уже учтено в salary
-      const t = planned ? (planned.type || "work") : (dow === 0 || dow === 6 ? "weekend" : "work");
-      byType += t === "weekend" ? 0 : typeAvg(t) || typeAvg("work");
+  }
+
+  // ---------- Рендер ----------
+  function render() {
+    migrateLegacyHistory();
+    const wallets = State.getWallets();
+
+    const scooterOps = getScooterOps();
+    const usedWallets = [...new Set(scooterOps.map(o => o.wallet))];
+    if (usedWallets.length > 0) {
+      $("scooterWallets").style.display = "block";
+      $("noScooterWallets").style.display = "none";
+      $("scooterWallets").innerHTML = usedWallets.map(w => `
+        <div class="history-item" style="padding: 12px 0; border-bottom: 1px solid var(--border);">
+          <span>${esc(w)}</span>
+          <b style="color: var(--green);">${wallets[w] || 0} лей</b>
+        </div>`).join("");
+    } else {
+      $("scooterWallets").style.display = "none";
+      $("noScooterWallets").style.display = "block";
     }
 
-    setText("forecastSalary", fmt(salary));
-    setText("forecastDays", `${passedDays}/${dim}`);
-    setText("forecastByType", fmt(byType));
-    setText("forecastByAvg", fmt(byAvg));
+    $("f_wall").innerHTML = walletSelectHtml();
 
-    // === 8. Категории ===
-    const cats = {};
-    monthExp.forEach(o => {
-      const c = o.cat || "Без категории";
-      cats[c] = (cats[c] || 0) + Math.abs(num(o.amount));
-    });
-    const sortedC = Object.entries(cats).sort((a, b) => b[1] - a[1]);
-    const catTotal = sortedC.reduce((a, [, v]) => a + v, 0);
-    $("categoryList").innerHTML = sortedC.length
-      ? sortedC.map(([c, v]) => `<div class="list-row"><span>${esc(c)}</span><b>${fmt(v)} лей</b></div>`).join("") +
-        `<div class="list-row total-row"><span>Итого</span><b>${fmt(catTotal)} лей</b></div>`
-      : `<div class="list-row muted">Нет расходов</div>`;
+    const scooter = State.getScooter();
+    const fuels = State.getFuel();
+    const totalKm = Math.max(scooter.currentKm - scooter.startKm, 0);
+    $("statKm").innerText = totalKm.toFixed(1) + " км";
+    const totalLiters = fuels.reduce((s, f) => s + (+f.liters || 0), 0);
+    $("statConsumption").innerText = (totalKm > 0 ? (totalLiters / totalKm * 100) : 0).toFixed(2) + " л/100км";
+
+    const today = UI.date.local();
+    // Раскрытые блоки не сворачиваем при перерисовке
+    const openIds = [...document.querySelectorAll("details.acc[open]")].map(d => d.id);
+
+    $("componentsList").innerHTML = COMPONENTS.map(c => {
+      const data = State.getComponent(c.id);
+      const nextKm = data.lastKm ? data.lastKm + data.intervalKm : 0;
+      const left = nextKm ? Math.round(nextKm - scooter.currentKm) : null;
+      let status = "Не задано. Нажми чтобы настроить.";
+      if (data.lastKm > 0) {
+        // Отсчёт всегда идёт от пробега ПОСЛЕДНЕЙ замены, даже если прошлую поменяли раньше срока
+        const driven = Math.max(Math.round(scooter.currentKm - data.lastKm), 0);
+        status = left <= 0
+          ? `⚠️ Пора менять! (просрочено на ${Math.abs(left)} км)`
+          : `Осталось ${left} км · следующая на ${Math.round(nextKm)} км`;
+        status += ` · с замены проехано ${driven} из ${data.intervalKm} км`;
+        if (data.lastDate) status += ` · замена ${fmtDate(data.lastDate)} на ${Math.round(data.lastKm)} км`;
+      }
+      return `
+      <details class="acc" id="acc_${c.id}">
+        <summary><div><div>${c.title}</div><div style="font-size:12px;font-weight:400;color:var(--text-dim);margin-top:4px">${status}</div></div></summary>
+        <div class="acc-body">
+          <div class="input-row">
+            <div><label>Дата замены</label><input type="date" id="c_date_${c.id}" class="form-control" value="${today}"></div>
+            <div><label>Пробег (км)</label><input type="number" id="c_km_${c.id}" class="form-control" value="${Math.round(scooter.currentKm)}"></div>
+          </div>
+          <div class="input-row">
+            <div><label>Интервал (км)</label><input type="number" id="c_int_${c.id}" class="form-control" value="${data.intervalKm || c.interval}"></div>
+            <div><label>Стоимость (лей)</label><input type="number" id="c_cost_${c.id}" class="form-control" placeholder="0"></div>
+          </div>
+          <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="c_wall_${c.id}" class="form-control">${walletSelectHtml()}</select></div>
+          <label class="check-row"><input type="checkbox" id="c_skip_${c.id}"> Не списывать с кошелька (старая запись)</label>
+          <div style="margin-bottom: 10px;"><label>Заметка</label><input type="text" id="c_note_${c.id}" class="form-control" placeholder="Например: масло 10W-40"></div>
+          <button class="save-btn" onclick="saveComponent('${c.id}', '${c.title}')">💾 ЗАПИСАТЬ ЗАМЕНУ</button>
+          <div class="hint" style="margin-top:8px">Все замены — в блоке «История замен и учёт» ниже.</div>
+        </div>
+      </details>`;
+    }).join("");
+
+    $("officialList").innerHTML = OFFICIALS.map(o => {
+      const data = State.getOfficial(o.id);
+      const status = data.nextDate ? `Действует до: ${fmtDate(data.nextDate)} (${data.cost} лей)` : "Нет данных";
+      return `
+      <details class="acc" id="acc_off_${o.id}">
+        <summary><div><div>${o.title}</div><div style="font-size:12px;font-weight:400;color:var(--text-dim);margin-top:4px">${status}</div></div></summary>
+        <div class="acc-body">
+          <div style="margin-bottom: 10px;"><label>Дата прохождения</label><input type="date" id="o_date_${o.id}" class="form-control" value="${today}"></div>
+          <div style="margin-bottom: 10px;"><label>Действует до</label><input type="date" id="o_next_${o.id}" class="form-control" value="${data.nextDate || ""}"></div>
+          <div style="margin-bottom: 10px;"><label>Стоимость (лей)</label><input type="number" id="o_cost_${o.id}" class="form-control" placeholder="0"></div>
+          <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="o_wall_${o.id}" class="form-control">${walletSelectHtml()}</select></div>
+          <label class="check-row"><input type="checkbox" id="o_skip_${o.id}"> Не списывать с кошелька (старая запись)</label>
+          <button class="save-btn" onclick="saveOfficial('${o.id}', '${o.title}')">💾 СОХРАНИТЬ</button>
+        </div>
+      </details>`;
+    }).join("");
+
+    openIds.forEach(id => { const d = $(id); if (d) d.open = true; });
+
+    renderServiceHistory();
+
+    let historyHtml = "";
+    State.getMileageLog().slice().reverse().slice(0, 5).forEach(m => historyHtml += `<div class="history-item"><span>📏 Пробег</span><span>${m.date}: <b>${m.km} км</b></span></div>`);
+    fuels.slice().reverse().slice(0, 5).forEach(f => historyHtml += `<div class="history-item"><span>⛽ Заправка</span><span>${f.date}: <b>${money(fuelSum(f))} лей</b> (${(+f.liters || 0).toFixed(2)} л)</span></div>`);
+    $("globalHistory").innerHTML = historyHtml || `<div class="history-item">Нет записей</div>`;
+  }
+
+  function toggleFuelForm() {
+    const c = $("fuelFormContainer");
+    c.style.display = c.style.display === "none" ? "block" : "none";
+    if (c.style.display === "block") $("f_total").focus();
+  }
+  function toggleMileageForm() {
+    const c = $("mileageFormContainer");
+    c.style.display = c.style.display === "none" ? "block" : "none";
+    if (c.style.display === "block") $("m_km").focus();
+  }
+
+  function saveFuel() {
+    if (!guardAction("saveFuel")) return;
+    try {
+      const totalCost = UI.num($("f_total").value);
+      const price = UI.num($("f_price").value);
+      const wallet = $("f_wall").value;
+
+      if (!wallet) throw new Error("Кошелёк не выбран");
+      if (totalCost <= 0 || price <= 0) throw new Error("Заполните сумму и цену");
+
+      const liters = UI.r2(totalCost / price);
+      FinanceAPI.spend({ wallet, amount: totalCost, category: "Топливо (Скутер)", note: `${liters}л` });
+      State.setFuel([...State.getFuel(), { date: UI.date.local(), liters, price, total: totalCost }]);
+      toggleFuelForm();
+      render();
+      Notify.show(`✅ ${liters} л. Списано ${totalCost} лей`);
+    } catch (e) { Notify.error(e.message); }
+  }
+
+  function saveMileage() {
+    if (!guardAction("saveMileage")) return;
+    try {
+      const scooter = State.getScooter();
+      const km = UI.num($("m_km").value);
+      if (km < scooter.currentKm) throw new Error("Пробег не может уменьшаться");
+
+      State.setMileageLog([...State.getMileageLog(), { date: UI.date.local(), km }]);
+      scooter.currentKm = km;
+      if (scooter.startKm === 0) scooter.startKm = km;
+      State.setScooter(scooter);
+      toggleMileageForm();
+      render();
+      Notify.show("✅ Пробег обновлен");
+    } catch (e) { Notify.error(e.message); }
+  }
+
+  function saveComponent(id, title) {
+    if (!guardAction("saveComp")) return;
+    try {
+      const data = State.getComponent(id);
+      if (!Array.isArray(data.history)) data.history = [];
+      const date = $(`c_date_${id}`).value;
+      const km = UI.num($(`c_km_${id}`).value);
+      const interval = UI.num($(`c_int_${id}`).value);
+      const cost = UI.num($(`c_cost_${id}`).value);
+      const wallet = $(`c_wall_${id}`).value;
+      const skip = $(`c_skip_${id}`).checked;
+      const note = $(`c_note_${id}`).value.trim();
+
+      if (!date) throw new Error("Укажите дату замены");
+      if (km <= 0 || interval <= 0) throw new Error("Заполните км и интервал");
+
+      let opId = null;
+      if (cost > 0 && !skip) {
+        opId = FinanceAPI.spend({ date, wallet, amount: cost, category: `Скутер: ${title}`, note: note || `Замена на ${km} км` });
+      }
+
+      data.intervalKm = interval;
+      // Старую запись не считаем «последней», если уже есть более свежая замена
+      if (!data.lastKm || km >= data.lastKm) { data.lastKm = km; data.lastDate = date; }
+      data.history.push({ date, km, cost, wallet: cost > 0 && !skip ? wallet : "", opId, note });
+      data.history.sort((a, b) => String(a.date).localeCompare(String(b.date)) || (+a.km || 0) - (+b.km || 0));
+      State.setComponent(id, data);
+      render();
+      Notify.show(`✅ Замена ${title} записана`);
+    } catch (err) { Notify.error(err.message); }
+  }
+
+  function saveOfficial(id, title) {
+    if (!guardAction("saveOff")) return;
+    try {
+      const data = State.getOfficial(id);
+      if (!Array.isArray(data.history)) data.history = [];
+      const date = $(`o_date_${id}`).value;
+      const next = $(`o_next_${id}`).value;
+      const cost = UI.num($(`o_cost_${id}`).value);
+      const wallet = $(`o_wall_${id}`).value;
+      const skip = $(`o_skip_${id}`).checked;
+
+      if (!date || !next) throw new Error("Укажите даты");
+
+      let opId = null;
+      if (cost > 0 && !skip) {
+        opId = FinanceAPI.spend({ date, wallet, amount: cost, category: `Скутер: ${title}`, note: `Оплата до ${next}` });
+      }
+
+      if (!data.lastDate || date >= data.lastDate) { data.lastDate = date; data.nextDate = next; data.cost = cost; }
+      data.history.push({ date, nextDate: next, cost, wallet: cost > 0 && !skip ? wallet : "", opId });
+      data.history.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      State.setOfficial(id, data);
+      render();
+      Notify.show(`✅ ${title} записан`);
+    } catch (err) { Notify.error(err.message); }
   }
 
   render();
