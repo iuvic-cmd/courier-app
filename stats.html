@@ -517,7 +517,7 @@
     const costKm = totalKm > 0 && kmIsMonthly ? fuelCost / totalKm : 0;
 
     setText("statPrice", fmt(price));
-    setText("statKm", totalKm);
+    setText("statKm", fmt(Math.round(totalKm * 10) / 10));
     setText("statCons", kmIsMonthly ? cons.toFixed(2) + " л/100км" : "—");
     setText("statCostKm", kmIsMonthly ? fmt(costKm) : "—");
 
