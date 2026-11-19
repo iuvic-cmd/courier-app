@@ -11,9 +11,9 @@
     .header { margin-bottom: 12px; }
 
     .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
-    .stat-card { background: var(--panel); padding: 12px; border-radius: 12px; text-align: center; border-left: 3px solid var(--accent); }
+    .stat-card { background: var(--panel); padding: 12px; border-radius: 12px; text-align: center; border-left: 3px solid var(--accent); min-width: 0; }
     .stat-label { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; display: block; }
-    .stat-value { font-size: 18px; font-weight: 700; }
+    .stat-value { font-size: 18px; font-weight: 700; overflow-wrap: anywhere; }
 
     .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 24px; }
     .action-grid .btn { padding: 14px; font-size: 14px; }
@@ -22,34 +22,51 @@
     details.acc > summary {
       list-style: none; background: var(--panel); border: 1px solid var(--border);
       border-radius: 16px; padding: 16px; cursor: pointer; font-weight: 600;
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
     }
     details.acc > summary::-webkit-details-marker { display: none; }
-    details.acc > summary::after { content: "▼"; font-size: 12px; color: var(--text-dim); }
+    details.acc > summary::after { content: "▼"; font-size: 12px; color: var(--text-dim); flex: 0 0 auto; }
     details.acc[open] > summary::after { content: "▲"; }
-
-    .acc-body {
-      background: var(--panel); border: 1px solid var(--border); border-top: none;
-      border-radius: 0 0 16px 16px; padding: 16px; margin-top: -4px;
-    }
+    .acc-body { background: var(--panel); border: 1px solid var(--border); border-top: none; border-radius: 0 0 16px 16px; padding: 16px; margin-top: -4px; }
+    details.sub { margin-top: 10px; border: 1px solid var(--border); border-radius: 12px; }
+    details.sub > summary { list-style: none; padding: 12px; cursor: pointer; font-weight: 600; font-size: 14px; }
+    details.sub > summary::-webkit-details-marker { display: none; }
+    details.sub > .sub-body { padding: 0 12px 12px; }
 
     .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
     .input-row > div { flex: 1; min-width: 0; }
-    .input-row label, .acc-body label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+    .input-row label, .acc-body label, .box label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
 
     .history-list { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
-    .history-item { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; color: var(--text-dim); }
+    .history-item { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; font-size: 13px; color: var(--text-dim); }
     .section-title { font-size: 14px; font-weight: 700; margin: 24px 0 10px; color: var(--text-dim); text-transform: uppercase; }
 
     .save-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--green); color: white; border: none; font-weight: 700; margin-top: 10px; cursor: pointer; transition: 0.2s; }
     .save-btn:active { background: #2e7d32; transform: scale(0.98); }
+    .save-btn.blue { background: var(--accent); }
     .cancel-btn { width: 100%; padding: 16px; font-size: 16px; border-radius: 12px; background: var(--border); color: var(--text); border: none; font-weight: 700; margin-top: 8px; cursor: pointer; }
+
+    .box { background: var(--panel); border-radius: 16px; padding: 16px; margin-bottom: 20px; }
+    .seg { display: flex; gap: 6px; margin-bottom: 12px; }
+    .seg button { flex: 1; padding: 10px 6px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; }
+    .seg button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
+    .chip { padding: 6px 12px; border-radius: 16px; border: 1px solid var(--orange); background: transparent; color: var(--orange); font-size: 13px; font-weight: 600; cursor: pointer; }
+    .banner { background: var(--warn-bg); border-left: 5px solid #ffb800; border-radius: 0 10px 10px 0; padding: 12px 14px; margin-bottom: 16px; font-size: 14px; color: #8a5a00; }
+    :root[data-theme="dark"] .banner { color: #ffcf80; }
 
     .check-row { display: flex !important; align-items: center; gap: 8px; font-size: 14px !important; color: var(--text) !important; margin: 4px 0 10px; }
     .check-row input { width: 20px; height: 20px; accent-color: var(--accent); }
 
+    .pbar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin: 8px 0 4px; }
+    .pbar i { display: block; height: 100%; background: var(--green); }
+    .due { font-size: 13px; line-height: 1.5; }
+    .jr { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .jr:last-child { border-bottom: none; }
+    .jr .sub { font-size: 11px; color: var(--text-dim); }
+    .jr .rest { text-align: right; font-weight: 600; white-space: nowrap; }
+
     .svc-summary { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; font-size: 14px; line-height: 1.7; }
-    .svc-summary b { font-weight: 700; }
     .svc-list { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 0 16px; margin-top: 10px; }
     .svc-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--border); }
     .svc-row:last-child { border-bottom: none; }
@@ -61,34 +78,44 @@
 </head>
 <body>
 <div class="container">
-  <div class="header">
-    <h1>🛵 Скутер</h1>
-  </div>
+  <div class="header"><h1>🛵 Скутер</h1></div>
+
+  <div id="setupBanner"></div>
 
   <div class="stats-grid">
-    <div class="stat-card">
-      <span class="stat-label">📊 Общий пробег</span>
-      <span class="stat-value" id="statKm">0 км</span>
-    </div>
-    <div class="stat-card" style="border-left-color: var(--orange);">
-      <span class="stat-label">⛽ Расход топлива</span>
-      <span class="stat-value" id="statConsumption">0 л/100км</span>
-    </div>
+    <div class="stat-card"><span class="stat-label">🛵 Одометр</span><span class="stat-value" id="statOdo">0 км</span></div>
+    <div class="stat-card"><span class="stat-label">📊 С покупки</span><span class="stat-value" id="statSince">0 км</span></div>
+    <div class="stat-card" style="border-left-color: var(--green);"><span class="stat-label">📅 За 7 дней</span><span class="stat-value" id="statWeek">0 км</span></div>
+    <div class="stat-card" style="border-left-color: var(--orange);"><span class="stat-label">⛽ Расход топлива</span><span class="stat-value" id="statConsumption">0 л/100км</span></div>
   </div>
 
   <div class="action-grid">
+    <button class="btn btn-green" onclick="toggleMileageForm()"><span>📏</span> Пробег за день</button>
     <button class="btn btn-primary" onclick="toggleFuelForm()"><span>⛽</span> Заправка</button>
-    <button class="btn btn-green" onclick="toggleMileageForm()"><span>📏</span> Пробег</button>
   </div>
 
-  <!-- Кошельки для скутера -->
-  <div class="section-title" style="margin-top: 0;">💰 Мои кошельки для скутера</div>
-  <div id="scooterWallets" style="background: var(--panel); border-radius: 16px; padding: 0 16px; border: 1px solid var(--border); margin-bottom: 16px; display: none;"></div>
-  <div class="hint" id="noScooterWallets" style="text-align: center; margin-bottom: 16px;">Пока нет оплат с кошельков. Сделай первую заправку или ТО.</div>
+  <!-- Форма пробега -->
+  <div id="mileageFormContainer" style="display: none;">
+    <div class="box" style="border: 2px solid var(--green);">
+      <h3 style="margin-bottom: 12px; font-size: 16px;">📏 Пробег</h3>
+      <div class="seg">
+        <button id="tabTrip" class="on" onclick="setTripMode('trip')">Пройдено за день</button>
+        <button id="tabOdo" onclick="setTripMode('odo')">Показание одометра</button>
+      </div>
+      <div class="input-row">
+        <div><label>Дата</label><input type="date" id="m_date" class="form-control"></div>
+        <div><label id="m_label">Пройдено, км</label><input type="number" id="m_km" class="form-control" inputmode="decimal" placeholder="0"></div>
+      </div>
+      <div class="hint" id="m_hint" style="font-size:12px;color:var(--text-dim)"></div>
+      <div id="m_missing"></div>
+      <button class="save-btn" onclick="saveMileage()">💾 СОХРАНИТЬ</button>
+      <button class="cancel-btn" onclick="toggleMileageForm()">Отмена</button>
+    </div>
+  </div>
 
   <!-- Форма заправки -->
-  <div id="fuelFormContainer" style="display: none; margin-bottom: 20px;">
-    <div style="background: var(--panel); border: 2px solid var(--accent); border-radius: 16px; padding: 16px;">
+  <div id="fuelFormContainer" style="display: none;">
+    <div class="box" style="border: 2px solid var(--accent);">
       <h3 style="margin-bottom: 12px; font-size: 16px;">⛽ Новая заправка</h3>
       <div class="input-row">
         <div><label>Сумма по чеку</label><input type="number" id="f_total" class="form-control" placeholder="0" inputmode="decimal"></div>
@@ -100,15 +127,23 @@
     </div>
   </div>
 
-  <!-- Форма пробега -->
-  <div id="mileageFormContainer" style="display: none; margin-bottom: 20px;">
-    <div style="background: var(--panel); border: 2px solid var(--green); border-radius: 16px; padding: 16px;">
-      <h3 style="margin-bottom: 12px; font-size: 16px;">📏 Обновить пробег</h3>
-      <div style="margin-bottom: 12px;"><label>Текущий пробег (км)</label><input type="number" id="m_km" class="form-control" value="" inputmode="numeric"></div>
-      <button class="save-btn" onclick="saveMileage()">💾 СОХРАНИТЬ</button>
-      <button class="cancel-btn" onclick="toggleMileageForm()">Отмена</button>
+  <!-- Настройки скутера -->
+  <details class="acc" id="acc_setup">
+    <summary><div><div>⚙ Покупка и пробег</div><div id="setupStatus" style="font-size:12px;font-weight:400;color:var(--text-dim);margin-top:4px"></div></div></summary>
+    <div class="acc-body">
+      <div class="input-row">
+        <div><label>Дата покупки</label><input type="date" id="s_date" class="form-control"></div>
+        <div><label>Пробег при покупке, км</label><input type="number" id="s_start" class="form-control" inputmode="decimal" placeholder="0"></div>
+      </div>
+      <div class="hint" style="font-size:12px;color:var(--text-dim)">Пробег при покупке — точка отсчёта. «Первая замена» у расходников считается от неё. Текущий пробег меняется только вводом пройденных километров.</div>
+      <button class="save-btn blue" onclick="saveSetup()">💾 СОХРАНИТЬ</button>
     </div>
-  </div>
+  </details>
+
+  <!-- Кошельки для скутера -->
+  <div class="section-title">💰 Мои кошельки для скутера</div>
+  <div id="scooterWallets" style="background: var(--panel); border-radius: 16px; padding: 0 16px; border: 1px solid var(--border); margin-bottom: 16px; display: none;"></div>
+  <div class="hint" id="noScooterWallets" style="text-align: center; margin-bottom: 16px;">Пока нет оплат с кошельков. Сделай первую заправку или ТО.</div>
 
   <div class="section-title">ТО и Расходники</div>
   <div id="componentsList"></div>
@@ -116,14 +151,16 @@
   <div class="section-title">Официальные документы</div>
   <div id="officialList"></div>
 
-  <!-- История замен и учёт -->
   <div class="section-title">🧾 История замен и учёт</div>
   <select id="svcFilter" class="form-control" onchange="renderServiceHistory()" style="margin-bottom: 10px;"></select>
   <div class="svc-summary" id="svcSummary"></div>
   <div class="svc-list" id="svcList"></div>
 
-  <div class="section-title">История</div>
-  <div class="history-list" id="globalHistory" style="background: var(--panel); padding: 0 16px; border-radius: 16px; border: 1px solid var(--border);"></div>
+  <div class="section-title">📏 Журнал пробега</div>
+  <div class="svc-list" id="mileageJournal"></div>
+
+  <div class="section-title">⛽ История заправок</div>
+  <div class="history-list" id="globalHistory" style="background: var(--panel); padding: 0 16px; border-radius: 16px; border: 1px solid var(--border); margin-top:0"></div>
 </div>
 
 <nav class="tabbar">
@@ -149,12 +186,15 @@
 
   const $ = id => document.getElementById(id);
   const esc = UI.esc;
+  const today = () => UI.date.local();
   const fmtDate = ds => String(ds || "").split("-").reverse().join(".");
   const money = x => UI.fmt(UI.r2(+x || 0));
+  const km1 = x => UI.fmt(Math.round((+x || 0) * 10) / 10);
   const fuelSum = f => +(f.total != null ? f.total : f.amount) || 0; // старые записи хранят сумму в amount
+  const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
   const COMPONENTS = [
-    { id: 'oil', title: '🛢 Масло', interval: 2000 },
+    { id: 'oil', title: '🛢 Масло и расходники', interval: 2000 },
     { id: 'air_filter', title: '💨 Воздушный фильтр', interval: 3000 },
     { id: 'belt', title: '⚙ Ремень', interval: 10000 },
     { id: 'brakes', title: '🛑 Колодки', interval: 5000 }
@@ -165,6 +205,26 @@
     { id: 'insurance', title: '🛡 Страховка' }
   ];
 
+  // ---------- Даты ----------
+  const daysBetween = (a, b) => Math.round((new Date(b + "T12:00:00") - new Date(a + "T12:00:00")) / 86400000);
+  function addMonthsStr(ds, n) {
+    const [y, m, d] = ds.split("-").map(Number);
+    const dt = new Date(y, m - 1 + n, 1);
+    const last = new Date(dt.getFullYear(), dt.getMonth() + 1, 0).getDate();
+    dt.setDate(Math.min(d, last));
+    return UI.date.local(dt);
+  }
+
+  // ---------- Данные скутера ----------
+  function scooterData() {
+    const s = State.getScooter() || {};
+    return { currentKm: +s.currentKm || 0, startKm: +s.startKm || 0, purchaseDate: s.purchaseDate || "", raw: s };
+  }
+  function saveScooterData(patch) {
+    const s = Object.assign({}, State.getScooter() || {}, patch);
+    State.setScooter(s);
+  }
+
   // Читает и старый (kind/expense), и новый (tip: Трата) формат операций,
   // возвращая только записи, связанные со скутером (Скутер/Топливо).
   function getScooterOps() {
@@ -172,15 +232,44 @@
       .map(o => o.tip ? (o.tip === "Трата" ? { cat: o.kat, wallet: o.koshel } : null) : (o.kind === "expense" ? o : null))
       .filter(o => o && /Скутер|Топливо/.test(o.cat || ""));
   }
-
-  function walletSelectHtml(onlyScooter = false) {
+  function walletSelectHtml() {
     const wallets = State.getWallets();
-    let keys = Object.keys(wallets);
-    if (onlyScooter) {
-      const used = [...new Set(getScooterOps().map(o => o.wallet))];
-      if (used.length > 0) keys = used;
+    return Object.keys(wallets).map(w => `<option value="${esc(w)}">${esc(w)} (${wallets[w] || 0} лей)</option>`).join("");
+  }
+
+  // ---------- Расчёт «когда менять» ----------
+  // Первая замена считается от покупки (firstKm / firstMonths),
+  // дальше — от последней замены (intervalKm / intervalMonths). Срабатывает то, что раньше.
+  function calcDue(c, data, sc) {
+    const hist = Array.isArray(data.history) ? data.history : [];
+    const hasLast = hist.length > 0 || +data.lastKm > 0;
+    const base = hasLast
+      ? { km: +data.lastKm || 0, date: data.lastDate || "", ik: +data.intervalKm > 0 ? +data.intervalKm : c.interval, im: +data.intervalMonths || 0 }
+      : { km: sc.startKm, date: sc.purchaseDate || "", ik: +data.firstKm || 0, im: +data.firstMonths || 0 };
+    const nextKm = base.ik > 0 ? base.km + base.ik : null;
+    const kmLeft = nextKm != null ? Math.round(nextKm - sc.currentKm) : null;
+    const nextDate = base.im > 0 && base.date ? addMonthsStr(base.date, base.im) : null;
+    const daysLeft = nextDate ? daysBetween(today(), nextDate) : null;
+    const driven = Math.max(0, Math.round(sc.currentKm - base.km));
+    let frac = 0;
+    if (base.ik > 0) frac = Math.max(frac, driven / base.ik);
+    if (nextDate) {
+      const total = daysBetween(base.date, nextDate), el = daysBetween(base.date, today());
+      if (total > 0) frac = Math.max(frac, el / total);
     }
-    return keys.map(w => `<option value="${esc(w)}">${esc(w)} (${wallets[w] || 0} лей)</option>`).join("");
+    return {
+      first: !hasLast, base, nextKm, kmLeft, nextDate, daysLeft, driven,
+      frac: Math.min(1, Math.max(0, frac)),
+      overdue: (kmLeft != null && kmLeft <= 0) || (daysLeft != null && daysLeft <= 0),
+      configured: base.ik > 0 || !!nextDate
+    };
+  }
+  function dueText(d) {
+    if (!d.configured) return d.first ? "Не задано, когда первая замена. Откройте «⚙ Интервалы»." : "Интервал не задан. Откройте «⚙ Интервалы».";
+    const parts = [];
+    if (d.kmLeft != null) parts.push(d.kmLeft <= 0 ? `⚠️ просрочено на ${Math.abs(d.kmLeft)} км` : `осталось ${d.kmLeft} км (до ${Math.round(d.nextKm)} км)`);
+    if (d.nextDate) parts.push(d.daysLeft <= 0 ? `⚠️ срок вышел ${fmtDate(d.nextDate)}` : `до ${fmtDate(d.nextDate)} (${d.daysLeft} дн.)`);
+    return (d.first ? "Первая замена: " : "") + parts.join(" · ");
   }
 
   // ---------- История замен: сбор записей ----------
@@ -213,11 +302,10 @@
     const list = all.filter(e => filter === "all" || e.key === filter)
       .sort((a, b) => b.date.localeCompare(a.date) || b.idx - a.idx);
 
-    const year = UI.date.local().slice(0, 4);
+    const year = today().slice(0, 4);
     const total = list.reduce((s, e) => s + e.cost, 0);
     const thisYear = list.filter(e => e.date.startsWith(year)).reduce((s, e) => s + e.cost, 0);
-    const fuels = State.getFuel();
-    const fuelTotal = fuels.reduce((s, f) => s + fuelSum(f), 0);
+    const fuelTotal = State.getFuel().reduce((s, f) => s + fuelSum(f), 0);
 
     let html = `Записей: <b>${list.length}</b> · потрачено: <b>${money(total)} лей</b><br>В этом году: <b>${money(thisYear)} лей</b>`;
     if (filter.startsWith("comp:") && list.length) {
@@ -227,7 +315,8 @@
         const avg = (byKm[byKm.length - 1].km - byKm[0].km) / (byKm.length - 1);
         html += `<br>Средний пробег между заменами: <b>${Math.round(avg)} км</b>`;
       }
-      if (list.length >= 1 && total > 0) html += `<br>Средняя цена замены: <b>${money(total / list.filter(e => e.cost > 0).length)} лей</b>`;
+      const paid = list.filter(e => e.cost > 0);
+      if (paid.length) html += `<br>Средняя цена замены: <b>${money(total / paid.length)} лей</b>`;
     }
     if (filter === "all") {
       html += `<br>⛽ Топливо за всё время: <b>${money(fuelTotal)} лей</b>`;
@@ -291,77 +380,225 @@
     });
   }
 
+  // ---------- Пробег ----------
+  let tripMode = "trip";
+  function setTripMode(m) {
+    tripMode = m;
+    $("tabTrip").classList.toggle("on", m === "trip");
+    $("tabOdo").classList.toggle("on", m === "odo");
+    $("m_label").textContent = m === "trip" ? "Пройдено, км" : "Одометр, км";
+    const sc = scooterData();
+    $("m_hint").textContent = m === "trip"
+      ? `Км за выбранный день добавятся к текущему пробегу (${km1(sc.currentKm)} км).`
+      : `Введите показание одометра. Оно должно быть не меньше текущего (${km1(sc.currentKm)} км).`;
+    $("m_km").value = "";
+  }
+
+  // Рабочие дни последних двух недель, за которые пробег не введён
+  function missingDays() {
+    const days = State.getDays() || {};
+    const have = new Set(State.getMileageLog().map(e => String(e.date)));
+    const out = [];
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const ds = UI.date.local(d), r = days[ds];
+      if (r && ((+r.night || 0) + (+r.ap || 0) > 0 || +r.total > 0) && !have.has(ds)) out.push(ds);
+    }
+    return out;
+  }
+  function renderMissing() {
+    const m = missingDays();
+    $("m_missing").innerHTML = m.length
+      ? `<div class="hint" style="font-size:12px;color:var(--text-dim);margin-top:8px">Рабочие дни без пробега — нажмите, чтобы выбрать дату:</div><div class="chips">${m.map(d => `<button class="chip" onclick="pickDay('${d}')">${d.slice(8)}.${d.slice(5, 7)}</button>`).join("")}</div>`
+      : "";
+  }
+  function pickDay(ds) { $("m_date").value = ds; setTripMode("trip"); $("m_km").focus(); }
+
+  function toggleMileageForm() {
+    const c = $("mileageFormContainer");
+    const open = c.style.display === "none";
+    c.style.display = open ? "block" : "none";
+    if (open) {
+      $("m_date").value = today();
+      setTripMode("trip");
+      renderMissing();
+      $("m_km").focus();
+    }
+  }
+
+  function saveMileage() {
+    if (!guardAction("saveMileage")) return;
+    try {
+      const sc = scooterData();
+      if (!(sc.startKm > 0)) throw new Error("Сначала задайте пробег при покупке («⚙ Покупка и пробег»)");
+      const date = $("m_date").value || today();
+      const val = UI.num($("m_km").value);
+      let trip, odo;
+      if (tripMode === "trip") {
+        if (!(val > 0)) throw new Error("Введите пройденные километры");
+        trip = UI.r2(val); odo = UI.r2(sc.currentKm + trip);
+      } else {
+        if (val < sc.currentKm) throw new Error(`Показание меньше текущего пробега (${km1(sc.currentKm)} км). Чтобы исправить, удалите лишнюю запись в журнале пробега.`);
+        trip = UI.r2(val - sc.currentKm); odo = UI.r2(val);
+        if (!(trip > 0)) throw new Error("Показание совпадает с текущим пробегом");
+      }
+      // km — показание одометра после записи (так читают отчёты), trip — пройдено за запись
+      State.setMileageLog([...State.getMileageLog(), { id: newId(), date, trip, km: odo, mode: tripMode }]);
+      saveScooterData({ currentKm: odo });
+      toggleMileageForm();
+      render();
+      Notify.show(`✅ +${km1(trip)} км. Одометр: ${km1(odo)} км`);
+    } catch (e) { Notify.error(e.message); }
+  }
+
+  function deleteTrip(id) {
+    const log = State.getMileageLog();
+    const i = log.findIndex(e => e.id === id);
+    if (i < 0) return;
+    const e = log[i], t = +e.trip || 0;
+    if (!confirm(`Удалить запись: ${fmtDate(e.date)}, +${km1(t)} км? Пробег уменьшится на ${km1(t)} км.`)) return;
+    log.splice(i, 1);
+    // Следующие новые записи (с trip) сдвигаем на величину удалённой
+    for (let k = i; k < log.length; k++) if (log[k].trip != null) log[k].km = UI.r2(log[k].km - t);
+    State.setMileageLog(log);
+    saveScooterData({ currentKm: Math.max(UI.r2(scooterData().currentKm - t), 0) });
+    render();
+    Notify.show("🗑 Запись пробега удалена");
+  }
+
+  function saveSetup() {
+    if (!guardAction("saveSetup")) return;
+    try {
+      const sc = scooterData();
+      const start = UI.num($("s_start").value);
+      const date = $("s_date").value || "";
+      if (start < 0) throw new Error("Пробег не может быть отрицательным");
+      const patch = { startKm: start, purchaseDate: date };
+      if (!(sc.startKm > 0) && sc.currentKm < start) patch.currentKm = start; // первый ввод: пробег = пробегу при покупке
+      saveScooterData(patch);
+      render();
+      Notify.show("✅ Сохранено");
+    } catch (e) { Notify.error(e.message); }
+  }
+
   // ---------- Рендер ----------
   function render() {
     migrateLegacyHistory();
+    const sc = scooterData();
     const wallets = State.getWallets();
+    const fuels = State.getFuel();
 
-    const scooterOps = getScooterOps();
-    const usedWallets = [...new Set(scooterOps.map(o => o.wallet))];
+    $("setupBanner").innerHTML = sc.startKm > 0 ? "" :
+      `<div class="banner">Чтобы считать пробег и замены, задайте <b>пробег при покупке</b>: откройте «⚙ Покупка и пробег» ниже.</div>`;
+    $("setupStatus").textContent = sc.startKm > 0
+      ? `Куплен${sc.purchaseDate ? " " + fmtDate(sc.purchaseDate) : ""} · при покупке ${km1(sc.startKm)} км`
+      : "Не задано";
+    if (!$("acc_setup").open) { $("s_start").value = sc.startKm || ""; $("s_date").value = sc.purchaseDate || ""; }
+
+    // Кошельки
+    const usedWallets = [...new Set(getScooterOps().map(o => o.wallet))];
     if (usedWallets.length > 0) {
       $("scooterWallets").style.display = "block";
       $("noScooterWallets").style.display = "none";
       $("scooterWallets").innerHTML = usedWallets.map(w => `
         <div class="history-item" style="padding: 12px 0; border-bottom: 1px solid var(--border);">
-          <span>${esc(w)}</span>
-          <b style="color: var(--green);">${wallets[w] || 0} лей</b>
+          <span>${esc(w)}</span><b style="color: var(--green);">${wallets[w] || 0} лей</b>
         </div>`).join("");
     } else {
       $("scooterWallets").style.display = "none";
       $("noScooterWallets").style.display = "block";
     }
-
     $("f_wall").innerHTML = walletSelectHtml();
 
-    const scooter = State.getScooter();
-    const fuels = State.getFuel();
-    const totalKm = Math.max(scooter.currentKm - scooter.startKm, 0);
-    $("statKm").innerText = totalKm.toFixed(1) + " км";
+    // Верхние карточки
+    const since = Math.max(sc.currentKm - sc.startKm, 0);
+    const weekFrom = (() => { const d = new Date(); d.setDate(d.getDate() - 6); return UI.date.local(d); })();
+    const week = State.getMileageLog().filter(e => e.trip != null && String(e.date) >= weekFrom).reduce((s, e) => s + (+e.trip || 0), 0);
+    $("statOdo").innerText = km1(sc.currentKm) + " км";
+    $("statSince").innerText = km1(since) + " км";
+    $("statWeek").innerText = km1(week) + " км";
     const totalLiters = fuels.reduce((s, f) => s + (+f.liters || 0), 0);
-    $("statConsumption").innerText = (totalKm > 0 ? (totalLiters / totalKm * 100) : 0).toFixed(2) + " л/100км";
+    $("statConsumption").innerText = (since > 0 ? (totalLiters / since * 100) : 0).toFixed(2) + " л/100км";
 
-    const today = UI.date.local();
-    // Раскрытые блоки не сворачиваем при перерисовке
-    const openIds = [...document.querySelectorAll("details.acc[open]")].map(d => d.id);
-
+    // Расходники
+    const openIds = [...document.querySelectorAll("details[open][id]")].map(d => d.id);
     $("componentsList").innerHTML = COMPONENTS.map(c => {
       const data = State.getComponent(c.id);
-      const nextKm = data.lastKm ? data.lastKm + data.intervalKm : 0;
-      const left = nextKm ? Math.round(nextKm - scooter.currentKm) : null;
-      let status = "Не задано. Нажми чтобы настроить.";
-      if (data.lastKm > 0) {
-        status = left <= 0 ? `⚠️ Пора менять! (просрочено на ${Math.abs(left)} км)` : `Осталось ${left} км (до ${Math.round(nextKm)})`;
-        if (data.lastDate) status += ` · была ${fmtDate(data.lastDate)}`;
-      }
+      const hist = (data.history || []).slice().sort((a, b) => (+a.km || 0) - (+b.km || 0) || String(a.date).localeCompare(String(b.date)));
+      const due = calcDue(c, data, sc);
+      const barColor = due.overdue ? "var(--red)" : due.frac >= 0.9 ? "var(--red)" : due.frac >= 0.7 ? "var(--orange)" : "var(--green)";
+
+      // Бортовой журнал: дата, км, сколько проехали до следующей замены / остаток
+      const rows = hist.map((e, i) => {
+        const next = hist[i + 1];
+        const right = next
+          ? `проехали ${Math.round(next.km - e.km)} км`
+          : (due.configured
+              ? (due.kmLeft != null ? (due.kmLeft <= 0 ? `⚠️ просрочено ${Math.abs(due.kmLeft)} км` : `остаток ${due.kmLeft} км`) : (due.nextDate ? `до ${fmtDate(due.nextDate)}` : ""))
+              : "");
+        return `<div class="jr"><div><b>${fmtDate(e.date) || "—"}</b> · ${Math.round(e.km)} км<div class="sub">${e.cost ? money(e.cost) + " лей" : "без оплаты"}${e.note ? " · " + esc(e.note) : ""}</div></div><div class="rest">${right}</div></div>`;
+      }).reverse().join("");
+
+      const iv = +data.intervalKm > 0 ? +data.intervalKm : c.interval;
       return `
       <details class="acc" id="acc_${c.id}">
-        <summary><div><div>${c.title}</div><div style="font-size:12px;font-weight:400;color:var(--text-dim);margin-top:4px">${status}</div></div></summary>
+        <summary><div><div>${c.title}</div><div class="due" style="font-weight:400;color:${due.overdue ? "var(--red)" : "var(--text-dim)"};margin-top:4px">${dueText(due)}</div></div></summary>
         <div class="acc-body">
-          <div class="input-row">
-            <div><label>Дата замены</label><input type="date" id="c_date_${c.id}" class="form-control" value="${today}"></div>
-            <div><label>Пробег (км)</label><input type="number" id="c_km_${c.id}" class="form-control" value="${Math.round(scooter.currentKm)}"></div>
-          </div>
-          <div class="input-row">
-            <div><label>Интервал (км)</label><input type="number" id="c_int_${c.id}" class="form-control" value="${data.intervalKm || c.interval}"></div>
-            <div><label>Стоимость (лей)</label><input type="number" id="c_cost_${c.id}" class="form-control" placeholder="0"></div>
-          </div>
-          <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="c_wall_${c.id}" class="form-control">${walletSelectHtml()}</select></div>
-          <label class="check-row"><input type="checkbox" id="c_skip_${c.id}"> Не списывать с кошелька (старая запись)</label>
-          <div style="margin-bottom: 10px;"><label>Заметка</label><input type="text" id="c_note_${c.id}" class="form-control" placeholder="Например: масло 10W-40"></div>
-          <button class="save-btn" onclick="saveComponent('${c.id}', '${c.title}')">💾 ЗАПИСАТЬ ЗАМЕНУ</button>
-          <div class="hint" style="margin-top:8px">Все замены — в блоке «История замен и учёт» ниже.</div>
+          ${due.configured ? `<div class="pbar"><i style="width:${Math.round(due.frac * 100)}%;background:${barColor}"></i></div>
+          <div class="due" style="color:var(--text-dim)">${due.first ? "С покупки" : "С замены"} проехано ${due.driven} км${due.base.ik > 0 ? " из " + Math.round(due.base.ik) : ""}${due.base.date ? " · " + (due.first ? "куплен " : "замена ") + fmtDate(due.base.date) : ""}</div>` : ""}
+
+          <div style="margin-top:12px;font-weight:700;font-size:13px">📜 Бортовой журнал</div>
+          ${rows ? `<div>${rows}</div>` : `<div class="empty-note">Замен ещё не было</div>`}
+
+          <details class="sub" id="rep_${c.id}">
+            <summary>➕ Записать замену</summary>
+            <div class="sub-body">
+              <div class="input-row">
+                <div><label>Дата замены</label><input type="date" id="c_date_${c.id}" class="form-control" value="${today()}"></div>
+                <div><label>Пробег, км</label><input type="number" id="c_km_${c.id}" class="form-control" value="${Math.round(sc.currentKm)}"></div>
+              </div>
+              <div class="input-row">
+                <div><label>Стоимость (лей)</label><input type="number" id="c_cost_${c.id}" class="form-control" placeholder="0"></div>
+                <div><label>Заметка</label><input type="text" id="c_note_${c.id}" class="form-control" placeholder="Например: масло 10W-40"></div>
+              </div>
+              <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="c_wall_${c.id}" class="form-control">${walletSelectHtml()}</select></div>
+              <label class="check-row"><input type="checkbox" id="c_skip_${c.id}"> Не списывать с кошелька (старая запись)</label>
+              <div class="hint" style="font-size:12px;color:var(--text-dim)">Следующая замена: этот пробег + интервал (${iv} км${+data.intervalMonths > 0 ? " или " + data.intervalMonths + " мес." : ""}).</div>
+              <button class="save-btn" onclick="saveComponent('${c.id}', '${c.title}')">💾 ЗАПИСАТЬ ЗАМЕНУ</button>
+            </div>
+          </details>
+
+          <details class="sub" id="set_${c.id}">
+            <summary>⚙ Интервалы</summary>
+            <div class="sub-body">
+              <div class="hint" style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Пустое поле или 0 — не учитывать. Срабатывает то, что наступит раньше.</div>
+              <div style="font-weight:600;font-size:13px;margin-bottom:6px">Первая замена (после покупки)</div>
+              <div class="input-row">
+                <div><label>Через, км</label><input type="number" id="c_fk_${c.id}" class="form-control" inputmode="decimal" value="${+data.firstKm || ""}" placeholder="например 1000"></div>
+                <div><label>или через, мес.</label><input type="number" id="c_fm_${c.id}" class="form-control" inputmode="decimal" value="${+data.firstMonths || ""}" placeholder="например 3"></div>
+              </div>
+              <div style="font-weight:600;font-size:13px;margin:6px 0">Дальше, между заменами</div>
+              <div class="input-row">
+                <div><label>Каждые, км</label><input type="number" id="c_ik_${c.id}" class="form-control" inputmode="decimal" value="${iv}"></div>
+                <div><label>или каждые, мес.</label><input type="number" id="c_im_${c.id}" class="form-control" inputmode="decimal" value="${+data.intervalMonths || ""}" placeholder="например 12"></div>
+              </div>
+              <button class="save-btn blue" onclick="saveCompSettings('${c.id}')">💾 СОХРАНИТЬ ИНТЕРВАЛЫ</button>
+            </div>
+          </details>
         </div>
       </details>`;
     }).join("");
 
+    // Документы
     $("officialList").innerHTML = OFFICIALS.map(o => {
       const data = State.getOfficial(o.id);
-      const status = data.nextDate ? `Действует до: ${fmtDate(data.nextDate)} (${data.cost} лей)` : "Нет данных";
+      const left = data.nextDate ? daysBetween(today(), data.nextDate) : null;
+      const status = data.nextDate ? `Действует до: ${fmtDate(data.nextDate)}${left != null ? (left < 0 ? " · ⚠️ срок вышел" : ` · ещё ${left} дн.`) : ""} (${data.cost} лей)` : "Нет данных";
       return `
       <details class="acc" id="acc_off_${o.id}">
         <summary><div><div>${o.title}</div><div style="font-size:12px;font-weight:400;color:var(--text-dim);margin-top:4px">${status}</div></div></summary>
         <div class="acc-body">
-          <div style="margin-bottom: 10px;"><label>Дата прохождения</label><input type="date" id="o_date_${o.id}" class="form-control" value="${today}"></div>
+          <div style="margin-bottom: 10px;"><label>Дата прохождения</label><input type="date" id="o_date_${o.id}" class="form-control" value="${today()}"></div>
           <div style="margin-bottom: 10px;"><label>Действует до</label><input type="date" id="o_next_${o.id}" class="form-control" value="${data.nextDate || ""}"></div>
           <div style="margin-bottom: 10px;"><label>Стоимость (лей)</label><input type="number" id="o_cost_${o.id}" class="form-control" placeholder="0"></div>
           <div style="margin-bottom: 10px;"><label>Кошелёк</label><select id="o_wall_${o.id}" class="form-control">${walletSelectHtml()}</select></div>
@@ -375,9 +612,17 @@
 
     renderServiceHistory();
 
+    // Журнал пробега (последние 15 записей)
+    const log = State.getMileageLog();
+    const lastLog = log.slice(-15).reverse();
+    $("mileageJournal").innerHTML = lastLog.length ? lastLog.map(e => {
+      const isNew = e.trip != null;
+      return `<div class="svc-row"><div><b>${fmtDate(e.date)}</b><div class="svc-sub">${isNew ? (e.mode === "odo" ? "по одометру" : "за день") : "прежний формат"}${isNew ? "" : " · " + km1(e.km) + " км"}</div></div>
+        <div class="svc-right"><b>${isNew ? "+" + km1(e.trip) + " км" : ""}</b>${isNew ? `<span class="svc-sub">→ ${km1(e.km)}</span><button class="del-btn" onclick="deleteTrip('${e.id}')">🗑</button>` : ""}</div></div>`;
+    }).join("") : `<div class="empty-note">Записей пока нет. Нажмите «Пробег за день».</div>`;
+
     let historyHtml = "";
-    State.getMileageLog().slice().reverse().slice(0, 5).forEach(m => historyHtml += `<div class="history-item"><span>📏 Пробег</span><span>${m.date}: <b>${m.km} км</b></span></div>`);
-    fuels.slice().reverse().slice(0, 5).forEach(f => historyHtml += `<div class="history-item"><span>⛽ Заправка</span><span>${f.date}: <b>${money(fuelSum(f))} лей</b> (${(+f.liters || 0).toFixed(2)} л)</span></div>`);
+    fuels.slice().reverse().slice(0, 8).forEach(f => historyHtml += `<div class="history-item"><span>⛽ ${fmtDate(f.date)}</span><span><b>${money(fuelSum(f))} лей</b> (${(+f.liters || 0).toFixed(2)} л)</span></div>`);
     $("globalHistory").innerHTML = historyHtml || `<div class="history-item">Нет записей</div>`;
   }
 
@@ -386,11 +631,6 @@
     c.style.display = c.style.display === "none" ? "block" : "none";
     if (c.style.display === "block") $("f_total").focus();
   }
-  function toggleMileageForm() {
-    const c = $("mileageFormContainer");
-    c.style.display = c.style.display === "none" ? "block" : "none";
-    if (c.style.display === "block") $("m_km").focus();
-  }
 
   function saveFuel() {
     if (!guardAction("saveFuel")) return;
@@ -398,36 +638,33 @@
       const totalCost = UI.num($("f_total").value);
       const price = UI.num($("f_price").value);
       const wallet = $("f_wall").value;
-
       if (!wallet) throw new Error("Кошелёк не выбран");
       if (totalCost <= 0 || price <= 0) throw new Error("Заполните сумму и цену");
-
       const liters = UI.r2(totalCost / price);
       FinanceAPI.spend({ wallet, amount: totalCost, category: "Топливо (Скутер)", note: `${liters}л` });
-      State.setFuel([...State.getFuel(), { date: UI.date.local(), liters, price, total: totalCost }]);
+      State.setFuel([...State.getFuel(), { date: today(), liters, price, total: totalCost }]);
       toggleFuelForm();
       render();
       Notify.show(`✅ ${liters} л. Списано ${totalCost} лей`);
     } catch (e) { Notify.error(e.message); }
   }
 
-  function saveMileage() {
-    if (!guardAction("saveMileage")) return;
+  function saveCompSettings(id) {
+    if (!guardAction("saveCompSet")) return;
     try {
-      const scooter = State.getScooter();
-      const km = UI.num($("m_km").value);
-      if (km < scooter.currentKm) throw new Error("Пробег не может уменьшаться");
-
-      State.setMileageLog([...State.getMileageLog(), { date: UI.date.local(), km }]);
-      scooter.currentKm = km;
-      if (scooter.startKm === 0) scooter.startKm = km;
-      State.setScooter(scooter);
-      toggleMileageForm();
+      const data = State.getComponent(id);
+      const f = n => Math.max(0, UI.num($(`${n}_${id}`).value) || 0);
+      data.firstKm = f("c_fk"); data.firstMonths = f("c_fm");
+      data.intervalKm = f("c_ik"); data.intervalMonths = f("c_im");
+      if (!(data.intervalKm > 0) && !(data.intervalMonths > 0)) throw new Error("Задайте интервал между заменами: километры или месяцы");
+      if (!Array.isArray(data.history)) data.history = [];
+      State.setComponent(id, data);
       render();
-      Notify.show("✅ Пробег обновлен");
+      Notify.show("✅ Интервалы сохранены");
     } catch (e) { Notify.error(e.message); }
   }
 
+  // Замена: следующая = пробег замены + интервал (и/или дата + месяцы)
   function saveComponent(id, title) {
     if (!guardAction("saveComp")) return;
     try {
@@ -435,21 +672,19 @@
       if (!Array.isArray(data.history)) data.history = [];
       const date = $(`c_date_${id}`).value;
       const km = UI.num($(`c_km_${id}`).value);
-      const interval = UI.num($(`c_int_${id}`).value);
       const cost = UI.num($(`c_cost_${id}`).value);
       const wallet = $(`c_wall_${id}`).value;
       const skip = $(`c_skip_${id}`).checked;
       const note = $(`c_note_${id}`).value.trim();
 
       if (!date) throw new Error("Укажите дату замены");
-      if (km <= 0 || interval <= 0) throw new Error("Заполните км и интервал");
+      if (!(km > 0)) throw new Error("Укажите пробег на момент замены");
 
       let opId = null;
       if (cost > 0 && !skip) {
         opId = FinanceAPI.spend({ date, wallet, amount: cost, category: `Скутер: ${title}`, note: note || `Замена на ${km} км` });
       }
 
-      data.intervalKm = interval;
       // Старую запись не считаем «последней», если уже есть более свежая замена
       if (!data.lastKm || km >= data.lastKm) { data.lastKm = km; data.lastDate = date; }
       data.history.push({ date, km, cost, wallet: cost > 0 && !skip ? wallet : "", opId, note });
