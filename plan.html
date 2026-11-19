@@ -198,6 +198,9 @@
     <div class="hint">Нажмите на месяц, чтобы открыть. Невыполненные дела сами переходят в новый месяц, а прошлый остаётся в истории.</div>
     <div id="monthsList"></div>
     <button class="link" onclick="createNext()">➕ Создать следующий месяц</button>
+    <button class="link" onclick="importPlanJSON()">📥 Импорт JSON</button>
+    <button class="link" onclick="exportPlanJSON()">📤 Экспорт JSON</button>
+    <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="handleImportFile(event)">
     <div class="row"><button class="no" onclick="closeMonths()">Закрыть</button></div>
   </div>
 </div>
@@ -231,7 +234,6 @@
   const fmt = x => (+x || 0).toLocaleString("ru-RU", { maximumFractionDigits: 0 });
   const num = v => parseFloat(String(v || "").replace(/\s/g, "").replace(",", ".")) || 0;
   const newId = () => "t_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const clone = x => JSON.parse(JSON.stringify(x));
   const MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
   const MN = ["январ", "феврал", "март", "апрел", "май", "июн", "июл", "август", "сентябр", "октябр", "ноябр", "декабр"];
   const curYm = () => UI.date.local().slice(0, 7);
@@ -251,12 +253,10 @@
   const monthLabel = ym => MONTHS[+ym.slice(5, 7) - 1] + " " + ym.slice(0, 4);
   const blankPlan = ym => ({ month: monthLabel(ym), ym, goal: "", checkpoint: "", sections: [{ key: "main", title: "📋 Мой план на месяц", tasks: [] }] });
 
-  // Все месяцы: { "2026-11": {month, ym, goal, checkpoint, sections}, ... }
   function loadAll() {
     let pl = AppStorage.get("plans", null);
     if (!pl || typeof pl !== "object" || Array.isArray(pl)) {
       pl = {};
-      // Перенос из старого формата: один план (plan) + архив (plan_archive)
       const arch = AppStorage.get("plan_archive", {}) || {};
       Object.keys(arch).forEach(k => {
         const a = arch[k];
@@ -282,7 +282,6 @@
   function persist() { plans[viewYm] = P; AppStorage.set("plans", plans); }
   function saveAll() { AppStorage.set("plans", plans); }
 
-  // ---- Факт из «Финансов» (поддерживает оба формата журнала) ----
   function planOps() {
     return State.getOps().map(o => {
       const date = String(o.data || o.date || "").slice(0, 10);
@@ -323,7 +322,6 @@
     return "manual";
   }
 
-  // ---- Рендер ----
   function render() {
     OPS = planOps();
     if (!plans[viewYm]) viewYm = curYm();
@@ -403,7 +401,6 @@
     return null;
   }
 
-  // Галочка: если факт вводится вручную и пуст — ставим факт = плану
   function toggleDone(id, val) {
     const f = findTask(id);
     if (!f) return;
@@ -446,7 +443,6 @@
     }
   }
 
-  // ---- Задача ----
   function fillSections(selId, selected) {
     $(selId).innerHTML = P.sections.map(s => `<option value="${esc(s.key)}"${s.key === selected ? " selected" : ""}>${esc(s.title)}</option>`).join("");
   }
@@ -505,7 +501,6 @@
     persist(); closeTaskModal(); render();
   }
 
-  // ---- Добавить списком ----
   function openBulk() {
     $("bText").value = "";
     $("bErr").textContent = "";
@@ -530,12 +525,11 @@
     Notify.show(`✅ Добавлено задач: ${items.length}`);
   }
 
-  // ---- Месяцы: переключение, перенос невыполненного ----
   function carryTask(t, prev) {
     const p = num(t.plan), f = factOf(t, prev.ym);
     const finished = t.done || (p > 0 && f >= p);
     if (finished) return null;
-    t.carried = true; // в прошлом месяце остаётся пометка
+    t.carried = true;
     const rest = p > 0 && f > 0 && f < p ? p - f : p;
     return { id: newId(), title: t.title, note: t.note || "", plan: Math.round(rest), fact: 0, done: false, src: t.src || "manual", from: prev.ym };
   }
@@ -546,7 +540,6 @@
       sections: prev.sections.map(sec => ({ key: sec.key, title: sec.title, tasks: withTasks ? sec.tasks.map(t => carryTask(t, prev)).filter(Boolean) : [] }))
     };
   }
-  // Если наступил новый месяц, а плана на него нет — создаём и переносим невыполненное
   function ensureRollover() {
     const cur = curYm();
     if (plans[cur]) return false;
@@ -622,7 +615,6 @@
     if (ym) createMonth(ym, carry);
   }
 
-  // Пометка «перенесено дальше» остаётся, только если в следующих месяцах есть такая задача
   function refreshCarried() {
     const keys = Object.keys(plans).sort();
     keys.forEach(k => plans[k].sections.forEach(sec => sec.tasks.forEach(t => {
@@ -641,7 +633,6 @@
     openMonths(); render();
   }
 
-  // ---- Настройки ----
   function openSettings() {
     $("sGoal").value = P.goal || "";
     $("sCheck").value = P.checkpoint || "";
@@ -664,11 +655,72 @@
     $("sErr").textContent = n ? `Привязано задач: ${n}` : "Подходящих задач не найдено";
   }
 
-  // Закрытие модалок по клику вне
+  // ---- Импорт / экспорт JSON ----
+  function importPlanJSON() {
+    const inp = $("importFile");
+    if (!inp) { alert("Поле импорта не найдено в HTML"); return; }
+    inp.value = "";
+    inp.click();
+  }
+  function handleImportFile(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        const incoming = (data.ym && data.sections) ? { [data.ym]: data } : data;
+        if (typeof incoming !== "object" || Array.isArray(incoming)) throw new Error("Не объект");
+        const keys = Object.keys(incoming);
+        if (!keys.length) throw new Error("Пусто");
+        let added = 0, replaced = 0;
+        keys.forEach(k => {
+          if (!/^\d{4}-\d{2}$/.test(k)) throw new Error("Ключ не в формате YYYY-MM: " + k);
+          const pl = incoming[k];
+          if (!pl.month) pl.month = monthLabel(k);
+          pl.ym = k;
+          if (!Array.isArray(pl.sections) || !pl.sections.length) {
+            pl.sections = [{ key: "main", title: "📋 Мой план на месяц", tasks: [] }];
+          }
+          pl.sections.forEach(sec => {
+            if (!sec.key) sec.key = "s_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+            if (!Array.isArray(sec.tasks)) sec.tasks = [];
+            sec.tasks.forEach(t => {
+              if (!t.id) t.id = "t_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+              if (t.src === undefined) t.src = "manual";
+              if (t.fact === undefined) t.fact = 0;
+              if (t.done === undefined) t.done = false;
+            });
+          });
+          if (plans[k]) {
+            if (!confirm(`Месяц «${monthLabel(k)}» уже есть. Заменить его?`)) return;
+            replaced++;
+          } else added++;
+          plans[k] = pl;
+        });
+        saveAll();
+        closeMonths();
+        if (plans[viewYm]) render();
+        Notify.show(`📥 Импорт: добавлено ${added}, заменено ${replaced}`);
+      } catch (err) {
+        alert("Ошибка импорта: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+  function exportPlanJSON() {
+    const data = { [viewYm]: plans[viewYm] };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "plan_" + viewYm + ".json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
   ["taskModal", "bulkModal", "setModal", "monthsModal", "createModal"].forEach(id =>
     $(id).addEventListener("click", e => { if (e.target.id === id) $(id).classList.remove("on"); }));
 
-  // Обновлять факт при возврате на страницу (данные могли измениться в «Финансах»)
   function refresh() {
     OPS = planOps();
     if (ensureRollover()) saveAll();
@@ -679,7 +731,7 @@
 
   OPS = planOps();
   ensureRollover();
-  saveAll(); // сразу сохраняем в новом формате (plans)
+  saveAll();
   viewYm = curYm();
   render();
 </script>
