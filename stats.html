@@ -501,26 +501,24 @@
     const totalLiters = fuels.reduce((s, f) => s + num(f.liters), 0);
     const price = totalLiters > 0 ? fuelCost / totalLiters : 0;
 
-    // Пробег за месяц. В журнале смешаны два формата: старый (км за день, меньше стартового
-    // показания) и новый (показание одометра, не меньше стартового). Восстанавливаем одометр.
+    // Пробег за месяц. Новые записи (cash.html) хранят «пройдено» в поле trip — их просто суммируем.
+    // Прежние записи (без trip): км за день (меньше стартового показания) или показание одометра.
     const sc = State.getScooter() || {};
     const startOdo = num(sc.startKm);
-    const mlog = State.getMileageLog().map(e => ({ date: String(e.date || ""), km: num(e.km) }))
-      .filter(e => e.km > 0 && e.date).sort((a, b) => a.date.localeCompare(b.date));
-    let odo = startOdo;
-    const track = mlog.map(e => {
-      if (e.km >= startOdo) odo = Math.max(odo, e.km); else odo += e.km;
-      return { date: e.date, odo };
+    const allLog = State.getMileageLog().map(e => ({ date: String(e.date || ""), km: num(e.km), trip: e.trip != null ? num(e.trip) : null }))
+      .filter(e => e.date);
+    let monthKm = 0, anyEntry = false, odoL = startOdo;
+    allLog.filter(e => e.trip == null && e.km > 0).sort((a, b) => a.date.localeCompare(b.date)).forEach(e => {
+      let d;
+      if (e.km >= startOdo) { d = Math.max(0, e.km - odoL); odoL = Math.max(odoL, e.km); }
+      else { d = e.km; odoL += e.km; }
+      if (e.date.startsWith(prefix)) { monthKm += d; anyEntry = true; }
     });
-    const inMonthTrack = track.filter(t => t.date.startsWith(prefix));
+    allLog.filter(e => e.trip != null && e.date.startsWith(prefix)).forEach(e => { monthKm += e.trip; anyEntry = true; });
     let totalKm = 0, kmIsMonthly = false;
-    if (inMonthTrack.length) {
-      const endOdo = inMonthTrack[inMonthTrack.length - 1].odo;
-      const before = track.filter(t => t.date.slice(0, 7) < prefix).pop();
-      totalKm = Math.max(endOdo - (before ? before.odo : startOdo), 0);
-      kmIsMonthly = totalKm > 0;
-    }
+    if (anyEntry && monthKm > 0) { totalKm = monthKm; kmIsMonthly = true; }
     if (!kmIsMonthly) totalKm = Math.max(num(sc.currentKm) - startOdo, 0);
+
     setText("statKmLabel", kmIsMonthly ? "🛵 Пробег (за месяц)" : "🛵 Пробег (всего)");
     const cons = totalKm > 0 && kmIsMonthly ? (totalLiters / totalKm * 100) : 0;
     const costKm = totalKm > 0 && kmIsMonthly ? fuelCost / totalKm : 0;
