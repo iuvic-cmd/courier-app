@@ -287,41 +287,41 @@ if(!State.getOrdersLog){State.getOrdersLog=()=>AppStorage.get("orders_log",null)
 // ==========================================
 //  PIN-КОД
 // ==========================================
-const DEFAULT_PIN = "1234";
-let enteredPin = "";
+//const DEFAULT_PIN = "1234";
+//let enteredPin = "";
 
-if (sessionStorage.getItem("appUnlocked") !== "true") {
-    document.getElementById("pinScreen").classList.add("active");
-}
+//if (sessionStorage.getItem("appUnlocked") !== "true") {
+    //document.getElementById("pinScreen").classList.add("active");
+//}
 
-function getPin() {
-    return AppStorage.get("pin", DEFAULT_PIN);
-}
+//function getPin() {
+    //return AppStorage.get("pin", DEFAULT_PIN);
+//}
 
-function pinInput(n) {
-    if (enteredPin.length < 4) { enteredPin += n; updateDots(); }
-    if (enteredPin.length === 4) setTimeout(checkPin, 150);
-}
-function pinDelete() {
-    if (enteredPin.length > 0) { enteredPin = enteredPin.slice(0, -1); updateDots(); }
-}
-function updateDots() {
-    for (let i = 0; i < 4; i++) {
-        document.getElementById("dot" + i).classList.toggle("filled", i < enteredPin.length);
-    }
-}
-function checkPin() {
-    if (enteredPin === getPin()) {
-        sessionStorage.setItem("appUnlocked", "true");
-        document.getElementById("pinScreen").classList.remove("active");
-    } else {
-        const s = document.getElementById("pinScreen");
-        s.style.transform = "translateX(10px)";
-        setTimeout(() => s.style.transform = "translateX(-10px)", 50);
-        setTimeout(() => s.style.transform = "translateX(0)", 100);
-        setTimeout(() => { enteredPin = ""; updateDots(); }, 300);
-    }
-}
+//function pinInput(n) {
+    //if (enteredPin.length < 4) { enteredPin += n; updateDots(); }
+    //if (enteredPin.length === 4) setTimeout(checkPin, 150);
+//}
+//function pinDelete() {
+    //if (enteredPin.length > 0) { enteredPin = enteredPin.slice(0, -1); updateDots(); }
+//}
+//function updateDots() {
+    //for (let i = 0; i < 4; i++) {
+        //document.getElementById("dot" + i).classList.toggle("filled", i < enteredPin.length);
+    //}
+//}
+//function checkPin() {
+    //if (enteredPin === getPin()) {
+        //sessionStorage.setItem("appUnlocked", "true");
+        //document.getElementById("pinScreen").classList.remove("active");
+    //} else {
+        //const s = document.getElementById("pinScreen");
+        //s.style.transform = "translateX(10px)";
+        //setTimeout(() => s.style.transform = "translateX(-10px)", 50);
+        //setTimeout(() => s.style.transform = "translateX(0)", 100);
+        //setTimeout(() => { enteredPin = ""; updateDots(); }, 300);
+    //}
+//}
 
 // ==========================================
 //  ХЕЛПЕРЫ
