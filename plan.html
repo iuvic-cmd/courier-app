@@ -80,6 +80,8 @@
     .modal-box .ok { background: var(--accent); color: #fff; }
     .modal-box .no { background: var(--border); color: var(--text); }
     .modal-box .link { width: 100%; margin-top: 12px; padding: 10px; border: 1px dashed var(--border); border-radius: 10px; background: transparent; color: var(--accent); font-size: 14px; font-weight: 600; cursor: pointer; }
+    .modal-box label.chk { display: flex; align-items: center; gap: 8px; color: var(--text); font-size: 14px; margin-top: 12px; }
+    .modal-box label.chk input { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
     .hint { font-size: 12px; color: var(--text-dim); margin-top: 6px; line-height: 1.4; }
     .err { color: var(--red); font-size: 13px; min-height: 18px; margin-top: 6px; }
   </style>
@@ -143,9 +145,10 @@
       <option value="credit">🏛 Платежи по кредитам (из «Финансов»)</option>
       <option value="card">💳 Платежи по кредиткам (из «Финансов»)</option>
       <option value="cat">🗂 Траты по категории</option>
+      <option value="debt">🤝 Возврат долга человеку</option>
     </select>
     <div id="tCatWrap" style="display:none">
-      <input id="tCat" list="catList" placeholder="Категория, например Топливо">
+      <input id="tCat" list="catList" placeholder="Категория или имя, например Топливо">
       <datalist id="catList"></datalist>
       <div class="hint">Берутся все траты за месяц, в названии категории которых есть этот текст.</div>
     </div>
@@ -167,11 +170,15 @@
 <div id="bulkModal" class="modal">
   <div class="modal-box">
     <h3>📋 Добавить списком</h3>
-    <div class="hint">Одна задача на строку: «Название — сумма». Например:<br>Ломбард — 4620<br>Бензин 800<br>Интернет: 150</div>
-    <textarea id="bText" class="big" placeholder="Ломбард — 4620&#10;Кредит Consum — 1201&#10;Бензин — 800"></textarea>
-    <label>В раздел</label>
+    <div class="hint">Строка «Шаг 1. Название» станет блоком, строка «[ ] Название — сумма» (или «Название — сумма») — задачей. Заметка в скобках после суммы сохранится.</div>
+    <textarea id="bText" class="big" placeholder="Шаг 1. Техника&#10;[ ] Колодки — 800&#10;[ ] Оплатить Orange — 2700"></textarea>
+    <button class="link" onclick="fillDecember()">📥 Подставить чек-лист на декабрь</button>
+    <label>Месяц</label>
+    <input type="month" id="bMonth">
+    <label class="chk"><input type="checkbox" id="bReplace"> Заменить все задачи этого месяца</label>
+    <label>Задачи без блока — в раздел</label>
     <select id="bSection"></select>
-    <div class="hint">Для «ломбард», «кредит», «кредитка», «бензин/топливо» факт подключится автоматически.</div>
+    <div class="hint">Для ломбарда, кредитов, кредитки, топлива, долгов людям и ваших категорий трат (Orange, Электричество и т.д.) факт подключится автоматически.</div>
     <div class="err" id="bErr"></div>
     <div class="row">
       <button class="ok" onclick="saveBulk()">✅ Добавить</button>
@@ -296,6 +303,7 @@
         }
         if (o.tip === "Кредит" && o.napr === "платёж") return { date, type: "credit", s };
         if (o.tip === "Ломбард" && o.napr === "платёж") return { date, type: "lombard", s };
+        if (o.tip === "Долг" && o.napr === "вернул я") return { date, type: "debt", cat: o.kat || "", s };
         return null;
       }
       if (o.kind === "expense" && !/корректиров/i.test(o.cat || "")) return { date, type: "exp", cat: o.cat || "", s: Math.abs(+o.amount || 0) };
@@ -306,6 +314,10 @@
   function autoFact(src, ym) {
     const inM = OPS.filter(o => o.date.startsWith(ym));
     if (src === "lombard" || src === "credit" || src === "card") return inM.filter(o => o.type === src).reduce((a, o) => a + o.s, 0);
+    if (src.startsWith("debt:")) {
+      const who = src.slice(5).toLowerCase();
+      return inM.filter(o => o.type === "debt" && o.cat.toLowerCase().includes(who)).reduce((a, o) => a + o.s, 0);
+    }
     if (src.startsWith("cat:")) {
       const name = src.slice(4).toLowerCase();
       return inM.filter(o => o.type === "exp" && o.cat.toLowerCase().includes(name)).reduce((a, o) => a + o.s, 0);
@@ -313,12 +325,12 @@
     return 0;
   }
   const factOf = (t, ym) => isAuto(t) ? Math.round(autoFact(t.src, ym || (P && P.ym) || curYm())) : num(t.fact);
-  const srcLabel = s => s === "lombard" ? "ломбард" : s === "credit" ? "кредиты" : s === "card" ? "кредитки" : s.startsWith("cat:") ? s.slice(4) : "";
+  const srcLabel = s => s === "lombard" ? "ломбард" : s === "credit" ? "кредиты" : s === "card" ? "кредитки" : s.startsWith("cat:") ? s.slice(4) : s.startsWith("debt:") ? "долг: " + s.slice(5) : "";
   function detectSrc(title) {
     const l = String(title).toLowerCase();
     if (l.includes("ломбард")) return "lombard";
     if (l.includes("кредитк")) return "card";
-    if (l.includes("кредит")) return "credit";
+    if (l.includes("кредит") || l.includes("consum")) return "credit";
     if (/бензин|топлив/.test(l)) return "cat:Топлив";
     return "manual";
   }
@@ -452,7 +464,8 @@
   }
   function srcChanged() {
     const v = $("tSrc").value;
-    $("tCatWrap").style.display = v === "cat" ? "block" : "none";
+    $("tCatWrap").style.display = v === "cat" || v === "debt" ? "block" : "none";
+    $("tCat").placeholder = v === "debt" ? "Имя из долгов, например Сырбу" : "Категория, например Топливо";
     $("tFactWrap").style.display = v === "manual" ? "block" : "none";
   }
   function openTaskModal(id, secKey) {
@@ -468,8 +481,8 @@
     $("tPlan").value = f ? (f.task.plan || "") : "";
     $("tFact").value = f ? (f.task.fact || "") : "";
     const src = f && f.task.src ? f.task.src : "manual";
-    $("tSrc").value = src.startsWith("cat:") ? "cat" : src;
-    $("tCat").value = src.startsWith("cat:") ? src.slice(4) : "";
+    $("tSrc").value = src.startsWith("cat:") ? "cat" : src.startsWith("debt:") ? "debt" : src;
+    $("tCat").value = src.startsWith("cat:") || src.startsWith("debt:") ? src.slice(src.indexOf(":") + 1) : "";
     srcChanged();
     fillSections("tSection", f ? f.sec.key : (secKey || P.sections[0].key));
     $("tErr").textContent = "";
@@ -482,10 +495,10 @@
     const title = $("tTitle").value.trim();
     if (!title) { $("tErr").textContent = "Введите заголовок"; return; }
     let src = $("tSrc").value;
-    if (src === "cat") {
+    if (src === "cat" || src === "debt") {
       const c = $("tCat").value.trim();
-      if (!c) { $("tErr").textContent = "Укажите категорию"; return; }
-      src = "cat:" + c;
+      if (!c) { $("tErr").textContent = src === "cat" ? "Укажите категорию" : "Укажите имя"; return; }
+      src = src + ":" + c;
     }
     const data = {
       title, src,
@@ -505,15 +518,43 @@
     persist(); closeTaskModal(); render();
   }
 
+  // Умное распознавание: ломбард/кредит/кредитка/топливо + долги людям + ваши категории трат
+  function smartSrc(title) {
+    const base = detectSrc(title);
+    if (base !== "manual") return base;
+    const l = String(title).toLowerCase();
+    if (/отда|верн|погас/.test(l)) {
+      const names = (AppStorage.get("dolgi", []) || []).map(d => String(d.kto || "").replace(/[^A-Za-zА-Яа-яЁё0-9 ]/g, "").trim()).filter(Boolean);
+      const hit = names.find(n => { const x = n.toLowerCase(); return l.includes(x) || l.includes(x.slice(0, Math.max(4, x.length - 1))); });
+      if (hit) return "debt:" + hit;
+    }
+    // Расходники скутера: категории появятся при записи замены в «Скутере»
+    if (/колодк/.test(l)) return "cat:колодк";
+    if (/ремен|ремн/.test(l)) return "cat:ремен";
+    if (/(мопед|скутер)/.test(l) && /масл/.test(l)) return "cat:масл";
+    if (/(мопед|скутер)/.test(l) && /фильтр/.test(l)) return "cat:фильтр";
+    const cats = new Set(((State.getCategories() || {}).expense || []));
+    State.getOps().forEach(o => { const c = o.kat || o.cat; if (c && (o.tip === "Трата" || o.kind === "expense")) cats.add(c); });
+    const STOP = new Set(["скутер", "машина", "оплата", "оплаты"]);
+    for (const c of cats) {
+      const w = String(c).toLowerCase().split(/[^a-zа-яё0-9]+/i).filter(x => x.length >= 5 && !STOP.has(x)).find(x => l.includes(x));
+      if (w) return "cat:" + w;
+    }
+    return "manual";
+  }
+
   // ---- Добавить списком ----
   function openBulk() {
     $("bText").value = "";
     $("bErr").textContent = "";
+    $("bMonth").value = viewYm;
+    $("bReplace").checked = false;
     fillSections("bSection", P.sections[0].key);
     $("bulkModal").classList.add("on");
     setTimeout(() => $("bText").focus(), 100);
   }
   function closeBulk() { $("bulkModal").classList.remove("on"); }
+
   function parseLine(line) {
     const s = line.trim();
     if (!s) return null;
@@ -521,13 +562,105 @@
     if (m && m[1].trim()) return { title: m[1].trim(), plan: Math.round(num(m[2])) };
     return { title: s, plan: 0 };
   }
+  // «Название — 1 080 (заметка)» -> {title, plan, note}
+  function parseTaskText(s) {
+    s = s.trim();
+    const m = s.match(/^(.*?)\s+[—–-]\s+(\d[\d\s]*(?:[.,]\d+)?)\s*(?:лей|лея|lei|mdl|l)?\s*(.*)$/i);
+    if (m && m[1].trim()) {
+      const note = (m[3] || "").replace(/^[\s(]+|[\s).]+$/g, "").trim();
+      return { title: m[1].trim(), plan: Math.round(num(m[2])), note };
+    }
+    const p = parseLine(s);
+    return { title: p.title, plan: p.plan, note: "" };
+  }
+  const HEAD_RE = /^[^A-Za-zА-Яа-яЁё0-9]*(?:#+\s*)?(?:шаг|блок|этап)\s*\d+/i;
+  function parseChecklist(text) {
+    const sections = [], loose = [];
+    let cur = null;
+    text.split(/\r?\n/).forEach(raw => {
+      const line = raw.trim();
+      if (!line) return;
+      if (HEAD_RE.test(line)) {
+        cur = { title: line.replace(/^#+\s*/, "").replace(/[:：]\s*$/, "").trim(), tasks: [] };
+        sections.push(cur);
+        return;
+      }
+      const m = line.match(/^(?:\[\s*([xх✓✔]?)\s*\]|[-•*▪]|\d+[.)])\s*(.+)$/i);
+      if (m) {
+        const t = parseTaskText(m[2]); t.done = !!m[1];
+        (cur ? cur.tasks : loose).push(t);
+      } else if (!cur || /\s[—–-]\s+\d/.test(line)) {
+        // до первого блока каждая строка — задача; после него — только «Название — сумма»
+        const t = parseTaskText(line); t.done = false;
+        (cur ? cur.tasks : loose).push(t);
+      }
+    });
+    return { sections, loose };
+  }
+
+  const DECEMBER = [
+    "🔧 Шаг 1. Закрываем технику и связь (чтобы работать)",
+    "[ ] Купить и поставить колодки на мопед — 800",
+    "[ ] Заправить Scenic (30 литров) — 1080",
+    "[ ] Оплатить Orange — 2700",
+    "[ ] Оплатить Молдтелеком — 360",
+    "🏦 Шаг 2. Закрываем банки и коммуналку (чтобы не росли долги)",
+    "[ ] Оплатить проценты Ломбарда — 2310",
+    "[ ] Внести на Кредитку — 2500",
+    "[ ] Внести на Consum — 1201",
+    "[ ] Оплатить Электричество — 2146",
+    "[ ] Сдать свою долю в общий котел на коммуналку — 2000",
+    "🤝 Шаг 3. Отдаем долги людям (чтобы сохранить отношения)",
+    "[ ] Отдать Славику — 3000 (закрыт)",
+    "[ ] Отдать Сырбу — 4300 (закрыта половина)",
+    "🛡 Шаг 4. Создаем подушку (чтобы не брать новые кредиты)",
+    "[ ] Положить в конверт «Подушка» — 2000 (итого там станет 2570)",
+    "💰 Шаг 5. Остаток",
+    "[ ] Оставить резерв на карте/в конверте (на следующие счета ЖКХ и жизнь) — 5603"
+  ].join("\n");
+  function fillDecember() {
+    $("bText").value = DECEMBER;
+    $("bMonth").value = "2026-12";
+    $("bReplace").checked = true;
+    $("bErr").textContent = "";
+  }
+
   function saveBulk() {
-    const sec = P.sections.find(s => s.key === $("bSection").value);
-    const items = $("bText").value.split("\n").map(parseLine).filter(Boolean);
-    if (!items.length) { $("bErr").textContent = "Введите хотя бы одну строку"; return; }
-    items.forEach(it => sec.tasks.push({ id: newId(), title: it.title, note: "", plan: it.plan, fact: 0, done: false, src: detectSrc(it.title) }));
-    persist(); closeBulk(); render();
-    Notify.show(`✅ Добавлено задач: ${items.length}`);
+    const text = $("bText").value;
+    const parsed = parseChecklist(text);
+    const total = parsed.sections.reduce((a, s) => a + s.tasks.length, 0) + parsed.loose.length;
+    if (!total) { $("bErr").textContent = "Не нашёл ни одной задачи. Формат: «[ ] Название — сумма»"; return; }
+
+    const ym = $("bMonth").value || viewYm;
+    const replace = $("bReplace").checked;
+    const old = plans[ym];
+    const oldCount = old ? old.sections.reduce((a, s) => a + s.tasks.length, 0) : 0;
+    if (replace && oldCount && !confirm(`Заменить все задачи в «${monthLabel(ym)}» (${oldCount} шт.)?`)) return;
+
+    if (!old) plans[ym] = Object.assign(blankPlan(ym), { sections: [] });
+    const target = plans[ym];
+    if (replace) target.sections = [];
+    const mk = t => ({ id: newId(), title: t.title, note: t.note || "", plan: t.plan, fact: 0, done: !!t.done, src: smartSrc(t.title) });
+    let linked = 0;
+    parsed.sections.forEach((sc, i) => {
+      const tasks = sc.tasks.map(mk);
+      linked += tasks.filter(t => t.src !== "manual").length;
+      target.sections.push({ key: "s_" + Date.now() + "_" + i, title: sc.title, tasks });
+    });
+    if (parsed.loose.length) {
+      let sec = (ym === viewYm && !replace) ? target.sections.find(x => x.key === $("bSection").value) : null;
+      sec = sec || target.sections[0];
+      if (!sec) { sec = { key: "main", title: "📋 Мой план на месяц", tasks: [] }; target.sections.push(sec); }
+      parsed.loose.forEach(t => { const x = mk(t); if (x.src !== "manual") linked++; sec.tasks.push(x); });
+    }
+    if (!target.sections.length) target.sections.push({ key: "main", title: "📋 Мой план на месяц", tasks: [] });
+    refreshCarried();
+    saveAll();
+    viewYm = ym;
+    closeBulk();
+    render();
+    window.scrollTo(0, 0);
+    Notify.show(`✅ ${monthLabel(ym)}: блоков ${parsed.sections.length || 0}, задач ${total}, с автофактом ${linked}`);
   }
 
   // ---- Месяцы: переключение, перенос невыполненного ----
@@ -657,7 +790,7 @@
     let n = 0;
     P.sections.forEach(s => s.tasks.forEach(t => {
       if (isAuto(t)) return;
-      const src = detectSrc(t.title);
+      const src = smartSrc(t.title);
       if (src !== "manual") { t.src = src; n++; }
     }));
     persist(); render();
