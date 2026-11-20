@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/components.css">
   <style>
-    .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-top: 16px; padding-bottom: 90px; }
+    .container { max-width: 480px; margin: 0 auto; padding: 16px; padding-top: calc(16px + env(safe-area-inset-top, 0px)); padding-bottom: 90px; }
     .monthbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
     .mb-arrow { width: 48px; height: 48px; flex: 0 0 auto; border-radius: 12px; border: 1px solid var(--border); background: var(--panel); color: var(--accent); font-size: 20px; cursor: pointer; }
     .mb-title { flex: 1; text-align: center; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 6px 8px; cursor: pointer; min-width: 0; }
@@ -238,7 +238,6 @@
   const fmt = x => (+x || 0).toLocaleString("ru-RU", { maximumFractionDigits: 0 });
   const num = v => parseFloat(String(v || "").replace(/\s/g, "").replace(",", ".")) || 0;
   const newId = () => "t_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const clone = x => JSON.parse(JSON.stringify(x));
   const MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
   const MN = ["январ", "феврал", "март", "апрел", "май", "июн", "июл", "август", "сентябр", "октябр", "ноябр", "декабр"];
   const curYm = () => UI.date.local().slice(0, 7);
@@ -289,10 +288,18 @@
   function persist() { plans[viewYm] = P; AppStorage.set("plans", plans); }
   function saveAll() { AppStorage.set("plans", plans); }
 
+  // Приводим дату к YYYY-MM-DD (поддерживает и DD.MM.YYYY)
+  function normDate(v) {
+    const s = String(v || "").trim();
+    const m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+    if (m) return m[3] + "-" + m[2].padStart(2, "0") + "-" + m[1].padStart(2, "0");
+    return s.slice(0, 10);
+  }
+
   // ---- Факт из «Финансов» (поддерживает оба формата журнала) ----
   function planOps() {
     return State.getOps().map(o => {
-      const date = String(o.data || o.date || "").slice(0, 10);
+      const date = normDate(o.data || o.date);
       if (o.tip) {
         const base = Math.abs(+(o.baz != null ? o.baz : o.summa) || 0), s = Math.abs(+o.summa || 0);
         if (o.tip === "Трата") return { date, type: "exp", cat: o.kat || "", s: base };
@@ -415,12 +422,17 @@
     return null;
   }
 
-  // Галочка: если факт вводится вручную и пуст — ставим факт = плану
+  // Галочка: если факт вводится вручную и пуст — ставим факт = плану (с пометкой factAuto).
+  // При снятии галочки такой факт сбрасывается.
   function toggleDone(id, val) {
     const f = findTask(id);
     if (!f) return;
-    f.task.done = val;
-    if (val && !isAuto(f.task) && !num(f.task.fact) && num(f.task.plan) > 0) f.task.fact = num(f.task.plan);
+    const t = f.task;
+    t.done = val;
+    if (!isAuto(t)) {
+      if (val && !num(t.fact) && num(t.plan) > 0) { t.fact = num(t.plan); t.factAuto = true; }
+      else if (!val && t.factAuto) { t.fact = 0; delete t.factAuto; }
+    }
     persist(); render();
   }
 
@@ -428,9 +440,11 @@
     const f = findTask(id);
     if (!f || (field === "fact" && isAuto(f.task))) return;
     f.task[field] = Math.max(0, Math.round(num(input.value)));
+    if (field === "fact") delete f.task.factAuto; // факт задан вручную
     input.value = f.task[field] || "";
     persist();
-    updateTotals();
+    if (field === "plan") render(); // у автозадач может измениться статус «выполнено»
+    else updateTotals();
   }
 
   function toggleEdit() { editMode = !editMode; render(); }
@@ -510,6 +524,7 @@
 
     if (editingTaskId) {
       const f = findTask(editingTaskId);
+      if (data.src === "manual" && data.fact !== num(f.task.fact)) delete f.task.factAuto;
       if (f.sec !== sec) { f.sec.tasks.splice(f.idx, 1); sec.tasks.push({ ...f.task, ...data }); }
       else Object.assign(f.task, data);
     } else {
@@ -535,7 +550,7 @@
     if (/(мопед|скутер)/.test(l) && /фильтр/.test(l)) return "cat:фильтр";
     const cats = new Set(((State.getCategories() || {}).expense || []));
     State.getOps().forEach(o => { const c = o.kat || o.cat; if (c && (o.tip === "Трата" || o.kind === "expense")) cats.add(c); });
-    const STOP = new Set(["скутер", "машина", "оплата", "оплаты"]);
+    const STOP = new Set(["скутер", "машина", "оплата", "оплаты", "прочее", "прочие", "прочих", "прочий", "остаток", "остатки"]);
     for (const c of cats) {
       const w = String(c).toLowerCase().split(/[^a-zа-яё0-9]+/i).filter(x => x.length >= 5 && !STOP.has(x)).find(x => l.includes(x));
       if (w) return "cat:" + w;
@@ -558,14 +573,14 @@
   function parseLine(line) {
     const s = line.trim();
     if (!s) return null;
-    const m = s.match(/^(.*?)[\s\-–—:=]*(\d[\d\s]*(?:[.,]\d+)?)\s*(?:лей|lei|mdl|l)?\s*$/i);
+    const m = s.match(/^(.*?)[\s\-–—:=~]*(\d[\d\s]*(?:[.,]\d+)?)\s*(?:лей|lei|mdl|l)?\s*$/i);
     if (m && m[1].trim()) return { title: m[1].trim(), plan: Math.round(num(m[2])) };
     return { title: s, plan: 0 };
   }
-  // «Название — 1 080 (заметка)» -> {title, plan, note}
+  // «Название — 1 080 (заметка)» -> {title, plan, note}; допускается «~» перед суммой
   function parseTaskText(s) {
     s = s.trim();
-    const m = s.match(/^(.*?)\s+[—–-]\s+(\d[\d\s]*(?:[.,]\d+)?)\s*(?:лей|лея|lei|mdl|l)?\s*(.*)$/i);
+    const m = s.match(/^(.*?)\s+[—–-]\s+~?\s*(\d[\d\s]*(?:[.,]\d+)?)\s*(?:лей|лея|lei|mdl|l)?\s*(.*)$/i);
     if (m && m[1].trim()) {
       const note = (m[3] || "").replace(/^[\s(]+|[\s).]+$/g, "").trim();
       return { title: m[1].trim(), plan: Math.round(num(m[2])), note };
@@ -589,7 +604,7 @@
       if (m) {
         const t = parseTaskText(m[2]); t.done = !!m[1];
         (cur ? cur.tasks : loose).push(t);
-      } else if (!cur || /\s[—–-]\s+\d/.test(line)) {
+      } else if (!cur || /\s[—–-]\s+~?\d/.test(line)) {
         // до первого блока каждая строка — задача; после него — только «Название — сумма»
         const t = parseTaskText(line); t.done = false;
         (cur ? cur.tasks : loose).push(t);
@@ -622,8 +637,8 @@
     "💰 Шаг 5. Личный резерв (на случай квитанции за октябрь)",
     "[ ] Оставить на карте/в конверте — 2809"
   ].join("\n");
-  
-  function fillDecemberм() {
+
+  function fillDecember() {
     $("bText").value = DECEMBER;
     $("bMonth").value = "2026-12";
     $("bReplace").checked = true;
@@ -708,15 +723,15 @@
     viewYm = ym;
     render();
   }
+  // Шаг строго на соседний календарный месяц; если его нет — вперёд предлагаем создать
   function shiftMonth(dir) {
-    const keys = Object.keys(plans).sort();
-    const i = keys.indexOf(viewYm), t = keys[i + dir];
-    if (t) { viewYm = t; render(); window.scrollTo(0, 0); return; }
-    if (dir > 0) {
-      askCreate(addMonth(viewYm, 1));
-    } else {
-      Notify.show("Раньше месяцев нет");
-    }
+    const target = addMonth(viewYm, dir);
+    if (plans[target]) { viewYm = target; render(); window.scrollTo(0, 0); return; }
+    if (dir > 0) { askCreate(target); return; }
+    // назад: ближайший существующий более ранний месяц
+    const earlier = Object.keys(plans).filter(k => k < viewYm).sort().pop();
+    if (earlier) { viewYm = earlier; render(); window.scrollTo(0, 0); }
+    else Notify.show("Раньше месяцев нет");
   }
   function goCurrent() { viewYm = curYm(); render(); window.scrollTo(0, 0); }
 
