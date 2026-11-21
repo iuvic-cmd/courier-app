@@ -1,10 +1,12 @@
 /**
- * theme.js — Тема (авто / светлая / тёмная) + запрет зума страницы.
+ * theme.js — Тема (авто / светлая / тёмная).
+ * Зум страницы не блокируем (доступность). Двойной тап по кнопкам не даёт зум
+ * благодаря touch-action: manipulation в components.css, а поля ввода — font-size 16px.
  */
 (function (global) {
-    // --- Запрет зума (пинч и двойной тап) ---
-    (function disableZoom() {
-        const content = "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover";
+    // viewport: без user-scalable=no / maximum-scale
+    (function setViewport() {
+        const content = "width=device-width, initial-scale=1, viewport-fit=cover";
         let vp = document.querySelector('meta[name="viewport"]');
         if (!vp) {
             vp = document.createElement("meta");
@@ -12,16 +14,6 @@
             document.head.appendChild(vp);
         }
         vp.setAttribute("content", content);
-        // iOS Safari игнорирует user-scalable=no, поэтому дополнительно гасим жесты
-        ["gesturestart", "gesturechange", "gestureend"].forEach(ev =>
-            document.addEventListener(ev, e => e.preventDefault(), { passive: false })
-        );
-        let lastTouch = 0;
-        document.addEventListener("touchend", e => {
-            const now = Date.now();
-            if (now - lastTouch < 300 && e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA") e.preventDefault();
-            lastTouch = now;
-        }, { passive: false });
     })();
 
     const THEME_KEY = "theme"; // "dark" | "light"; ключа нет = следовать системе
