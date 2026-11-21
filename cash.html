@@ -188,6 +188,7 @@
 <script src="js/lib/notify.js"></script>
 <script src="js/lib/guard.js"></script>
 <script src="js/lib/theme.js"></script>
+<script src="js/lib/pin.js"></script>
 <script src="js/domain/state.js"></script>
 <script src="js/domain/migrate.js"></script>
 <script>Schema.run();</script>
@@ -952,6 +953,15 @@
   }
 
   render();
+  // Обновляем страницу при возврате, только если данные изменились и вы ничего не вводите
+  let _sig = "";
+  const sig = () => JSON.stringify([State.getScooter(), State.getFuel(), State.getMileageLog(), State.getWallets()]);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) { _sig = sig(); return; }
+    if (sig() === _sig) return;
+    const a = document.activeElement;
+    if (!(a && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName))) render();
+  });
 </script>
 </body>
 </html>
