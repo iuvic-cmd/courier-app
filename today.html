@@ -124,7 +124,7 @@ function render() {
   const rows = [prevYm(ym), ym].map(m => {
     const s = Calc.salary(m);
     return s.accrued > 0 || s.received > 0
-      ? row("index.html", ruMonth(m), `начислено ${fmt(s.accrued)} · получено ${fmt(s.received)}`, s.due > 0 ? `<span class="bad">ещё ${fmt(s.due)}</span>` : `<span class="ok">✅</span>`) : "";
+      ? row("index.html", ruMonth(m), `начислено ${fmt(s.accrued)} · получено ${fmt(s.received)}${s.closed ? " · закрыт" : ""}`, s.due > 0 ? `<span class="bad">ещё ${fmt(s.due)}</span>` : `<span class="ok">✅</span>`) : "";
   }).join("");
   $("cSalary").innerHTML = `<h2>Зарплата <a href="index.html">Получить →</a></h2>` + (rows || `<div class="empty">Начислений пока нет</div>`);
 
