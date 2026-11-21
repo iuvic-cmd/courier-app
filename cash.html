@@ -188,6 +188,8 @@
 <script src="js/lib/guard.js"></script>
 <script src="js/lib/theme.js"></script>
 <script src="js/domain/state.js"></script>
+<script src="js/domain/migrate.js"></script>
+<script>Schema.run();</script>
 <script src="js/domain/finance-api.js"></script>
 <script>
   Theme.init();
@@ -276,7 +278,7 @@
         if (!Array.isArray(data.history)) data.history = [];
         const h = Object.assign({}, it.entry);
         if (it.refunded && +h.cost > 0 && h.wallet) {
-          h.opId = FinanceAPI.spend({ date: h.date, wallet: h.wallet, amount: h.cost, category: it.category, note: h.note || "" });
+          h.opId = FinanceAPI.spend({ date: h.date, wallet: h.wallet, amount: h.cost, category: it.category, note: h.note || "", ref: { t: it.kind, id: it.id, hid: h.hid } });
         }
         data.history.push(h);
         sortHist(it.kind, data.history);
@@ -287,7 +289,7 @@
       case "restoreFuel": {
         const fuels = State.getFuel(), f = Object.assign({}, it.entry);
         if (it.refunded && f.wallet) {
-          f.opId = FinanceAPI.spend({ date: f.date, wallet: f.wallet, amount: fuelSum(f), category: "Топливо (Скутер)", note: `${f.liters}л` });
+          f.opId = FinanceAPI.spend({ date: f.date, wallet: f.wallet, amount: fuelSum(f), category: "Топливо (Скутер)", note: `${f.liters}л`, ref: { t: "fuel", id: f.id } });
         }
         fuels.splice(Math.min(it.index, fuels.length), 0, f);
         State.setFuel(fuels);
@@ -553,7 +555,7 @@
     const h = (data.history || [])[idx];
     if (!h) return;
     if (!confirm(`Удалить запись от ${fmtDate(h.date)}?`)) return;
-    const refund = h.opId != null && +h.cost > 0 && confirm(`Вернуть ${money(h.cost)} лей на кошелёк «${h.wallet || ""}»?`);
+    const refund = FinanceAPI.exists(h.opId) && +h.cost > 0 && confirm(`Вернуть ${money(h.cost)} лей на кошелёк «${h.wallet || ""}»?`);
     const r = removeServiceCore(kind, id, idx, refund);
     const title = (kind === "comp" ? COMPONENTS : OFFICIALS).find(x => x.id === id).title;
     if (r) pushUndo({ t: "restoreSvc", kind, id, entry: r.entry, refunded: r.refunded, category: `Скутер: ${title}`, label: `удалена запись «${title}» ${fmtDate(r.entry.date)}` });
@@ -853,8 +855,9 @@
       if (!wallet) throw new Error("Кошелёк не выбран");
       if (totalCost <= 0 || price <= 0) throw new Error("Заполните сумму и цену");
       const liters = UI.r2(totalCost / price);
-      const opId = FinanceAPI.spend({ wallet, amount: totalCost, category: "Топливо (Скутер)", note: `${liters}л` });
-      const entry = { id: newId(), date: today(), liters, price, total: totalCost, wallet, opId };
+      const fid = newId();
+      const opId = FinanceAPI.spend({ wallet, amount: totalCost, category: "Топливо (Скутер)", note: `${liters}л`, ref: { t: "fuel", id: fid } });
+      const entry = { id: fid, date: today(), liters, price, total: totalCost, wallet, opId };
       State.setFuel([...State.getFuel(), entry]);
       pushUndo({ t: "fuel", id: entry.id, label: `заправка ${money(totalCost)} лей (${liters} л)` });
       toggleFuelForm();
@@ -867,7 +870,7 @@
     if (!f) return;
     if (!confirm(`Удалить заправку ${fmtDate(f.date)} на ${money(fuelSum(f))} лей?`)) return;
     let refunded = false;
-    if (f.opId != null && confirm(`Вернуть ${money(fuelSum(f))} лей на кошелёк «${f.wallet || ""}»?`)) {
+    if (FinanceAPI.exists(f.opId) && confirm(`Вернуть ${money(fuelSum(f))} лей на кошелёк «${f.wallet || ""}»?`)) {
       try { FinanceAPI.undo(f.opId); refunded = true; } catch (e) { Notify.error(e.message); }
     }
     fuels.splice(i, 1);
@@ -907,18 +910,18 @@
       const wallet = $(`c_wall_${id}`).value;
       const skip = $(`c_skip_${id}`).checked;
       const note = $(`c_note_${id}`).value.trim();
+      const hid = newId();
 
       if (!date) throw new Error("Укажите дату замены");
       if (!(km > 0)) throw new Error("Укажите пробег на момент замены");
 
       let opId = null;
       if (cost > 0 && !skip) {
-        opId = FinanceAPI.spend({ date, wallet, amount: cost, category: `Скутер: ${title}`, note: note || `Замена на ${km} км` });
+        opId = FinanceAPI.spend({ date, wallet, amount: cost, category: `Скутер: ${title}`, note: note || `Замена на ${km} км`, ref: { t: "comp", id, hid } });
       }
 
       // Старую запись не считаем «последней», если уже есть более свежая замена
       if (!data.lastKm || km >= data.lastKm) { data.lastKm = km; data.lastDate = date; }
-      const hid = newId();
       data.history.push({ hid, date, km, cost, wallet: cost > 0 && !skip ? wallet : "", opId, note });
       sortHist("comp", data.history);
       State.setComponent(id, data);
@@ -938,16 +941,16 @@
       const cost = UI.num($(`o_cost_${id}`).value);
       const wallet = $(`o_wall_${id}`).value;
       const skip = $(`o_skip_${id}`).checked;
+      const hid = newId();
 
       if (!date || !next) throw new Error("Укажите даты");
 
       let opId = null;
       if (cost > 0 && !skip) {
-        opId = FinanceAPI.spend({ date, wallet, amount: cost, category: `Скутер: ${title}`, note: `Оплата до ${next}` });
+        opId = FinanceAPI.spend({ date, wallet, amount: cost, category: `Скутер: ${title}`, note: `Оплата до ${next}`, ref: { t: "off", id, hid } });
       }
 
       if (!data.lastDate || date >= data.lastDate) { data.lastDate = date; data.nextDate = next; data.cost = cost; }
-      const hid = newId();
       data.history.push({ hid, date, nextDate: next, cost, wallet: cost > 0 && !skip ? wallet : "", opId });
       sortHist("off", data.history);
       State.setOfficial(id, data);
