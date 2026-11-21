@@ -33,6 +33,7 @@ h1{font-size:24px;margin-bottom:2px}.sub{color:var(--text-dim);font-size:13px;ma
   <div class="card" id="cSalary"></div>
   <div class="card" id="cPay"></div>
   <div class="card" id="cScooter"></div>
+  <div class="card" id="cBackup" style="display:none"></div>
   <div class="card" id="cPlan"></div>
 </div>
 
@@ -51,6 +52,8 @@ h1{font-size:24px;margin-bottom:2px}.sub{color:var(--text-dim);font-size:13px;ma
 <script src="js/lib/notify.js"></script>
 <script src="js/lib/guard.js"></script>
 <script src="js/lib/theme.js"></script>
+<script src="js/lib/pin.js"></script>
+<script src="js/lib/backup.js"></script>
 <script src="js/domain/state.js"></script>
 <script src="js/domain/migrate.js"></script>
 <script>Schema.run();</script>
@@ -98,6 +101,11 @@ function undoLast() {
   render(); Notify.show("↩ Отменено");
 }
 
+function doBackup() {
+  try { const n = Backup.download(); Notify.show("✅ Копия создана, ключей: " + n); render(); }
+  catch (e) { Notify.error(e.message); }
+}
+
 function render() {
   const now = new Date(), ds = UI.date.local(), ym = ds.slice(0, 7);
   $("hdr").textContent = `${now.getDate()} ${ruMonth(ym).toLowerCase().replace(/ь$/, "я").replace(/т$/, "та").replace(/й$/, "я")}`;
@@ -132,19 +140,32 @@ function render() {
     ? sc.map(w => row("cash.html", "🛵 " + esc(w.title), esc(w.note), w.plan ? "~" + fmt(w.plan) + " лей" : "")).join("")
     : `<div class="empty">Менять и оплачивать пока нечего ✅</div>`);
 
+  // 4b. Резервная копия: напоминаем, если её нет или ей больше недели
+  const bd = Backup.daysSince(), cb = $("cBackup");
+  cb.innerHTML = (bd === null || bd >= 7)
+    ? `<h2>Копия данных <a href="settings.html">Настройки →</a></h2><div class="row" style="border:0;padding:0"><span>${bd === null ? "Копию ещё не делали" : "Последняя копия: " + bd + " дн. назад"}<small>Скачайте файл и сохраните в облако или отправьте себе</small></span></div><button class="btn btn-green" style="margin:10px 0 0" onclick="doBackup()">💾 Скачать копию</button>`
+    : "";
+  cb.style.display = cb.innerHTML ? "" : "none";
+
   // 5. План месяца
   const P = Calc.planSummary(ym);
   if (!P) { $("cPlan").innerHTML = `<h2>План месяца <a href="plan.html">План →</a></h2><div class="empty">План на месяц ещё не создан</div>`; return; }
-  const pct = P.plan > 0 ? Math.min(100, Math.round(P.fact / P.plan * 100)) : 0;
+  const pct = P.plan > 0 ? Math.min(100, Math.round(P.covered / P.plan * 100)) : 0;
   const open = P.open.slice().sort((a, b) => b.left - a.left).slice(0, 5);
+  const diff = P.fact - P.plan;
+  const diffTxt = diff === 0 ? "ровно по плану" : diff < 0 ? "на " + fmt(-diff) + " меньше плана" : "на " + fmt(diff) + " больше плана";
+  const head = P.open.length
+    ? `<span>Осталось внести</span><b class="big" style="font-size:20px">${fmt(P.left)} лей</b>`
+    : `<span>✅ Все задачи закрыты</span><b class="big ok" style="font-size:20px">${pct}%</b>`;
   $("cPlan").innerHTML = `<h2>План месяца <a href="plan.html">План →</a></h2>
-    <div class="row" style="border:0;padding-top:0"><span>Осталось внести</span><b class="big" style="font-size:20px">${fmt(P.left)} лей</b></div>
+    <div class="row" style="border:0;padding-top:0">${head}</div>
     <div class="bar"><i style="width:${pct}%"></i></div>
-    <div class="sub" style="margin:0 0 6px">${pct}% · факт ${fmt(P.fact)} из ${fmt(P.plan)} лей · не закрыто задач: ${P.open.length}</div>` +
+    <div class="sub" style="margin:0 0 6px">Факт ${fmt(P.fact)} из ${fmt(P.plan)} лей (${diffTxt}) · не закрыто: ${P.open.length} из ${P.count}</div>` +
     open.map(t => row("plan.html", esc(t.title), "", t.left > 0 ? fmt(t.left) + " лей" : "—")).join("");
 }
 
 render();
+Backup.persist();
 document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
 window.addEventListener("pageshow", e => { if (e.persisted) render(); });
 window.addEventListener("storage", render);
