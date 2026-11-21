@@ -1,4 +1,4 @@
-const CACHE_NAME = 'uchot-v7';
+const CACHE_NAME = 'uchot-v8';
 const ASSETS = [
   './',
   './index.html',
@@ -18,7 +18,6 @@ const ASSETS = [
   './js/domain/tariff.js',
   './js/domain/schedule.js',
   './js/domain/finance-api.js',
-  './js/domain/ledger.js',
   './js/domain/migrate.js',
   './manifest.json',
   './icon-512.PNG' // регистр важен: на GitHub Pages имя файла в верхнем регистре
