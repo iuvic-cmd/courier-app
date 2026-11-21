@@ -18,6 +18,7 @@ const ASSETS = [
   './js/domain/tariff.js',
   './js/domain/schedule.js',
   './js/domain/finance-api.js',
+  './js/domain/selectors.js',
   './js/domain/migrate.js',
   './manifest.json',
   './icon-512.PNG' // регистр важен: на GitHub Pages имя файла в верхнем регистре
