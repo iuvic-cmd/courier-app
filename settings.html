@@ -49,12 +49,14 @@
   <!-- PIN -->
   <div class="card">
     <h3>🔐 PIN-код</h3>
-    <p class="hint">По умолчанию <b>1234</b>. Если забудешь новый, поменяй <code>DEFAULT_PIN</code> в <code>index.html</code>.</p>
+    <p class="hint" id="pinState"></p>
     <div class="form-group">
-      <label>Новый PIN (4 цифры)</label>
+      <label>PIN (4 цифры)</label>
       <input type="text" id="newPin" maxlength="4" inputmode="numeric" class="form-control" placeholder="0000">
     </div>
-    <button class="btn-save" onclick="savePin()">💾 Сменить PIN</button>
+    <button class="btn-save" onclick="savePin()">💾 Включить / сменить PIN</button>
+    <button class="btn-danger" onclick="disablePin()">🔓 Выключить PIN</button>
+    <p class="hint" style="margin: 10px 0 0;">Это защита от случайного просмотра, а не шифрование.</p>
   </div>
 
   <!-- Тариф -->
@@ -62,7 +64,7 @@
     <h3>💰 Тариф</h3>
     <div class="form-group">
       <label>🌙 Ночной (лей)</label>
-      <input type="number" id="tariffNight" class="form-control" placeholder="73">
+      <input type="number" id="tariffNight" class="form-control" placeholder="74">
     </div>
     <div class="form-group">
       <label>📦 Единый (лей)</label>
@@ -93,7 +95,7 @@
   <!-- Импорт -->
   <div class="card">
     <h3>📥 Импорт данных</h3>
-    <p class="hint">Вставьте текст копии (Python-формат или JSON) или выберите файл. Формат определяется сам. Существующие данные с теми же ключами будут заменены.</p>
+    <p class="hint">Вставьте текст копии (Python-формат или JSON) или выберите файл. Формат определяется сам. Существующие данные с теми же ключами будут заменены. Перед импортом автоматически делается снимок.</p>
     <textarea id="importBox" placeholder="Вставь копию данных сюда"></textarea>
     <button class="btn-save" onclick="importFromText()">📥 Импортировать</button>
 
@@ -110,7 +112,8 @@
       <button class="btn-sm-reset" style="background: var(--orange);" onclick="resetSection('days')">📦 Дни и учёт</button>
       <button class="btn-sm-reset" style="background: var(--accent);" onclick="resetSection('fin')">💼 Финансы</button>
       <button class="btn-sm-reset" style="background: var(--purple);" onclick="resetSection('cash')">🛵 Скутер</button>
-      <button class="btn-sm-reset" style="background: var(--text-dim);" onclick="resetSection('settings')">⚙ Настройки</button>
+      <button class="btn-sm-reset" style="background: var(--green);" onclick="resetSection('plan')">📋 План</button>
+      <button class="btn-sm-reset" style="background: var(--text-dim); grid-column: 1 / -1;" onclick="resetSection('settings')">⚙ Настройки</button>
     </div>
     <button class="btn-danger" onclick="resetAllData()" style="margin-top:20px;">🗑 Сбросить ВСЁ</button>
   </div>
@@ -132,6 +135,8 @@
 <script src="js/lib/ui.js"></script>
 <script src="js/lib/notify.js"></script>
 <script src="js/lib/theme.js"></script>
+<script src="js/lib/pin.js"></script>
+<script src="js/lib/backup.js"></script>
 <script src="js/domain/state.js"></script>
 <script src="js/domain/migrate.js"></script>
 <script>Schema.run();</script>
@@ -149,13 +154,27 @@
   refreshThemeButtons();
 
   // --- PIN ---
+  function refreshPin() {
+    document.getElementById("pinState").textContent =
+      AppStorage.get("pin_on", false) === true ? "PIN включён." : "PIN выключен. Введите 4 цифры и нажмите «Включить».";
+  }
   function savePin() {
     const pin = document.getElementById("newPin").value.trim();
     if (!/^\d{4}$/.test(pin)) return Notify.error("PIN должен состоять из 4 цифр");
     AppStorage.set("pin", pin);
+    AppStorage.set("pin_on", true);
+    try { sessionStorage.setItem("appUnlocked", "true"); } catch (e) {}
     document.getElementById("newPin").value = "";
-    Notify.show("✅ PIN успешно изменен");
+    refreshPin();
+    Notify.show("✅ PIN включён");
   }
+  function disablePin() {
+    if (!confirm("Выключить PIN-код?")) return;
+    AppStorage.set("pin_on", false);
+    refreshPin();
+    Notify.show("PIN выключен");
+  }
+  refreshPin();
 
   // --- Тариф ---
   function saveTariff() {
@@ -168,7 +187,7 @@
     Notify.show(`✅ Тариф с ${date}: 🌙${night} / 📦${ap}`);
   }
 
-  // --- Экспорт / импорт: Python-текст и JSON ---
+  // --- Экспорт / импорт: Python-текст и JSON (сборка копии — в backup.js) ---
   let exportFmt = "py";
   try { exportFmt = localStorage.getItem("export_fmt") === "json" ? "json" : "py"; } catch (e) {}
   function setFmt(f) {
@@ -182,17 +201,7 @@
   }
   refreshFmt();
 
-  // Значение -> литерал Python (компактно, как в прежних копиях)
-  function py(v) {
-    if (v === null || v === undefined) return "None";
-    if (v === true) return "True";
-    if (v === false) return "False";
-    if (typeof v === "number") return String(v);
-    if (typeof v === "string") return "'" + v.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t") + "'";
-    if (Array.isArray(v)) return "[" + v.map(py).join(",") + "]";
-    return "{" + Object.keys(v).map(k => py(k) + ":" + py(v[k])).join(",") + "}";
-  }
-  // Литерал Python -> JSON
+  // Литерал Python -> JSON (для импорта)
   function decodePyStr(v) {
     return v.replace(/\\([\s\S])/g, (m, c) => ({ n: "\n", t: "\t", r: "\r" })[c] || c);
   }
@@ -218,28 +227,7 @@
     return o;
   }
 
-  function collectData() {
-    const out = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (!k || !k.startsWith(PREFIX)) continue;
-      try { out[k.slice(PREFIX.length)] = JSON.parse(localStorage.getItem(k)); }
-      catch (e) { out[k.slice(PREFIX.length)] = localStorage.getItem(k); }
-    }
-    return out;
-  }
-  function buildExport() {
-    const data = collectData();
-    const names = Object.keys(data).sort();
-    if (exportFmt === "json") {
-      const o = {};
-      names.forEach(k => o[PREFIX + k] = data[k]);
-      return { text: JSON.stringify(o, null, 2), count: names.length, ext: "json", mime: "application/json" };
-    }
-    const lines = [`# Копия данных «Учёт» ${UI.date.local()}`];
-    names.forEach(k => lines.push(`${k} = ${py(data[k])}`));
-    return { text: lines.join("\n") + "\n", count: names.length, ext: "txt", mime: "text/plain" };
-  }
+  const buildExport = () => Backup.build(exportFmt);
 
   function setExportStatus(msg) { document.getElementById("exportStatus").textContent = msg; }
 
@@ -256,6 +244,7 @@
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+      Backup.mark();
       setExportStatus(`Файл создан. Ключей: ${count}. Если загрузка не началась — используй «Скопировать».`);
     } catch (e) {
       Notify.error("Не удалось создать файл: " + e.message);
@@ -279,7 +268,7 @@
     const fallback = () => { box.select(); box.setSelectionRange(0, text.length); setExportStatus("Выдели текст и скопируй вручную."); };
     try {
       navigator.clipboard.writeText(text).then(
-        () => { Notify.show("✅ Скопировано"); setExportStatus(`Ключей: ${count}`); },
+        () => { Backup.mark(); Notify.show("✅ Скопировано"); setExportStatus(`Ключей: ${count}`); },
         fallback
       );
     } catch (e) { fallback(); }
@@ -314,6 +303,7 @@
       const keys = Object.keys(data);
       if (!keys.length) return Notify.error("В данных нет ключей приложения");
       if (!confirm(`Заменить текущие данные? Будет записано ключей: ${keys.length}.`)) return;
+      Backup.snapshot();
       keys.forEach(k => localStorage.setItem(k, JSON.stringify(data[k])));
       const warn = failed.length ? ` Не разобрано: ${failed.join(", ")}.` : "";
       document.getElementById("importStatus").textContent = `Импортировано ключей: ${keys.length}.${warn}`;
@@ -338,15 +328,17 @@
   // --- Сброс ---
   function resetSection(section) {
     const names = {
-      days: "Дни учёта (календарь, заказы, лог)",
+      days: "Дни учёта (календарь, заказы, лог, закрытые месяцы зарплаты)",
       fin: "Финансы (кошельки, операции, долги, кредиты)",
       cash: "Скутер (пробег, заправки, ТО)",
+      plan: "План (месяцы, автозадачи, настройки плана)",
       settings: "Настройки смен, подмоги, тариф, PIN"
     };
     if (!confirm(`Удалить раздел «${names[section]}»? Это необратимо.`)) return;
+    Backup.snapshot();
 
     let keysToRemove = [];
-    if (section === "days") keysToRemove = ["days", "orders_log"];
+    if (section === "days") keysToRemove = ["days", "orders_log", "salary_closed"];
     else if (section === "fin") keysToRemove = [
       "wallets", "ops", "categories",
       "traty", "dohody", "byudzhety", "celi", "dolgi", "regulyarnye", "kredity", "kartki",
@@ -354,8 +346,9 @@
       "debts", "goals"
     ];
     else if (section === "cash") keysToRemove = ["scooter", "scooter_fuel", "mileage_log", "comp_oil", "comp_air_filter", "comp_belt", "comp_brakes", "scooter_expenses",
-      "official_tech", "official_tax", "official_insurance"];
-    else if (section === "settings") keysToRemove = ["shift", "help", "roster", "tariff", "pin"];
+      "official_tech", "official_tax", "official_insurance", "scooter_undo"];
+    else if (section === "plan") keysToRemove = ["plans", "plan", "plan_archive", "plan_cfg", "plan_auto_off"];
+    else if (section === "settings") keysToRemove = ["shift", "help", "roster", "tariff", "pin", "pin_on"];
 
     keysToRemove.forEach(k => AppStorage.remove(k));
     Notify.show(`✅ Раздел «${names[section]}» удален`);
@@ -364,8 +357,9 @@
 
   function resetAllData() {
     if (!confirm("ВНИМАНИЕ! Удалить ВСЕ данные приложения?")) return;
+    Backup.snapshot();
     Object.keys(localStorage).forEach(key => {
-      if (key.startsWith(PREFIX)) localStorage.removeItem(key);
+      if (key.startsWith(PREFIX) && !key.startsWith(PREFIX + "snap_")) localStorage.removeItem(key);
     });
     alert("Данные удалены. Перезагрузка.");
     location.reload();
