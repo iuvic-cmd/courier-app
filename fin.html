@@ -46,6 +46,7 @@ label{font-size:13px;color:var(--text-dim);display:block;margin-top:6px}
 <script src="js/lib/notify.js"></script>
 <script src="js/lib/guard.js"></script>
 <script src="js/lib/theme.js"></script>
+<script src="js/lib/pin.js"></script>
 <script src="js/domain/state.js"></script>
 <script src="js/domain/migrate.js"></script>
 <script>Schema.run();</script>
@@ -133,33 +134,16 @@ function addOp(tip,w,kat,s,note,dt){
   save()}
 
 function transfer(a,b,s,t,note,dt){
-  s=r2(s);if(!(s>0))throw"Сумма должна быть больше нуля";if(a===b)throw"Выбери разные кошельки";
   if(typeof b==="string"&&b.startsWith("💳 ")){
     const c=S.kartki.find(x=>"💳 "+x.nazvanie===b);if(!c)throw"Карта не найдена";
-    if(cur(a)!=="MDL")throw"Платёж по карте — только с кошелька в леях";
-    if(S.kohelki[a]<s)throw`Недостаточно средств на «${a}»`;
-    if(s>c.dolg)throw"Больше текущего долга по карте ("+fmt(c.dolg)+")";
-    const pp=c.posl;S.kohelki[a]=r2(S.kohelki[a]-s);c.dolg=r2(c.dolg-s);
-    if(!c.min||s>=c.min||c.dolg<=0)c.posl=nowS().slice(0,7);
-    rec("Кредитка",s,a,Object.assign({kat:c.nazvanie,napr:"платёж",cid:c.id,pp,zametka:note},dt?{data:dt}:{}));return}
-  if(S.kohelki[a]<s)throw`Недостаточно средств на «${a}»`;
-  const same=cur(a)===cur(b);if(!same){t=r2(t);if(!(t>0))throw"Укажи сумму к зачислению"}else t=s;
-  S.kohelki[a]=r2(S.kohelki[a]-s);S.kohelki[b]=r2(S.kohelki[b]+t);
-  const z={id:nid(),data:dt||nowS(),tip:same?"Перевод":"Конвертация",summa:s,koshel:a,kuda:b};
-  if(!same)z.summa_kuda=t;if(note)z.zametka=note;S.istorija.push(z);save()}
+    FinanceAPI.payCard({date:dt,wallet:a,cardId:c.id,amount:s,note});
+  }else if(cur(a)===cur(b))FinanceAPI.transfer({date:dt,fromWallet:a,toWallet:b,amount:s,note});
+  else FinanceAPI.convert({date:dt,fromWallet:a,toWallet:b,amount:s,received:t,note});
+  load()}
 
 function undo(id){
-  try{if(FinanceAPI.undo(id)){syncMoney();save();render();toast("Операция отменена")}}catch(e){err(e)}}
-function undoCard(id){const z=ops().find(x=>x.id===id);if(!z)return;
-  try{const c=S.kartki.find(x=>x.id===z.cid);if(!c)throw"Карта удалена";const s=z.summa,n=z.napr;
-    if(n==="покупка"){c.dolg=r2(c.dolg-s);S.traty[z.kat]=Math.max(0,r2((S.traty[z.kat]||0)-s))}
-    else if(n==="проценты"){c.dolg=r2(c.dolg-s)}
-    else if(n==="платёж"){if(!(z.koshel in S.kohelki))throw"Кошелёк из операции удалён";c.dolg=r2(c.dolg+s);S.kohelki[z.koshel]=r2(S.kohelki[z.koshel]+s);c.posl=z.pp||""}
-    else if(n==="снятие"){if(!(z.koshel in S.kohelki)||S.kohelki[z.koshel]<s)throw"На кошельке уже меньше этой суммы";S.kohelki[z.koshel]=r2(S.kohelki[z.koshel]-s);c.dolg=r2(c.dolg-s)}
-    else if(n==="корректировка"){c.dolg=r2(c.dolg-z.d)}
-    else throw"Эту операцию нельзя отменить";
-    c.dolg=Math.max(0,c.dolg);S.istorija.splice(S.istorija.indexOf(z),1);save();render();toast("Операция отменена")
-  }catch(e){err(e)}}
+  try{if(FinanceAPI.undo(id)){load();render();toast("Операция отменена")}}catch(e){err(e)}}
+function undoCard(id){undo(id)}
 
 /* ---- окна ---- */
 function closeSheet(){$("ov").classList.remove("on")}
@@ -221,7 +205,7 @@ function home(){
   ops().forEach(z=>{if((z.data||"").startsWith(ym)&&z.tip==="Доход")inc+=z.baz??z.summa});sp=Calc.month(ym).expenses;
   const last=byDate().slice(0,5).map(row).join("")||'<div class="mut">Пока нет операций</div>';
   const pm=(()=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")})();
-  const salRow=m=>{const x=Calc.salary(m),a=x.accrued,r=x.received;return a>0||r>0?`<div class="row" style="cursor:default"><span>💼 ${m.slice(5)}.${m.slice(0,4)} <span class="mut">начислено ${fmt(a)}</span></span><b class="${a-r>0?"r":"g"}">${a-r>0?"ещё "+fmt(a-r):"получено ✅"}</b></div>`:""};
+  const salRow=m=>{const x=Calc.salary(m),a=x.accrued,r=x.received;return a>0||r>0?`<div class="row" style="cursor:default"><span>💼 ${m.slice(5)}.${m.slice(0,4)} <span class="mut">начислено ${fmt(a)}</span></span><b class="${x.due>0?"r":"g"}">${x.due>0?"ещё "+fmt(x.due):(x.closed?"закрыт ✅":"получено ✅")}</b></div>`:""};
   const salCard=(salRow(pm)+salRow(ym))?`<div class="card"><h2>Зарплата: начислено и получено</h2>${salRow(pm)}${salRow(ym)}</div>`:"";
   return innerNav()+
   `<div class="card"><div class="mut">Всего в кошельках</div><h1>${fmt(tot)} лей</h1><div class="two"><div><div class="mut">Доходы за месяц</div><b class="g">+${fmt(inc)}</b></div><div><div class="mut">Траты за месяц</div><b class="r">-${fmt(sp)}</b></div></div></div>
@@ -247,8 +231,7 @@ function addW(){const n=$("nw").value.trim(),c=$("nc").value,r=num($("nr").value
   if(c!=="MDL"&&!(r>0)&&!(S.kursy[c]>0))return toast("Укажи курс");
   S.kohelki[n]=0;if(c!=="MDL"){S.valyuty[n]=c;if(r>0)S.kursy[c]=r}save();render();toast("Кошелёк добавлен")}
 function walMenu(i){const w=W()[i];mm(`${esc(w)}: ${fmt(S.kohelki[w])} ${esc(sym(w))}`,[["⚖️ Корректировка баланса",()=>corr(i)],["✏️ Переименовать",()=>ren(i)],["🗑 Удалить",()=>delW(i)]])}
-function corr(i){const w=W()[i];mini("Корректировка: "+esc(w),[["r","Реальный остаток ("+sym(w)+")",null,S.kohelki[w],1],["n","Заметка"]],v=>{
-  const r=r2(num(v.r));if(!isFinite(r)||r<0)throw"Остаток не может быть отрицательным";const d=r2(r-S.kohelki[w]);if(!d)throw"Уже совпадает";S.kohelki[w]=r;rec("Корректировка",d,w,{zametka:v.n})},"Сейчас в учёте: "+fmt(S.kohelki[w]))}
+function corr(i){const w=W()[i];mini("Корректировка: "+esc(w),[["r","Реальный остаток ("+sym(w)+")",null,S.kohelki[w],1],["n","Заметка"]],v=>{FinanceAPI.adjust({wallet:w,actual:v.r,note:v.n});load()},"Сейчас в учёте: "+fmt(S.kohelki[w]))}
 function ren(i){const w=W()[i];mini("Переименовать",[["n","Название",null,w]],v=>{
   const n=v.n.replace(/\s+/g," ");if(!n)throw"Пустое название";if(n!==w&&n in S.kohelki)throw"Такой кошелёк уже есть";
   const o={};W().forEach(k=>o[k===w?n:k]=S.kohelki[k]);S.kohelki=o;
@@ -317,17 +300,12 @@ function setB(){mini("Лимит на месяц",[["k","Категория",S.k
 function debt(){const o=S.dolgi.filter(d=>d.ostatok>0);return innerNav()+back("Долги")+`<div class="card">${o.map(d=>`<div class="row" onclick="payD(${d.id})"><div>${d.napr==="Я должен"?"🔴":"🟢"} ${esc(d.kto)}<div class="mut">${esc(d.napr)} · ${esc((d.data||"").slice(0,10))}${d.zametka?" · "+esc(d.zametka):""}</div></div><b>${fmt(d.ostatok)} ${esc(ds(d))}</b></div>`).join("")||'<div class="mut">Открытых долгов нет</div>'}</div><div class="mut">Нажми на долг, чтобы погасить.</div><button class="bt pri" onclick="newD()">Новый долг</button>`}
 function newD(){const NEWP="➕ Новый человек…",people=[...new Set(S.dolgi.map(d=>d.kto))];
   mini("Новый долг",[["t","Тип",["Я взял в долг","Я дал в долг"]],["k","Кто",people.concat(NEWP)],["kn","Имя нового человека"],["w","Кошелёк",W()],["s","Сумма",null,"",1],["n","Заметка"]],v=>{
-    const s=pos(v.s),b=v.t==="Я взял в долг";let kk=v.k;
+    let kk=v.k;
     if(kk===NEWP){kk=v.kn.replace(/\s+/g," ").trim();const ex=people.find(x=>x.toLowerCase()===kk.toLowerCase());if(ex)kk=ex}
-    if(!kk)throw"Укажи, кто";if(!b&&S.kohelki[v.w]<s)throw"Недостаточно средств";
-    S.kohelki[v.w]=r2(S.kohelki[v.w]+(b?s:-s));
-    const d={id:mid(S.dolgi),kto:kk,napr:b?"Я должен":"Мне должны",summa:s,ostatok:s,data:nowS(),zametka:v.n};if(cur(v.w)!=="MDL")d.val=cur(v.w);
-    S.dolgi.push(d);rec("Долг",s,v.w,{kat:kk,napr:b?"взял":"дал",zametka:v.n,did:d.id})});
+    FinanceAPI.debtNew({borrowed:v.t==="Я взял в долг",person:kk,wallet:v.w,amount:v.s,note:v.n});load()});
   const st=()=>{$("m_kn").style.display=$("m_k").value===NEWP?"block":"none"};$("m_k").onchange=st;st()}
 function payD(id){const d=S.dolgi.find(x=>x.id===id),w=W().filter(x=>cur(x)===dv(d));if(!w.length)return toast("Нет кошелька в этой валюте");
-  mini("Погашение: "+esc(d.kto),[["w","Кошелёк",w],["s","Сумма (макс. "+fmt(d.ostatok)+")",null,d.ostatok,1]],v=>{
-    const s=pos(v.s),me=d.napr==="Я должен";if(s>d.ostatok)throw"Больше остатка долга";if(me&&S.kohelki[v.w]<s)throw"Недостаточно средств";
-    S.kohelki[v.w]=r2(S.kohelki[v.w]+(me?-s:s));d.ostatok=r2(d.ostatok-s);rec("Долг",s,v.w,{kat:d.kto,napr:me?"вернул я":"вернули мне",did:d.id})})}
+  mini("Погашение: "+esc(d.kto),[["w","Кошелёк",w],["s","Сумма (макс. "+fmt(d.ostatok)+")",null,d.ostatok,1]],v=>{FinanceAPI.debtPay({debtId:id,wallet:v.w,amount:v.s});load()})}
 
 /* ---- цели ---- */
 function goal(){return innerNav()+back("Цели")+`<div class="card">${Object.keys(S.celi).map((n,i)=>{const g=S.celi[n],p=g.cel>0?Math.round(g.nakopleno/g.cel*100):0;return `<div class="row" onclick="goalMv(${i})"><div>🎯 ${esc(n)}<div class="mut">${fmt(g.nakopleno)} из ${fmt(g.cel)} (${p}%)</div></div><b>${p>=100?"✅":""}</b></div>`}).join("")||'<div class="mut">Целей нет</div>'}</div><div class="mut">Нажми на цель: пополнить, снять или удалить.</div><button class="bt pri" onclick="newG()">Новая цель</button>`}
@@ -335,10 +313,7 @@ function newG(){mini("Новая цель",[["n","Название"],["s","Ск�
 function goalMv(i){const n=Object.keys(S.celi)[i],g=S.celi[n];
   mini("Цель «"+esc(n)+"»",[["t","Действие",["Пополнить цель","Снять из цели","Удалить цель (пустую)"]],["w","Кошелёк",WM()],["s","Сумма",null,"",1]],v=>{
     if(v.t[0]==="У"){if(g.nakopleno>0)throw"В цели есть деньги";delete S.celi[n];return}
-    const s=pos(v.s),inn=v.t[0]==="П";
-    if(inn){if(S.kohelki[v.w]<s)throw"Недостаточно средств";S.kohelki[v.w]=r2(S.kohelki[v.w]-s);g.nakopleno=r2(g.nakopleno+s)}
-    else{if(g.nakopleno<s)throw"В цели меньше";g.nakopleno=r2(g.nakopleno-s);S.kohelki[v.w]=r2(S.kohelki[v.w]+s)}
-    rec("Цель",s,v.w,{kat:n,napr:inn?"in":"out"})})}
+    FinanceAPI.goalMove({goal:n,inn:v.t[0]==="П",wallet:v.w,amount:v.s});load()})}
 
 /* ---- регулярные ---- */
 const regOk=r=>{const d=new Date(),dm=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();return r.posl!==nowS().slice(0,7)&&d.getDate()>=Math.min(r.den,dm)};
@@ -387,10 +362,7 @@ function cred(){const ym=nowS().slice(0,7),lo=S.lombard.filter(b=>b.ostatok>0);
   return innerNav()+back("Кредиты и ломбард")+`<div class="card"><h2>Кредиты (нажми — платёж)</h2>${S.kredity.filter(k=>k.ostatok>0).map(k=>`<div class="row" onclick="payK(${k.id})"><div>🏛 ${esc(k.nazvanie)}<div class="mut">платёж ${fmt(k.plat)} · ${k.den}-го · ${k.stavka}%${k.posl===ym?" · ✅ оплачен":""}</div></div><b>${fmt(k.ostatok)}</b></div>`).join("")||'<div class="mut">Нет</div>'}<button class="bt" onclick="newK()">➕ Кредит</button></div>
 <div class="card"><h2>Ломбард: ${S.lombard_info.stavka}%/мес = ${fmt(lo.reduce((a,b)=>a+b.summa,0)*S.lombard_info.stavka/100)}</h2>${lo.map(b=>`<div class="row" style="cursor:default"><span>🥇 ${esc(b.nazvanie)}</span><b>${fmt(b.ostatok)}</b></div>`).join("")||'<div class="mut">Нет</div>'}<div class="two" style="margin-top:6px"><div><button class="bt" onclick="newL()">➕ Ломбард</button></div><div><button class="bt pri" onclick="payL()">Внести платёж</button></div></div></div>`}
 function payK(id){const k=S.kredity.find(x=>x.id===id);
-  mini("Платёж: "+esc(k.nazvanie),[["w","Кошелёк",WM(),k.koshel],["s","Сумма",null,k.plat,1]],v=>{
-    let s=pos(v.s);const pr=Math.min(s,r2(k.ostatok*k.stavka/1200)),os=r2(Math.min(k.ostatok,s-pr));s=r2(pr+os);
-    if(S.kohelki[v.w]<s)throw"Недостаточно средств";S.kohelki[v.w]=r2(S.kohelki[v.w]-s);k.ostatok=r2(k.ostatok-os);k.posl=nowS().slice(0,7);
-    rec("Кредит",s,v.w,{kat:k.nazvanie,napr:"платёж",osn:os,proc:pr})})}
+  mini("Платёж: "+esc(k.nazvanie),[["w","Кошелёк",WM(),k.koshel],["s","Сумма",null,k.plat,1]],v=>{FinanceAPI.payCredit({creditId:id,wallet:v.w,amount:v.s});load()})}
 function newK(){mini("Новый кредит",[["n","Название"],["p","Платёж в месяц",null,"",1],["d","День (1-31)",null,"",1],["s","Ставка % годовых",null,"",1],["o","Остаток",null,"",1],["w","Кошелёк",W(),"Наличные"]],v=>{
   const p=r2(num(v.p)),d=Math.round(num(v.d))||1,s=num(v.s)||0,o=r2(num(v.o));
   if(!v.n)throw"Название";if(!(p>0))throw"Платёж > 0";if(!(d>=1&&d<=31))throw"День 1-31";if(!(o>=0))throw"Остаток >= 0";
@@ -398,12 +370,7 @@ function newK(){mini("Новый кредит",[["n","Название"],["p","�
 function newL(){mini("Новый ломбард",[["n","Название"],["s","Сумма займа",null,"",1]],v=>{const s=pos(v.s);if(!v.n)throw"Название";S.lombard.push({id:mid(S.lombard),nazvanie:v.n,summa:s,ostatok:s})})}
 function payL(){const ym=nowS().slice(0,7),I=S.lombard_info,LO=()=>S.lombard.filter(b=>b.ostatok>0.005),
   pm=r2(LO().reduce((a,b)=>a+b.summa,0)*I.stavka/100),due=Math.max(0,r2(pm-(I.proc_ym===ym?I.proc_sum:0))),tot=r2(LO().reduce((a,b)=>a+b.ostatok,0));
-  mini("Платёж по ломбарду",[["w","Кошелёк",WM(),I.koshel],["s","Сумма (макс. "+fmt(r2(due+tot))+")",null,due||"",1]],v=>{
-    const s=Math.min(pos(v.s),r2(due+tot));if(S.kohelki[v.w]<s)throw"Недостаточно средств";
-    const pr=Math.min(s,due);let rest=r2(s-pr);const det=[];
-    LO().forEach(b=>{if(rest<=0)return;const x=Math.min(rest,b.ostatok);b.ostatok=r2(b.ostatok-x);rest=r2(rest-x);det.push([b.id,x]);if(b.ostatok<=0.005)b.ostatok=0});
-    S.kohelki[v.w]=r2(S.kohelki[v.w]-s);if(I.proc_ym!==ym){I.proc_ym=ym;I.proc_sum=0}I.proc_sum=r2(I.proc_sum+pr);
-    rec("Ломбард",s,v.w,{kat:"Ломбард",napr:"платёж",osn:r2(s-pr),proc:pr,det})},"Проценты к оплате в этом месяце: "+fmt(due))}
+  mini("Платёж по ломбарду",[["w","Кошелёк",WM(),I.koshel],["s","Сумма (макс. "+fmt(r2(due+tot))+")",null,due||"",1]],v=>{FinanceAPI.payLombard({wallet:v.w,amount:v.s});load()},"Проценты к оплате в этом месяце: "+fmt(due))}
 
 /* ---- активы ---- */
 function asset(){return innerNav()+back("Активы")+`<div class="card">${S.aktivy.map((a,i)=>`<div class="row" onclick="chA(${i})"><span>🏺 ${esc(a.nazvanie)}</span><b>${fmt(a.ocenka)}</b></div>`).join("")||'<div class="mut">Активов нет</div>'}</div><button class="bt pri" onclick="chA(-1)">Добавить актив</button>`}
@@ -429,26 +396,19 @@ function cardNew(){mini("Новая кредитная карта",[["n","Наз
   if(!v.n)throw"Укажи название";if(S.kartki.some(c=>c.nazvanie===v.n))throw"Такая карта уже есть";if(y<0||y>31)throw"День от 1 до 31";
   S.kartki.push({id:mid(S.kartki),nazvanie:v.n,limit:l,dolg:d,stavka:r,den:y,min:m,posl:""})})}
 function cardBuy(id){const c=S.kartki.find(x=>x.id===id);
-  mini("Покупка: "+esc(c.nazvanie),[["k","Категория",S.kat_trat],["s","Сумма",null,"",1],["n","Заметка"]],v=>{
-    const s=pos(v.s),av=r2(c.limit-c.dolg);if(s>av)throw"Превышен лимит. Доступно: "+fmt(Math.max(0,av));
-    c.dolg=r2(c.dolg+s);S.traty[v.k]=r2((S.traty[v.k]||0)+s);rec("Кредитка",s,c.nazvanie,{kat:v.k,napr:"покупка",cid:c.id,zametka:v.n})},"Доступно: "+fmt(Math.max(0,r2(c.limit-c.dolg))))}
+  mini("Покупка: "+esc(c.nazvanie),[["k","Категория",S.kat_trat],["s","Сумма",null,"",1],["n","Заметка"]],v=>{FinanceAPI.cardBuy({cardId:id,category:v.k,amount:v.s,note:v.n});load()},"Доступно: "+fmt(Math.max(0,r2(c.limit-c.dolg))))}
 function cardPay(id){const c=S.kartki.find(x=>x.id===id),ws=WM();if(!ws.length)return toast("Нет кошелька в леях");
-  mini("Платёж по карте: "+esc(c.nazvanie),[["w","Откуда платим",ws],["s","Сумма (долг "+fmt(c.dolg)+")",null,c.min&&c.min<=c.dolg?c.min:c.dolg,1]],v=>{
-    const s=pos(v.s);if(s>c.dolg)throw"Больше текущего долга";if(S.kohelki[v.w]<s)throw"Недостаточно средств на «"+v.w+"»";
-    const pp=c.posl;S.kohelki[v.w]=r2(S.kohelki[v.w]-s);c.dolg=r2(c.dolg-s);if(!c.min||s>=c.min||c.dolg<=0)c.posl=nowS().slice(0,7);
-    rec("Кредитка",s,v.w,{kat:c.nazvanie,napr:"платёж",cid:c.id,pp})})}
+  mini("Платёж по карте: "+esc(c.nazvanie),[["w","Откуда платим",ws],["s","Сумма (долг "+fmt(c.dolg)+")",null,c.min&&c.min<=c.dolg?c.min:c.dolg,1]],v=>{FinanceAPI.payCard({wallet:v.w,cardId:id,amount:v.s});load()})}
 function cardFee(id){const c=S.kartki.find(x=>x.id===id);
-  mini("Проценты / комиссия: "+esc(c.nazvanie),[["s","Сумма (увеличит долг)",null,"",1],["n","Заметка"]],v=>{const s=pos(v.s);c.dolg=r2(c.dolg+s);rec("Кредитка",s,c.nazvanie,{kat:c.nazvanie,napr:"проценты",cid:c.id,zametka:v.n})})}
+  mini("Проценты / комиссия: "+esc(c.nazvanie),[["s","Сумма (увеличит долг)",null,"",1],["n","Заметка"]],v=>{FinanceAPI.cardFee({cardId:id,amount:v.s,note:v.n});load()})}
 function cardCash(id){const c=S.kartki.find(x=>x.id===id);
-  mini("Снять наличные: "+esc(c.nazvanie),[["w","Зачислить на",WM()],["s","Сумма",null,"",1]],v=>{
-    const s=pos(v.s),av=r2(c.limit-c.dolg);if(s>av)throw"Превышен лимит. Доступно: "+fmt(Math.max(0,av));
-    c.dolg=r2(c.dolg+s);S.kohelki[v.w]=r2(S.kohelki[v.w]+s);rec("Кредитка",s,v.w,{kat:c.nazvanie,napr:"снятие",cid:c.id})})}
+  mini("Снять наличные: "+esc(c.nazvanie),[["w","Зачислить на",WM()],["s","Сумма",null,"",1]],v=>{FinanceAPI.cardCash({cardId:id,wallet:v.w,amount:v.s});load()})}
 function cardEdit(id){const c=S.kartki.find(x=>x.id===id);
   mini("Изменить карту",[["n","Название",null,c.nazvanie],["l","Лимит",null,c.limit,1],["d","Долг по выписке",null,c.dolg,1],["r","Ставка, %",null,c.stavka||"",1],["y","День (1-31)",null,c.den||"",1],["m","Мин. платёж",null,c.min||"",1]],v=>{
     const l=pos(v.l),d=Math.abs(r2(num(v.d||0))),r=num(v.r||0)||0,y=Math.round(num(v.y||0))||0,m=r2(num(v.m||0))||0;
     if(!v.n)throw"Укажи название";if(v.n!==c.nazvanie&&S.kartki.some(x=>x.nazvanie===v.n))throw"Такая карта уже есть";if(y<0||y>31)throw"День от 1 до 31";
-    const df=r2(d-c.dolg);Object.assign(c,{nazvanie:v.n,limit:l,stavka:r,den:y,min:m});
-    if(df){c.dolg=d;rec("Кредитка",Math.abs(df),c.nazvanie,{kat:c.nazvanie,napr:"корректировка",cid:c.id,d:df})}})}
+    Object.assign(c,{nazvanie:v.n,limit:l,stavka:r,den:y,min:m});save();
+    FinanceAPI.cardAdjust({cardId:c.id,debt:d});load()})}
 function cardMenu(id){const c=S.kartki.find(x=>x.id===id);
   mm(esc(c.nazvanie),[["📈 Проценты / комиссия",()=>cardFee(id)],["💵 Снять наличные",()=>cardCash(id)],["✏️ Изменить параметры",()=>cardEdit(id)],["🗑 Удалить карту",()=>{if(c.dolg>0)return toast("Сначала погаси долг");ask("Удалить карту «"+c.nazvanie+"»?",()=>{S.kartki.splice(S.kartki.indexOf(c),1);save();render()})}]])}
 
