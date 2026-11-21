@@ -120,36 +120,11 @@ details.tree.d>summary{background:var(--subtle-bg);color:var(--accent);font-weig
 .dialog-buttons button{flex:1;padding:12px;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer}
 .dialog-yes,.dialog-ok{background:#007aff;color:#fff}.dialog-no{background:var(--subtle-bg-2);color:var(--text)}
 
-/* PIN */
-#pinScreen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;transition:transform .05s}
-#pinScreen.active{display:flex}
-.pin-dots{display:flex;gap:16px;margin-bottom:40px}
-.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--text);transition:background .2s}
-.pin-dot.filled{background:var(--text)}
-.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:300px;width:100%}
-.pin-btn{background:var(--card-bg);border:1px solid var(--card-border);border-radius:50%;width:72px;height:72px;font-size:28px;font-weight:500;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0 auto;transition:transform .1s,background .2s;padding:0}
-.pin-btn:active{transform:scale(.9);background:var(--subtle-bg-2)}
-.pin-btn.empty{background:transparent;border:none;pointer-events:none}
-.pin-title{font-size:20px;font-weight:600;margin-bottom:30px;color:var(--text)}
-
 @media(max-width:400px){.container{padding:8px 10px 20px}header h1{font-size:18px}.day{min-height:50px;font-size:11px}.day-number{font-size:13px}.day-label{font-size:7px}}
 @media(max-width:360px){.day{min-height:44px}.day-number{font-size:12px}.type-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
-
-<div id="pinScreen">
-  <div class="pin-title">🔒 Введите PIN-код</div>
-  <div class="pin-dots">
-    <div class="pin-dot" id="dot0"></div><div class="pin-dot" id="dot1"></div><div class="pin-dot" id="dot2"></div><div class="pin-dot" id="dot3"></div>
-  </div>
-  <div class="pin-pad">
-    <button class="pin-btn" onclick="pinInput('1')">1</button><button class="pin-btn" onclick="pinInput('2')">2</button><button class="pin-btn" onclick="pinInput('3')">3</button>
-    <button class="pin-btn" onclick="pinInput('4')">4</button><button class="pin-btn" onclick="pinInput('5')">5</button><button class="pin-btn" onclick="pinInput('6')">6</button>
-    <button class="pin-btn" onclick="pinInput('7')">7</button><button class="pin-btn" onclick="pinInput('8')">8</button><button class="pin-btn" onclick="pinInput('9')">9</button>
-    <button class="pin-btn empty"></button><button class="pin-btn" onclick="pinInput('0')">0</button><button class="pin-btn" onclick="pinDelete()">⌫</button>
-  </div>
-</div>
 
 <div class="container">
 
@@ -247,6 +222,7 @@ details.tree.d>summary{background:var(--subtle-bg);color:var(--accent);font-weig
         <div class="form-group"><label for="salWallet">👛 Кошелёк:</label><select id="salWallet" class="form-control"></select></div>
       </div>
       <button onclick="saveSalary()" class="btn btn-green">💵 Записать получение</button>
+      <button id="salCloseBtn" onclick="toggleSalaryClosed()" class="btn btn-gray" style="margin-top:8px"></button>
       <div id="salList" style="margin-top:10px"></div>
     </div>
   </details>
@@ -287,57 +263,18 @@ details.tree.d>summary{background:var(--subtle-bg);color:var(--accent);font-weig
 <script src="js/lib/notify.js"></script>
 <script src="js/lib/guard.js"></script>
 <script src="js/lib/theme.js"></script>
+<script src="js/lib/pin.js"></script>
 <script src="js/domain/state.js"></script>
 <script src="js/domain/migrate.js"></script>
 <script>Schema.run();</script>
 <script src="js/domain/selectors.js"></script>
 <script src="js/domain/tariff.js"></script>
-<script src="js/domain/schedule.js"></script>
 <script src="js/domain/finance-api.js"></script>
 <script>
 try{Theme.init()}catch(e){}
 
 if(!State.getHelp){State.getHelp=()=>AppStorage.get("help",null);State.setHelp=v=>AppStorage.set("help",v)}
 if(!State.getOrdersLog){State.getOrdersLog=()=>AppStorage.get("orders_log",null);State.setOrdersLog=v=>AppStorage.set("orders_log",v)}
-
-// ==========================================
-//  PIN-КОД
-// ==========================================
-//const DEFAULT_PIN = "1234";
-//let enteredPin = "";
-
-//if (sessionStorage.getItem("appUnlocked") !== "true") {
-    //document.getElementById("pinScreen").classList.add("active");
-//}
-
-//function getPin() {
-    //return AppStorage.get("pin", DEFAULT_PIN);
-//}
-
-//function pinInput(n) {
-    //if (enteredPin.length < 4) { enteredPin += n; updateDots(); }
-    //if (enteredPin.length === 4) setTimeout(checkPin, 150);
-//}
-//function pinDelete() {
-    //if (enteredPin.length > 0) { enteredPin = enteredPin.slice(0, -1); updateDots(); }
-//}
-//function updateDots() {
-    //for (let i = 0; i < 4; i++) {
-        //document.getElementById("dot" + i).classList.toggle("filled", i < enteredPin.length);
-    //}
-//}
-//function checkPin() {
-    //if (enteredPin === getPin()) {
-        //sessionStorage.setItem("appUnlocked", "true");
-        //document.getElementById("pinScreen").classList.remove("active");
-    //} else {
-        //const s = document.getElementById("pinScreen");
-        //s.style.transform = "translateX(10px)";
-        //setTimeout(() => s.style.transform = "translateX(-10px)", 50);
-        //setTimeout(() => s.style.transform = "translateX(0)", 100);
-        //setTimeout(() => { enteredPin = ""; updateDots(); }, 300);
-    //}
-//}
 
 // ==========================================
 //  ХЕЛПЕРЫ
@@ -642,6 +579,9 @@ function renderSalary(){
   const ym=salaryYm(),s=salaryStats(ym),rows=salaryReceipts(ym);
   $("salSummary").innerHTML=`${MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}<br>💼 Начислено: <b>${UI.fmt(s.acc)} лей</b><br>✅ Получено: <b>${UI.fmt(s.rec)} лей</b><br>⏳ К получению: <b>${UI.fmt(s.due)} лей</b>`;
   $("salAmount").placeholder=s.due>0?String(s.due):"0";
+  const cl=Calc.salary(ym).closed;
+  if(cl)$("salSummary").innerHTML+=`<br>✅ <b>Месяц закрыт</b>: считается полученным`;
+  $("salCloseBtn").textContent=cl?"↩ Открыть месяц снова":"✅ Закрыть месяц (получено раньше)";
   const w=State.getWallets()||{},vl=AppStorage.get("valyuty",{})||{},sel=$("salWallet"),prev=sel.value;
   sel.innerHTML=Object.keys(w).filter(n=>(vl[n]||"MDL")==="MDL").map(n=>`<option value="${esc(n)}">${esc(n)} (${UI.fmt(w[n])} лей)</option>`).join("");
   if(prev&&[...sel.options].some(o=>o.value===prev))sel.value=prev;
@@ -660,6 +600,12 @@ function saveSalary(){
     $("salAmount").value="";$("salDate").value=getLocalDateStr();
     renderSalary();Notify.show(`✅ Получено ${UI.fmt(amt)} лей`);
   }catch(e){Notify.error(e.message)}
+}
+function toggleSalaryClosed(){
+  const ym=salaryYm(),cl=Calc.salary(ym).closed;
+  showConfirmDialog(cl?"Открыть месяц снова? Остаток к получению снова будет считаться.":"Закрыть месяц? Он будет считаться полученным целиком, остаток обнулится. Денег на кошельки это не добавит.",()=>{
+    Calc.setSalaryClosed(ym,!cl);renderSalary();Notify.show(cl?"Месяц открыт":"✅ Месяц закрыт");
+  });
 }
 function deleteSalary(id){
   showConfirmDialog("🗑 Удалить получение? Деньги будут списаны с кошелька.",()=>{
