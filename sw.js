@@ -1,7 +1,8 @@
-const CACHE_NAME = 'uchot-v9';
+const CACHE_NAME = 'uchot-v10';
 const ASSETS = [
   './',
   './index.html',
+  './today.html',
   './fin.html',
   './cash.html',
   './stats.html',
@@ -14,13 +15,13 @@ const ASSETS = [
   './js/lib/notify.js',
   './js/lib/guard.js',
   './js/lib/theme.js',
+  './js/lib/pin.js',
+  './js/lib/backup.js',
   './js/domain/state.js',
   './js/domain/tariff.js',
-  './js/domain/backup.js',
-  './js/domain/pin.js',
-  './js/domain/finance-api.js',
-  './js/domain/selectors.js',
   './js/domain/migrate.js',
+  './js/domain/selectors.js',
+  './js/domain/finance-api.js',
   './manifest.json',
   './icon-512.PNG' // регистр важен: на GitHub Pages имя файла в верхнем регистре
 ];
