@@ -432,7 +432,7 @@
   // возвращая только записи, связанные со скутером (Скутер/Топливо).
   function getScooterOps() {
     return State.getOps()
-      .map(o => o.tip ? (o.tip === "Трата" ? { cat: o.kat, wallet: o.koshel } : null) : (o.kind === "expense" ? o : null))
+      .map(o => o.tip === "Трата" ? { cat: o.kat, wallet: o.koshel } : null)
       .filter(o => o && /Скутер|Топливо/.test(o.cat || ""));
   }
   function walletSelectHtml() {
