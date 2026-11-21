@@ -128,6 +128,8 @@
       <div class="stat-item green"><span class="stat-label">💵 Чаевые и др. доходы</span><span class="stat-val" id="statIncome">0</span></div>
       <div class="stat-item red wide"><span class="stat-label">💸 Потрачено</span><span class="stat-val" id="statExpenses">0</span></div>
       <div class="stat-item blue wide"><span class="stat-label">Чистый доход</span><span class="stat-val" id="statNet">0</span></div>
+      <div class="stat-item"><span class="stat-label">💵 Зарплата получена</span><span class="stat-val" id="statSalRecv">0</span></div>
+      <div class="stat-item orange"><span class="stat-label">⏳ К получению</span><span class="stat-val" id="statSalDue">0</span></div>
     </div>
     <div class="note" id="statNote"></div>
   </div>
@@ -447,6 +449,9 @@
     setText("statIncome", fmt(income));
     setText("statExpenses", fmt(expenses));
     setText("statNet", fmt(net));
+    const salRecv = State.getOps().filter(o => o.tip === "Доход" && o.ref && o.ref.t === "salary" && o.ref.ym === prefix).reduce((s, o) => s + num(o.summa), 0);
+    setText("statSalRecv", fmt(salRecv));
+    setText("statSalDue", fmt(Math.max(salary - salRecv, 0)));
     const firstEver = State.getOps().map(o => String(o.data || o.date || "").slice(0, 10)).filter(Boolean).sort()[0] || "";
     let note = "";
     if (firstEver) {
