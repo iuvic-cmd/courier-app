@@ -79,13 +79,20 @@ function load(){
   APP_KEYS.forEach(k=>{S[k]=clone(AppStorage.get(k,d[k]))});
   S.arhiv=clone(AppStorage.get("arhiv",{}));
   if(!S.lombard_info||typeof S.lombard_info!=="object")S.lombard_info=d.lombard_info;
+  BASE=snap();
 }
 
+// Пишем в хранилище только то, что изменилось с последней загрузки/записи:
+// устаревшая копия S не затирает данные, которые поменял другой экран.
+let BASE={};
+const snap=()=>Object.assign({kohelki:JSON.stringify(S.kohelki),istorija:JSON.stringify(S.istorija),cats:JSON.stringify({expense:S.kat_trat,income:S.kat_dohodov})},Object.fromEntries(APP_KEYS.map(k=>[k,JSON.stringify(S[k])])));
 function save(){
-  State.setWallets(S.kohelki);
-  State.setOps(S.istorija);
-  State.setCategories({expense:S.kat_trat,income:S.kat_dohodov});
-  APP_KEYS.forEach(k=>AppStorage.set(k,S[k]));
+  const c=snap(),ch=k=>c[k]!==BASE[k];
+  if(ch("kohelki"))State.setWallets(S.kohelki);
+  if(ch("istorija"))State.setOps(S.istorija);
+  if(ch("cats"))State.setCategories({expense:S.kat_trat,income:S.kat_dohodov});
+  APP_KEYS.forEach(k=>{if(ch(k))AppStorage.set(k,S[k])});
+  BASE=c;
 }
 
 let tab="home",q="",lim=40,RP="m",MF=null,MM=[];
@@ -186,6 +193,7 @@ function editOp(id){const z=ops().find(x=>x.id===id),L=z.tip==="Трата"?S.ka
   mini("Изменить",[["k","Категория",L.includes(z.kat)?L:L.concat(z.kat),z.kat],["s","Сумма",null,z.summa,1],["d","Дата",null,(z.data||"").slice(0,10),0,"date"],["w","Кошелёк",W(),z.koshel],["n","Заметка",null,z.zametka||""]],v=>{
     const s=pos(v.s),sg=z.tip==="Трата"?-1:1,B=Object.assign({},S.kohelki);B[z.koshel]=r2(B[z.koshel]-sg*z.summa);B[v.w]=r2(B[v.w]+sg*s);
     if(B[z.koshel]<0||B[v.w]<0)throw"Не хватит денег на кошельке";S.kohelki=B;
+    const mp=z.tip==="Трата"?S.traty:S.dohody;mp[z.kat]=Math.max(0,r2((mp[z.kat]||0)-z.summa));mp[v.k]=r2((mp[v.k]||0)+s);
     Object.assign(z,{kat:v.k,summa:s,koshel:v.w,zametka:v.n});if(!z.zametka)delete z.zametka;
     if(/^\d{4}-\d{2}-\d{2}$/.test(v.d))z.data=v.d+" "+(((z.data||"").slice(11))||"12:00");
     delete z.baz;if(cur(v.w)!=="MDL")z.baz=r2(s*kurs(cur(v.w)))})}
@@ -285,10 +293,10 @@ function doImp(){
   let d;try{d=JSON.parse(t)}catch(e){d=fromCode(t)}
   if(!d||!d.kohelki||typeof d.kohelki!=="object")return toast("Не удалось распознать данные");
   ask("Заменить текущие данные импортированными?",()=>{
-    const n=DEF();KEYS.forEach(k=>{if(k in d)n[k]=d[k]});S=n;save();
+    const n=DEF();KEYS.forEach(k=>{if(k in d)n[k]=d[k]});S=n;BASE={};save();
     if(Object.keys(S.arhiv||{}).length)AppStorage.set("arhiv",S.arhiv);
     AppStorage.remove("schema");Schema.run();load();tab="home";render();toast("Импортировано")})}
-function rst(){mini("Сброс всех данных",[["c","Введи СБРОС"]],v=>{if(v.c.toUpperCase()!=="СБРОС")throw"Нужно ввести СБРОС";S=DEF();tab="home"},"Удалит всё: историю, долги, кредиты, ломбард. Сначала сделай экспорт!")}
+function rst(){mini("Сброс всех данных",[["c","Введи СБРОС"]],v=>{if(v.c.toUpperCase()!=="СБРОС")throw"Нужно ввести СБРОС";S=DEF();BASE={};tab="home"},"Удалит всё: историю, долги, кредиты, ломбард. Сначала сделай экспорт!")}
 
 /* ---- бюджеты ---- */
 function bud(){const ym=nowS().slice(0,7),sp=k=>r2(ops().filter(z=>z.tip==="Трата"&&z.kat===k&&(z.data||"").startsWith(ym)).reduce((a,z)=>a+(z.baz??z.summa),0));
