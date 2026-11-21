@@ -238,6 +238,19 @@ details.tree.d>summary{background:var(--subtle-bg);color:var(--accent);font-weig
     </div>
   </details>
 
+  <details class="acc" id="salarySection"><summary><span>💵 Зарплата: получение</span></summary>
+    <div class="acc-body">
+      <div class="box" id="salSummary"></div>
+      <div class="form-group" style="margin-top:10px"><label for="salAmount">Сколько получил (пусто = весь остаток):</label><input type="number" inputmode="decimal" id="salAmount" class="form-control" placeholder="0"/></div>
+      <div class="two-col">
+        <div class="form-group"><label for="salDate">📅 Дата:</label><input type="date" id="salDate" class="form-control"/></div>
+        <div class="form-group"><label for="salWallet">👛 Кошелёк:</label><select id="salWallet" class="form-control"></select></div>
+      </div>
+      <button onclick="saveSalary()" class="btn btn-green">💵 Записать получение</button>
+      <div id="salList" style="margin-top:10px"></div>
+    </div>
+  </details>
+
   <details class="acc" id="historySection"><summary><span>🕒 История</span></summary><div class="acc-body"><div id="history" class="tree-wrap"></div></div></details>
   <details class="acc" id="ordersLogSection"><summary><span>🧾 Лог заказов</span></summary><div class="acc-body"><div id="ordersLog" class="tree-wrap"></div></div></details>
 
@@ -398,7 +411,7 @@ function updateMonthCounter(){
   const el=$("monthlyCounter");el.textContent=`📦 ${night+ap}`;el.title=`🌙${night} 📦${ap}`;
   const m=$("monthlyMoney");m.textContent=`💰 ${money.toLocaleString("ru-RU")} лей`;m.title=`К получению за ${MONTHS[currentDate.getMonth()]}`;
 }
-function refreshAll(){renderCal();updateMonthCounter();loadHistory();displayOrdersLog();renderStatusGrid();renderShiftOverview();fillSetupForm()}
+function refreshAll(){renderCal();updateMonthCounter();loadHistory();displayOrdersLog();renderStatusGrid();renderShiftOverview();fillSetupForm();renderSalary()}
 
 // ==========================================
 //  ЛОГИКА ГРАФИКА
@@ -534,7 +547,7 @@ function renderCal(){
   }
   $("calendar").innerHTML=html;
 }
-function changeMonth(dir){currentDate=new Date(currentDate.getFullYear(),currentDate.getMonth()+dir,1);renderCal();updateMonthCounter()}
+function changeMonth(dir){currentDate=new Date(currentDate.getFullYear(),currentDate.getMonth()+dir,1);renderCal();updateMonthCounter();renderSalary()}
 
 function editDay(ds){
   $("mainMenu").open=true;$("edit").open=true;
@@ -614,6 +627,46 @@ function addOrders(){
     closeAddOrdersModal();refreshAll();
     Notify.show(`✅ Добавлено: +${n}🌙 +${a}📦`);
   }catch(e){Notify.error(e.message)}
+}
+
+// ==========================================
+//  ЗАРПЛАТА: начислено (по дням) и получено (операции «Доход» в Финансах)
+// ==========================================
+const salaryYm=()=>currentDate.getFullYear()+"-"+pad(currentDate.getMonth()+1);
+const salaryReceipts=ym=>State.getOps().filter(o=>o.tip==="Доход"&&o.ref&&o.ref.t==="salary"&&o.ref.ym===ym).sort((a,b)=>String(b.data).localeCompare(String(a.data)));
+function salaryStats(ym){
+  const acc=sum(getHistory().filter(d=>d.date.startsWith(ym)),d=>d.total||0),rec=sum(salaryReceipts(ym),o=>+o.summa||0);
+  return{acc,rec,due:Math.max(0,UI.r2(acc-rec))};
+}
+function renderSalary(){
+  if(!$("salSummary"))return;
+  const ym=salaryYm(),s=salaryStats(ym),rows=salaryReceipts(ym);
+  $("salSummary").innerHTML=`${MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}<br>💼 Начислено: <b>${UI.fmt(s.acc)} лей</b><br>✅ Получено: <b>${UI.fmt(s.rec)} лей</b><br>⏳ К получению: <b>${UI.fmt(s.due)} лей</b>`;
+  $("salAmount").placeholder=s.due>0?String(s.due):"0";
+  const w=State.getWallets()||{},vl=AppStorage.get("valyuty",{})||{},sel=$("salWallet"),prev=sel.value;
+  sel.innerHTML=Object.keys(w).filter(n=>(vl[n]||"MDL")==="MDL").map(n=>`<option value="${esc(n)}">${esc(n)} (${UI.fmt(w[n])} лей)</option>`).join("");
+  if(prev&&[...sel.options].some(o=>o.value===prev))sel.value=prev;
+  $("salList").innerHTML=rows.length?rows.map(o=>`<div class="log-row" style="padding:6px 0;border-bottom:1px solid var(--divider)"><span>${esc(String(o.data||"").slice(0,10).split("-").reverse().join("."))} · ${esc(o.koshel||"")}</span><span><b class="pos">+${UI.fmt(o.summa)}</b> <button class="log-del" data-id="${esc(o.id)}" onclick="deleteSalary(this.dataset.id)">🗑</button></span></div>`).join(""):empty("Получений за этот месяц нет");
+}
+function saveSalary(){
+  if(!guardAction("saveSalary"))return;
+  try{
+    const ym=salaryYm(),s=salaryStats(ym);
+    let amt=UI.num($("salAmount").value);
+    if(!(amt>0))amt=s.due;
+    if(!(amt>0)){showAlertDialog("Весь заработок за месяц уже получен. Введите сумму вручную, если это аванс.");return}
+    const wallet=$("salWallet").value;
+    if(!wallet)throw new Error("Кошелёк не выбран");
+    FinanceAPI.receive({date:$("salDate").value||getLocalDateStr(),wallet,amount:amt,category:"Зарплата",note:`Зарплата за ${MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`,ref:{t:"salary",ym},addCategory:true});
+    $("salAmount").value="";$("salDate").value=getLocalDateStr();
+    renderSalary();Notify.show(`✅ Получено ${UI.fmt(amt)} лей`);
+  }catch(e){Notify.error(e.message)}
+}
+function deleteSalary(id){
+  showConfirmDialog("🗑 Удалить получение? Деньги будут списаны с кошелька.",()=>{
+    try{FinanceAPI.undo(id);renderSalary();Notify.show("🗑 Получение удалено")}
+    catch(e){Notify.error(e.message)}
+  });
 }
 
 function groupYMD(items,getDate){
@@ -754,6 +807,7 @@ function initApp(){
   $("dayType").innerHTML=TYPE_KEYS.map(t=>`<option value="${t}">${DAY_TYPES[t].icon} ${DAY_TYPES[t].full}</option>`).join("");
   $("quickTypes").innerHTML=TYPE_KEYS.map(t=>`<button class="type-btn ${t}" onclick="$('dayType').value='${t}'">${DAY_TYPES[t].icon} ${DAY_TYPES[t].short}</button>`).join("");
   $("date").value=getLocalDateStr();
+  $("salDate").value=getLocalDateStr();
   initSetupForm();
   $("calendar").addEventListener("click",e=>{const c=e.target.closest(".day[data-date]");if(c)editDay(c.dataset.date)});
   $("addOrdersModal").addEventListener("click",e=>{if(e.target.id==="addOrdersModal")closeAddOrdersModal()});
