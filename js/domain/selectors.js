@@ -1,7 +1,7 @@
 /**
  * selectors.js — единые расчёты для всех страниц (Calc).
  * Страницы ничего не считают сами: берут цифры отсюда, поэтому не расходятся.
- * Читает только через State / AppStorage, ничего не пишет.
+ * Читает через State / AppStorage; пишет только setSalaryClosed.
  */
 (function (global) {
     const num = v => Number(v) || 0;
@@ -41,7 +41,14 @@
         const days = State.getDays() || {};
         const accrued = sumBy(Object.keys(days).filter(k => k.startsWith(ym)), k => num(days[k].total));
         const received = sumBy(salaryReceipts(ym), o => num(o.summa));
-        return { accrued, received, due: Math.max(0, Math.round((accrued - received) * 100) / 100) };
+        // «Закрытый» месяц считается полученным целиком (для старых месяцев, когда деньги получили раньше)
+        const closed = !!((AppStorage.get("salary_closed", {}) || {})[ym]);
+        return { accrued, received, closed, due: closed ? 0 : Math.max(0, Math.round((accrued - received) * 100) / 100) };
+    }
+    function setSalaryClosed(ym, v) {
+        const m = AppStorage.get("salary_closed", {}) || {};
+        if (v) m[ym] = true; else delete m[ym];
+        AppStorage.set("salary_closed", m);
     }
 
     // Всё за месяц ym ("ГГГГ-ММ")
@@ -73,7 +80,7 @@
             ym, dayKeys, salary: sal, totalOrders: orders, workDays, nightSum: night, apSum: ap,
             expenseOps, incomeOps, expenses, income, net: sal + income - expenses,
             fuels, fuelCost, maintCost, washCost, serviceCost: maintCost - washCost,
-            salaryReceived: sr.received, salaryDue: Math.max(0, sal - sr.received)
+            salaryReceived: sr.received, salaryDue: sr.due
         };
     }
 
@@ -234,16 +241,19 @@
     const raw = AppStorage.get("scooter", {}) || {};
     const sc = { currentKm: +raw.currentKm || 0, startKm: +raw.startKm || 0, purchaseDate: raw.purchaseDate || "" };
     if (!(sc.startKm > 0)) return [];
+    const cfg = AppStorage.get("plan_cfg", {}) || {};
+    const kmSoon = cfg.scKm != null && cfg.scKm !== "" ? +cfg.scKm : SC_KM_SOON;
+    const daysSoon = cfg.scDays != null && cfg.scDays !== "" ? +cfg.scDays : SC_DAYS_SOON;
     const isCur = ym === curYm(), t0 = UI.date.local();
     const [y, m] = ym.split("-").map(Number);
     const eom = ym + "-" + String(new Date(y, m, 0).getDate()).padStart(2, "0");
-    const soon = addDaysStr(t0, SC_DAYS_SOON);
+    const soon = addDaysStr(t0, daysSoon);
     const limit = isCur && soon > eom ? soon : eom;
     const out = [];
     SC_COMPONENTS.forEach(c => {
       const data = AppStorage.get("comp_" + c.id, {}) || {};
       const d = compDue(c, data, sc);
-      const byKm = isCur && d.kmLeft != null && d.kmLeft <= SC_KM_SOON;
+      const byKm = isCur && d.kmLeft != null && d.kmLeft <= kmSoon;
       const byDate = !!d.nextDate && d.nextDate <= limit;
       if (!byKm && !byDate) return;
       const parts = [];
@@ -301,6 +311,9 @@
         return out.sort((a, b) => a.den - b.den);
     }
 
-    global.Calc = { normOp, ops, isExpense, isIncome, salary, salaryReceipts, month, kmDeltas, scooter,
+    // Список всех возможных автозадач скутера (для настроек плана)
+    const scItems = () => SC_COMPONENTS.map(c => ({ id: "sc_comp_" + c.id, title: c.title })).concat(SC_OFFICIALS.map(o => ({ id: "sc_off_" + o.id, title: o.title })));
+
+    global.Calc = { normOp, ops, isExpense, isIncome, salary, setSalaryClosed, salaryReceipts, month, kmDeltas, scooter, scItems,
         planOps, autoFact, planSummary, finWanted, scWanted, paymentsDue };
 })(window);
