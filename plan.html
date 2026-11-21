@@ -384,7 +384,7 @@
     if (!pl) return false;
     const before = JSON.stringify(pl);
     const off = pl.finOff || [];
-    const manual = pl.sections.flatMap(s => s.tasks).filter(t => !t.fin);
+    const manual = pl.sections.flatMap(s => s.tasks).filter(t => !t.fin && !t.sc);
     const wanted = finWanted().filter(w => !off.includes(w.id) && !manual.some(t =>
       (w.agg && t.src === w.agg) || t.src === w.src || String(t.title).toLowerCase().includes(String(w.name).toLowerCase())));
     let sec = pl.sections.find(s => s.key === FIN_KEY);
@@ -405,8 +405,107 @@
   }
   function syncAllFinance() {
     let ch = false;
-    Object.keys(plans).filter(k => k >= curYm()).forEach(k => { if (syncFinance(k)) ch = true; });
+    Object.keys(plans).filter(k => k >= curYm()).forEach(k => { { const a = syncFinance(k), b = syncScooter(k); if (a || b) ch = true; } });
     return ch;
+  }
+
+  // ---- Автозадачи из «Скутера»: расходники и документы, которым пора ----
+  const SC_KEY = "sc_auto";
+  const SC_COMPONENTS = [
+    { id: "oil", title: "🛢 Масло и расходники", interval: 2000, kw: ["масл"] },
+    { id: "air_filter", title: "💨 Воздушный фильтр", interval: 3000, kw: ["фильтр"] },
+    { id: "belt", title: "⚙ Ремень", interval: 10000, kw: ["ремен", "ремн"] },
+    { id: "brakes", title: "🛑 Колодки", interval: 5000, kw: ["колодк"] }
+  ];
+  const SC_OFFICIALS = [
+    { id: "tech", title: "🛠 Техосмотр", kw: ["техосмотр"] },
+    { id: "tax", title: "💰 Налог на дорогу", kw: ["налог"] },
+    { id: "insurance", title: "🛡 Страховка", kw: ["страхов"] }
+  ];
+  const SC_KM_SOON = 300; // за сколько км до замены предлагать задачу
+  const SC_DAYS_SOON = 30; // за сколько дней до срока предлагать задачу
+  const fmtD = ds => String(ds || "").split("-").reverse().join(".");
+  const daysBetween = (a, b) => Math.round((new Date(b + "T12:00:00") - new Date(a + "T12:00:00")) / 86400000);
+  const addDaysStr = (ds, n) => { const d = new Date(ds + "T12:00:00"); d.setDate(d.getDate() + n); return UI.date.local(d); };
+  function addMonthsStr(ds, n) {
+    const [y, m, d] = ds.split("-").map(Number);
+    const dt = new Date(y, m - 1 + n, 1);
+    const last = new Date(dt.getFullYear(), dt.getMonth() + 1, 0).getDate();
+    dt.setDate(Math.min(d, last));
+    return UI.date.local(dt);
+  }
+  function lastCost(hist) {
+    const h = (hist || []).filter(x => +x.cost > 0).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    return h.length ? Math.round(+h[h.length - 1].cost) : 0;
+  }
+  // Та же логика, что в «Скутере»: первая замена — от покупки, дальше — от последней замены
+  function compDue(c, data, sc) {
+    const hist = Array.isArray(data.history) ? data.history : [];
+    const hasLast = hist.length > 0 || +data.lastKm > 0;
+    const base = hasLast
+      ? { km: +data.lastKm || 0, date: data.lastDate || "", ik: +data.intervalKm > 0 ? +data.intervalKm : c.interval, im: +data.intervalMonths || 0 }
+      : { km: sc.startKm, date: sc.purchaseDate || "", ik: +data.firstKm || 0, im: +data.firstMonths || 0 };
+    const nextKm = base.ik > 0 ? base.km + base.ik : null;
+    return {
+      kmLeft: nextKm != null ? Math.round(nextKm - sc.currentKm) : null,
+      nextDate: base.im > 0 && base.date ? addMonthsStr(base.date, base.im) : null
+    };
+  }
+  function scWanted(ym) {
+    const raw = AppStorage.get("scooter", {}) || {};
+    const sc = { currentKm: +raw.currentKm || 0, startKm: +raw.startKm || 0, purchaseDate: raw.purchaseDate || "" };
+    if (!(sc.startKm > 0)) return [];
+    const isCur = ym === curYm(), t0 = UI.date.local();
+    const [y, m] = ym.split("-").map(Number);
+    const eom = ym + "-" + String(new Date(y, m, 0).getDate()).padStart(2, "0");
+    const soon = addDaysStr(t0, SC_DAYS_SOON);
+    const limit = isCur && soon > eom ? soon : eom;
+    const out = [];
+    SC_COMPONENTS.forEach(c => {
+      const data = AppStorage.get("comp_" + c.id, {}) || {};
+      const d = compDue(c, data, sc);
+      const byKm = isCur && d.kmLeft != null && d.kmLeft <= SC_KM_SOON;
+      const byDate = !!d.nextDate && d.nextDate <= limit;
+      if (!byKm && !byDate) return;
+      const parts = [];
+      if (d.kmLeft != null) parts.push(d.kmLeft <= 0 ? "просрочено на " + Math.abs(d.kmLeft) + " км" : "осталось " + d.kmLeft + " км");
+      if (d.nextDate) parts.push("до " + fmtD(d.nextDate));
+      out.push({ id: "sc_comp_" + c.id, title: c.title, plan: lastCost(data.history), src: "cat:Скутер: " + c.title, kw: c.kw, note: parts.join(" · ") });
+    });
+    SC_OFFICIALS.forEach(o => {
+      const data = AppStorage.get("official_" + o.id, {}) || {};
+      if (!data.nextDate || data.nextDate > limit) return;
+      const left = daysBetween(t0, data.nextDate);
+      out.push({
+        id: "sc_off_" + o.id, title: o.title, plan: lastCost(data.history) || Math.round(+data.cost || 0),
+        src: "cat:Скутер: " + o.title, kw: o.kw, note: (left < 0 ? "срок вышел " : "действует до ") + fmtD(data.nextDate)
+      });
+    });
+    return out;
+  }
+  function syncScooter(ym) {
+    const pl = plans[ym];
+    if (!pl) return false;
+    const before = JSON.stringify(pl);
+    const off = pl.finOff || [];
+    const manual = pl.sections.flatMap(s => s.tasks).filter(t => !t.fin && !t.sc);
+    const wanted = scWanted(ym).filter(w => !off.includes(w.id) && !manual.some(t =>
+      t.src === w.src || w.kw.some(k => String(t.title).toLowerCase().includes(k))));
+    let sec = pl.sections.find(s => s.key === SC_KEY);
+    if (!sec && wanted.length) { sec = { key: SC_KEY, title: "🛵 Скутер: пора менять и оплатить", tasks: [] }; pl.sections.push(sec); }
+    if (sec) {
+      wanted.forEach(w => {
+        const t = sec.tasks.find(x => x.id === w.id);
+        if (t) {
+          t.title = w.title; t.src = w.src; t.note = w.note;
+          if (!t.planEdited) t.plan = w.plan;
+        } else sec.tasks.push({ id: w.id, title: w.title, note: w.note, plan: w.plan, fact: 0, done: false, src: w.src, sc: true });
+      });
+      const ids = new Set(wanted.map(w => w.id));
+      sec.tasks = sec.tasks.filter(t => ids.has(t.id) || t.done || factOf(t, ym) > 0);
+      if (!sec.tasks.length && pl.sections.length > 1) pl.sections = pl.sections.filter(s => s !== sec);
+    }
+    return JSON.stringify(pl) !== before;
   }
 
   // ---- Рендер ----
@@ -440,7 +539,7 @@
     return `<div class="task">
       <div class="task-row1">
         <input type="checkbox" ${checked ? "checked" : ""} ${autoDone ? "disabled" : ""} onchange="toggleDone('${esc(t.id)}', this.checked)">
-        <div class="task-title ${checked ? "done" : ""}" onclick="${t.fin ? "Notify.show('Создана автоматически из «Финансов»')" : `openTaskModal('${esc(t.id)}')`}">
+        <div class="task-title ${checked ? "done" : ""}" onclick="${t.fin || t.sc ? "Notify.show('Создана автоматически')" : `openTaskModal('${esc(t.id)}')`}">
           ${esc(t.title)}
           ${auto ? `<div><span class="src-tag">авто · ${esc(srcLabel(t.src))}</span></div>` : ""}
           ${t.from ? `<div><span class="src-tag carry">↪ из ${esc(monthLabel(t.from))}</span></div>` : ""}
@@ -507,7 +606,7 @@
     const f = findTask(id);
     if (!f || (field === "fact" && isAuto(f.task))) return;
     f.task[field] = Math.max(0, Math.round(num(input.value)));
-    if (field === "plan" && f.task.fin) f.task.planEdited = true;
+    if (field === "plan" && (f.task.fin || f.task.sc)) f.task.planEdited = true;
     if (field === "fact") delete f.task.factAuto; // факт задан вручную
     input.value = f.task[field] || "";
     persist();
@@ -519,7 +618,7 @@
 
   function removeTask(id) {
     const f = findTask(id);
-    if (f && confirm("Удалить задачу?")) { if (f.task.fin) (P.finOff = P.finOff || []).push(f.task.id); f.sec.tasks.splice(f.idx, 1); persist(); render(); }
+    if (f && confirm("Удалить задачу?")) { if (f.task.fin || f.task.sc) (P.finOff = P.finOff || []).push(f.task.id); f.sec.tasks.splice(f.idx, 1); persist(); render(); }
   }
 
   function addSection() {
@@ -751,7 +850,7 @@
 
   // ---- Месяцы: переключение, перенос невыполненного ----
   function carryTask(t, prev) {
-    if (t.fin) return null; // автозадачи создаются заново в новом месяце
+    if (t.fin || t.sc) return null; // автозадачи создаются заново в новом месяце
     const p = num(t.plan), f = factOf(t, prev.ym);
     const finished = t.done || (p > 0 && f >= p);
     if (finished) return null;
@@ -785,7 +884,7 @@
       OPS = planOps();
       const prevKeys = Object.keys(plans).filter(k => k < ym).sort();
       plans[ym] = prevKeys.length ? carryOver(plans[prevKeys[prevKeys.length - 1]], ym, carry) : blankPlan(ym);
-      if (ym >= curYm()) syncFinance(ym);
+      if (ym >= curYm()) { syncFinance(ym); syncScooter(ym); }
       saveAll();
     }
     viewYm = ym;
