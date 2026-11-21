@@ -230,12 +230,11 @@
 <script src="js/lib/storage.js"></script>
 <script src="js/lib/ui.js"></script>
 <script src="js/lib/theme.js"></script>
+<script src="js/lib/pin.js"></script>
 <script src="js/domain/state.js"></script>
 <script src="js/domain/migrate.js"></script>
 <script>Schema.run();</script>
 <script src="js/domain/selectors.js"></script>
-<script src="js/domain/schedule.js"></script>
-<script src="js/domain/ledger.js"></script>
 <script>
   Theme.init();
   let currentDate = new Date();
@@ -552,6 +551,8 @@
   }
 
   render();
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
+  window.addEventListener("pageshow", e => { if (e.persisted) render(); });
 </script>
 </body>
 </html>
