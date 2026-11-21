@@ -191,7 +191,7 @@ function row(z){
   const sg=neg?"-":z.tip==="Доход"?"+":"",c=neg?"r":z.tip==="Доход"?"g":"",w=z.koshel||"",ttl=z.kat||(z.kuda?w+" → "+z.kuda:z.tip);
   return `<div class="row" onclick="opMenu(${z.id})"><div>${ic} ${esc(ttl)}<div class="mut">${esc((z.data||"").slice(0,16))} · ${esc(w)}${z.zametka?" · "+esc(z.zametka):""}</div></div><b class="${c}">${sg}${fmt(z.summa)} ${esc(SY[cur(w)]||"")}</b></div>`}
 function opMenu(id){const z=ops().find(x=>x.id===id),it=[];if(!z)return;
-  if(z.ref){toast("Создана в «Скутере» — меняйте там");return}
+  if(z.ref){toast(z.ref.t==="salary"?"Создана в «Учёте» — отменяйте там":"Создана в «Скутере» — меняйте там");return}
   if(z.tip==="Трата"||z.tip==="Доход")it.push(["✏️ Изменить",()=>editOp(id)]);
   if(["Трата","Доход","Перевод","Корректировка"].includes(z.tip))it.push(["↩️ Отменить операцию",()=>ask("Отменить эту операцию?",()=>undo(id))]);
   if(z.tip==="Кредитка")it.push(["↩️ Отменить операцию",()=>ask("Отменить эту операцию?",()=>undoCard(id))]);
@@ -218,9 +218,12 @@ function home(){
   const ws=W(),tot=ws.reduce((a,w)=>a+S.kohelki[w]*kurs(cur(w)),0),ym=nowS().slice(0,7);let sp=0,inc=0;
   ops().forEach(z=>{if((z.data||"").startsWith(ym)){const v=z.baz??z.summa;if(z.tip==="Трата"||(z.tip==="Кредитка"&&(z.napr==="покупка"||z.napr==="проценты")))sp+=v;if(z.tip==="Доход")inc+=v}});
   const last=byDate().slice(0,5).map(row).join("")||'<div class="mut">Пока нет операций</div>';
+  const dy=State.getDays()||{},pm=(()=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")})();
+  const salRow=m=>{let a=0,r=0;Object.keys(dy).forEach(k=>{if(k.startsWith(m))a+=+dy[k].total||0});ops().forEach(z=>{if(z.tip==="Доход"&&z.ref&&z.ref.t==="salary"&&z.ref.ym===m)r+=+z.summa||0});return a>0||r>0?`<div class="row" style="cursor:default"><span>💼 ${m.slice(5)}.${m.slice(0,4)} <span class="mut">начислено ${fmt(a)}</span></span><b class="${a-r>0?"r":"g"}">${a-r>0?"ещё "+fmt(a-r):"получено ✅"}</b></div>`:""};
+  const salCard=(salRow(pm)+salRow(ym))?`<div class="card"><h2>Зарплата: начислено и получено</h2>${salRow(pm)}${salRow(ym)}</div>`:"";
   return innerNav()+
   `<div class="card"><div class="mut">Всего в кошельках</div><h1>${fmt(tot)} лей</h1><div class="two"><div><div class="mut">Доходы за месяц</div><b class="g">+${fmt(inc)}</b></div><div><div class="mut">Траты за месяц</div><b class="r">-${fmt(sp)}</b></div></div></div>
-  <div class="card"><h2>Кошельки</h2>${ws.map(w=>`<div class="row" onclick="go('wal')"><span>${esc(w)} <span class="mut">${esc(cur(w))}</span></span><b>${fmt(S.kohelki[w])} ${esc(sym(w))}</b></div>`).join("")}</div>
+  ${salCard}<div class="card"><h2>Кошельки</h2>${ws.map(w=>`<div class="row" onclick="go('wal')"><span>${esc(w)} <span class="mut">${esc(cur(w))}</span></span><b>${fmt(S.kohelki[w])} ${esc(sym(w))}</b></div>`).join("")}</div>
   <div class="card"><h2>Последние операции</h2>${last}<button class="bt pri" style="margin-top:10px" onclick="go('hist')">🕘 Вся история</button></div>`}
 
 /* ---- история ---- */
