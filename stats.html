@@ -259,10 +259,6 @@
   function normOp(o) {
     if (!o || typeof o !== "object") return null;
     const date = String(o.date || o.data || "").slice(0, 10);
-    if (o.kind) { // старый формат
-      const isAdj = o.kind === "expense" && String(o.cat || "").includes("Корректировка");
-      return { date, kind: isAdj ? "adjust" : o.kind, cat: o.cat, amount: o.amount };
-    }
     const base = num(o.baz != null ? o.baz : o.summa);
     switch (o.tip) {
       case "Трата":
