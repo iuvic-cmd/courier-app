@@ -304,13 +304,13 @@
       const date = normDate(o.data || o.date);
       if (o.tip) {
         const base = Math.abs(+(o.baz != null ? o.baz : o.summa) || 0), s = Math.abs(+o.summa || 0);
-        if (o.tip === "Трата") return { date, type: "exp", cat: o.kat || "", s: base };
+        if (o.tip === "Трата") return { date, type: "exp", cat: o.kat || "", note: o.zametka || "", s: base };
         if (o.tip === "Кредитка") {
-          if (o.napr === "покупка") return { date, type: "exp", cat: o.kat || "", s };
-          if (o.napr === "платёж") return { date, type: "card", s };
+          if (o.napr === "покупка") return { date, type: "exp", cat: o.kat || "", note: o.zametka || "", s };
+          if (o.napr === "платёж") return { date, type: "card", name: o.kat || "", s };
           return null;
         }
-        if (o.tip === "Кредит" && o.napr === "платёж") return { date, type: "credit", s };
+        if (o.tip === "Кредит" && o.napr === "платёж") return { date, type: "credit", name: o.kat || "", s };
         if (o.tip === "Ломбард" && o.napr === "платёж") return { date, type: "lombard", s };
         if (o.tip === "Долг" && o.napr === "вернул я") return { date, type: "debt", cat: o.kat || "", s };
         return null;
@@ -322,6 +322,14 @@
   function autoFact(src, ym) {
     const inM = OPS.filter(o => o.date.startsWith(ym));
     if (src === "lombard" || src === "credit" || src === "card") return inM.filter(o => o.type === src).reduce((a, o) => a + o.s, 0);
+    if (src.startsWith("credit:") || src.startsWith("card:")) {
+      const tp = src.split(":")[0], name = src.slice(tp.length + 1).toLowerCase();
+      return inM.filter(o => o.type === tp && String(o.name || "").toLowerCase() === name).reduce((a, o) => a + o.s, 0);
+    }
+    if (src.startsWith("reg:")) {
+      const name = src.slice(4).toLowerCase();
+      return inM.filter(o => o.type === "exp" && String(o.note || "").toLowerCase() === name).reduce((a, o) => a + o.s, 0);
+    }
     if (src.startsWith("debt:")) {
       const who = src.slice(5).toLowerCase();
       return inM.filter(o => o.type === "debt" && o.cat.toLowerCase().includes(who)).reduce((a, o) => a + o.s, 0);
@@ -333,7 +341,7 @@
     return 0;
   }
   const factOf = (t, ym) => isAuto(t) ? Math.round(autoFact(t.src, ym || (P && P.ym) || curYm())) : num(t.fact);
-  const srcLabel = s => s === "lombard" ? "ломбард" : s === "credit" ? "кредиты" : s === "card" ? "кредитки" : s.startsWith("cat:") ? s.slice(4) : s.startsWith("debt:") ? "долг: " + s.slice(5) : "";
+  const srcLabel = s => s === "lombard" ? "ломбард" : s === "credit" ? "кредиты" : s === "card" ? "кредитки" : s.startsWith("credit:") ? "кредит" : s.startsWith("card:") ? "кредитка" : s.startsWith("reg:") ? "регулярный" : s.startsWith("cat:") ? s.slice(4) : s.startsWith("debt:") ? "долг: " + s.slice(5) : "";
   function detectSrc(title) {
     const l = String(title).toLowerCase();
     if (l.includes("ломбард")) return "lombard";
@@ -341,6 +349,64 @@
     if (l.includes("кредит") || l.includes("consum")) return "credit";
     if (/бензин|топлив/.test(l)) return "cat:Топлив";
     return "manual";
+  }
+
+  // ---- Автозадачи из «Финансов»: кредиты, кредитки, ломбард, регулярные платежи ----
+  const FIN_KEY = "fin_auto";
+  function finWanted() {
+    const out = [];
+    (AppStorage.get("kredity", []) || []).filter(k => +k.ostatok > 0).forEach(k => out.push({
+      id: "fin_credit_" + k.id, title: "🏛 Кредит: " + k.nazvanie, plan: Math.round(+k.plat || 0),
+      src: "credit:" + k.nazvanie, agg: "credit", name: k.nazvanie, note: k.den ? "Платёж до " + k.den + "-го" : ""
+    }));
+    (AppStorage.get("kartki", []) || []).filter(c => +c.dolg > 0).forEach(c => out.push({
+      id: "fin_card_" + c.id, title: "💳 Карта: " + c.nazvanie,
+      plan: Math.round(+c.min > 0 ? Math.min(+c.min, +c.dolg) : +c.dolg),
+      src: "card:" + c.nazvanie, agg: "card", name: c.nazvanie,
+      note: [c.den ? "Платёж до " + c.den + "-го" : "", +c.min > 0 ? "мин. " + fmt(c.min) : ""].filter(Boolean).join(" · ")
+    }));
+    const lo = (AppStorage.get("lombard", []) || []).filter(b => +b.ostatok > 0.005);
+    const info = AppStorage.get("lombard_info", {}) || {};
+    const interest = Math.round(lo.reduce((a, b) => a + (+b.summa || 0), 0) * (+info.stavka || 0) / 100);
+    if (lo.length && interest > 0) out.push({
+      id: "fin_lombard", title: "🥇 Ломбард: проценты", plan: interest, src: "lombard", agg: "lombard",
+      name: "ломбард", note: info.den ? "Платёж до " + info.den + "-го" : ""
+    });
+    (AppStorage.get("regulyarnye", []) || []).filter(r => r.tip === "Трата" && r.nazvanie).forEach(r => out.push({
+      id: "fin_reg_" + r.nazvanie, title: "🔁 " + r.nazvanie, plan: Math.round(+r.summa || 0),
+      src: "reg:" + r.nazvanie, agg: "", name: r.nazvanie, note: r.den ? r.den + "-го числа" : ""
+    }));
+    return out;
+  }
+  // Создаёт/обновляет/убирает автозадачи в месяце ym. Ручные задачи с тем же источником или названием не дублируются.
+  function syncFinance(ym) {
+    const pl = plans[ym];
+    if (!pl) return false;
+    const before = JSON.stringify(pl);
+    const off = pl.finOff || [];
+    const manual = pl.sections.flatMap(s => s.tasks).filter(t => !t.fin);
+    const wanted = finWanted().filter(w => !off.includes(w.id) && !manual.some(t =>
+      (w.agg && t.src === w.agg) || t.src === w.src || String(t.title).toLowerCase().includes(String(w.name).toLowerCase())));
+    let sec = pl.sections.find(s => s.key === FIN_KEY);
+    if (!sec && wanted.length) { sec = { key: FIN_KEY, title: "🏦 Платежи из «Финансов»", tasks: [] }; pl.sections.push(sec); }
+    if (sec) {
+      wanted.forEach(w => {
+        const t = sec.tasks.find(x => x.id === w.id);
+        if (t) {
+          t.title = w.title; t.src = w.src; t.note = w.note;
+          if (!t.planEdited) t.plan = w.plan;
+        } else sec.tasks.push({ id: w.id, title: w.title, note: w.note, plan: w.plan, fact: 0, done: false, src: w.src, fin: true });
+      });
+      const ids = new Set(wanted.map(w => w.id));
+      sec.tasks = sec.tasks.filter(t => ids.has(t.id) || t.done || factOf(t, ym) > 0);
+      if (!sec.tasks.length && pl.sections.length > 1) pl.sections = pl.sections.filter(s => s !== sec);
+    }
+    return JSON.stringify(pl) !== before;
+  }
+  function syncAllFinance() {
+    let ch = false;
+    Object.keys(plans).filter(k => k >= curYm()).forEach(k => { if (syncFinance(k)) ch = true; });
+    return ch;
   }
 
   // ---- Рендер ----
@@ -374,7 +440,7 @@
     return `<div class="task">
       <div class="task-row1">
         <input type="checkbox" ${checked ? "checked" : ""} ${autoDone ? "disabled" : ""} onchange="toggleDone('${esc(t.id)}', this.checked)">
-        <div class="task-title ${checked ? "done" : ""}" onclick="openTaskModal('${esc(t.id)}')">
+        <div class="task-title ${checked ? "done" : ""}" onclick="${t.fin ? "Notify.show('Создана автоматически из «Финансов»')" : `openTaskModal('${esc(t.id)}')`}">
           ${esc(t.title)}
           ${auto ? `<div><span class="src-tag">авто · ${esc(srcLabel(t.src))}</span></div>` : ""}
           ${t.from ? `<div><span class="src-tag carry">↪ из ${esc(monthLabel(t.from))}</span></div>` : ""}
@@ -441,6 +507,7 @@
     const f = findTask(id);
     if (!f || (field === "fact" && isAuto(f.task))) return;
     f.task[field] = Math.max(0, Math.round(num(input.value)));
+    if (field === "plan" && f.task.fin) f.task.planEdited = true;
     if (field === "fact") delete f.task.factAuto; // факт задан вручную
     input.value = f.task[field] || "";
     persist();
@@ -452,7 +519,7 @@
 
   function removeTask(id) {
     const f = findTask(id);
-    if (f && confirm("Удалить задачу?")) { f.sec.tasks.splice(f.idx, 1); persist(); render(); }
+    if (f && confirm("Удалить задачу?")) { if (f.task.fin) (P.finOff = P.finOff || []).push(f.task.id); f.sec.tasks.splice(f.idx, 1); persist(); render(); }
   }
 
   function addSection() {
@@ -684,6 +751,7 @@
 
   // ---- Месяцы: переключение, перенос невыполненного ----
   function carryTask(t, prev) {
+    if (t.fin) return null; // автозадачи создаются заново в новом месяце
     const p = num(t.plan), f = factOf(t, prev.ym);
     const finished = t.done || (p > 0 && f >= p);
     if (finished) return null;
@@ -717,6 +785,7 @@
       OPS = planOps();
       const prevKeys = Object.keys(plans).filter(k => k < ym).sort();
       plans[ym] = prevKeys.length ? carryOver(plans[prevKeys[prevKeys.length - 1]], ym, carry) : blankPlan(ym);
+      if (ym >= curYm()) syncFinance(ym);
       saveAll();
     }
     viewYm = ym;
@@ -823,7 +892,8 @@
   // Обновлять факт при возврате на страницу (данные могли измениться в «Финансах»)
   function refresh() {
     OPS = planOps();
-    if (ensureRollover()) saveAll();
+    const a = ensureRollover(), b = syncAllFinance();
+    if (a || b) saveAll();
     render();
   }
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
@@ -831,6 +901,7 @@
 
   OPS = planOps();
   ensureRollover();
+  syncAllFinance();
   saveAll(); // сразу сохраняем в новом формате (plans)
   viewYm = curYm();
   render();
