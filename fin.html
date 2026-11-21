@@ -46,6 +46,8 @@ label{font-size:13px;color:var(--text-dim);display:block;margin-top:6px}
 <script src="js/lib/guard.js"></script>
 <script src="js/lib/theme.js"></script>
 <script src="js/domain/state.js"></script>
+<script src="js/domain/migrate.js"></script>
+<script>Schema.run();</script>
 <script src="js/domain/finance-api.js"></script>
 
 <script>
@@ -74,23 +76,6 @@ function load(){
   APP_KEYS.forEach(k=>{S[k]=clone(AppStorage.get(k,d[k]))});
   S.arhiv=clone(AppStorage.get("arhiv",{}));
   if(!S.lombard_info||typeof S.lombard_info!=="object")S.lombard_info=d.lombard_info;
-  if(migrateLegacy())save();
-}
-
-function migrateLegacy(){
-  let ch=false,id=Math.max(0,...S.istorija.map(z=>+z.id||0));
-  S.istorija=S.istorija.map(z=>{
-    if(!z||typeof z!=="object"||!z.kind)return z;
-    ch=true;
-    const b={id:++id,data:(z.date||"")+" 00:00",koshel:z.wallet,summa:Math.abs(+z.amount||0)};
-    if(z.note)b.zametka=z.note;
-    if(String(z.cat||"").includes("Корректировка"))return Object.assign(b,{tip:"Корректировка",summa:+z.amount||0});
-    if(z.kind==="expense")return Object.assign(b,{tip:"Трата",kat:z.cat});
-    if(z.kind==="income")return Object.assign(b,{tip:"Доход",kat:z.cat});
-    if(z.kind==="transfer")return Object.assign(b,{tip:"Перевод",kuda:z.toWallet});
-    return z;
-  });
-  return ch;
 }
 
 function save(){
@@ -128,18 +113,22 @@ function rec(tip,s,w,o){
   Object.keys(z).forEach(k=>{if(z[k]===""||z[k]==null)delete z[k]});
   S.istorija.push(z);save()}
 
+function syncMoney(){
+  const c=State.getCategories()||{};
+  S.kohelki=clone(State.getWallets());
+  S.istorija=clone(State.getOps());
+  S.traty=clone(AppStorage.get("traty",{}));
+  S.dohody=clone(AppStorage.get("dohody",{}));
+  S.kat_trat=clone(c.expense||S.kat_trat);
+  S.kat_dohodov=clone(c.income||S.kat_dohodov);
+}
 function addOp(tip,w,kat,s,note,dt){
-  s=r2(s);if(!(s>0))throw"Сумма должна быть больше нуля";kat=(kat||"").trim();if(!kat)throw"Выбери категорию";
-  if(tip==="Трата"){
-    if(S.kohelki[w]<s)throw`Недостаточно средств: на «${w}» только ${fmt(S.kohelki[w])}`;
-    S.kohelki[w]=r2(S.kohelki[w]-s);S.traty[kat]=r2((S.traty[kat]||0)+s);
-    if(!S.kat_trat.includes(kat))S.kat_trat.push(kat);
-  }else{
-    S.kohelki[w]=r2(S.kohelki[w]+s);S.dohody[kat]=r2((S.dohody[kat]||0)+s);
-    if(!S.kat_dohodov.includes(kat))S.kat_dohodov.push(kat);
-  }
-  const o2={kat,zametka:note};if(dt)o2.data=dt;
-  rec(tip,s,w,o2)}
+  kat=(kat||"").trim();if(!kat)throw"Выбери категорию";
+  const p={date:dt,wallet:w,amount:s,category:kat,note,addCategory:true};
+  if(tip==="Трата")FinanceAPI.spend(p);else FinanceAPI.receive(p);
+  syncMoney();
+  const L=tip==="Трата"?S.kat_trat:S.kat_dohodov;if(!L.includes(kat))L.push(kat);
+  save()}
 
 function transfer(a,b,s,t,note,dt){
   s=r2(s);if(!(s>0))throw"Сумма должна быть больше нуля";if(a===b)throw"Выбери разные кошельки";
@@ -158,17 +147,7 @@ function transfer(a,b,s,t,note,dt){
   if(!same)z.summa_kuda=t;if(note)z.zametka=note;S.istorija.push(z);save()}
 
 function undo(id){
-  const z=ops().find(x=>x.id===id);if(!z)return;
-  try{
-    const t=z.tip,w=z.koshel,s=z.summa;
-    if(!["Трата","Доход","Перевод","Корректировка"].includes(t))throw"Эту операцию нельзя отменить здесь";
-    if(!(w in S.kohelki)||(t==="Перевод"&&!(z.kuda in S.kohelki)))throw"Кошелёк из этой операции удалён";
-    if(t==="Трата"){S.kohelki[w]=r2(S.kohelki[w]+s);S.traty[z.kat]=Math.max(0,r2((S.traty[z.kat]||0)-s))}
-    else if(t==="Доход"){if(S.kohelki[w]<s)throw"На кошельке уже меньше этой суммы";S.kohelki[w]=r2(S.kohelki[w]-s);S.dohody[z.kat]=Math.max(0,r2((S.dohody[z.kat]||0)-s))}
-    else if(t==="Корректировка"){if(S.kohelki[w]-s<0)throw"Баланс станет отрицательным";S.kohelki[w]=r2(S.kohelki[w]-s)}
-    else{if(S.kohelki[z.kuda]<s)throw"На кошельке назначения уже меньше";S.kohelki[z.kuda]=r2(S.kohelki[z.kuda]-s);S.kohelki[w]=r2(S.kohelki[w]+s)}
-    S.istorija.splice(S.istorija.indexOf(z),1);save();render();toast("Операция отменена")
-  }catch(e){err(e)}}
+  try{if(FinanceAPI.undo(id)){syncMoney();save();render();toast("Операция отменена")}}catch(e){err(e)}}
 function undoCard(id){const z=ops().find(x=>x.id===id);if(!z)return;
   try{const c=S.kartki.find(x=>x.id===z.cid);if(!c)throw"Карта удалена";const s=z.summa,n=z.napr;
     if(n==="покупка"){c.dolg=r2(c.dolg-s);S.traty[z.kat]=Math.max(0,r2((S.traty[z.kat]||0)-s))}
@@ -212,6 +191,7 @@ function row(z){
   const sg=neg?"-":z.tip==="Доход"?"+":"",c=neg?"r":z.tip==="Доход"?"g":"",w=z.koshel||"",ttl=z.kat||(z.kuda?w+" → "+z.kuda:z.tip);
   return `<div class="row" onclick="opMenu(${z.id})"><div>${ic} ${esc(ttl)}<div class="mut">${esc((z.data||"").slice(0,16))} · ${esc(w)}${z.zametka?" · "+esc(z.zametka):""}</div></div><b class="${c}">${sg}${fmt(z.summa)} ${esc(SY[cur(w)]||"")}</b></div>`}
 function opMenu(id){const z=ops().find(x=>x.id===id),it=[];if(!z)return;
+  if(z.ref){toast("Создана в «Скутере» — меняйте там");return}
   if(z.tip==="Трата"||z.tip==="Доход")it.push(["✏️ Изменить",()=>editOp(id)]);
   if(["Трата","Доход","Перевод","Корректировка"].includes(z.tip))it.push(["↩️ Отменить операцию",()=>ask("Отменить эту операцию?",()=>undo(id))]);
   if(z.tip==="Кредитка")it.push(["↩️ Отменить операцию",()=>ask("Отменить эту операцию?",()=>undoCard(id))]);
@@ -319,7 +299,7 @@ function doImp(){
   ask("Заменить текущие данные импортированными?",()=>{
     const n=DEF();KEYS.forEach(k=>{if(k in d)n[k]=d[k]});S=n;save();
     if(Object.keys(S.arhiv||{}).length)AppStorage.set("arhiv",S.arhiv);
-    tab="home";render();toast("Импортировано")})}
+    AppStorage.remove("schema");Schema.run();load();tab="home";render();toast("Импортировано")})}
 function rst(){mini("Сброс всех данных",[["c","Введи СБРОС"]],v=>{if(v.c.toUpperCase()!=="СБРОС")throw"Нужно ввести СБРОС";S=DEF();tab="home"},"Удалит всё: историю, долги, кредиты, ломбард. Сначала сделай экспорт!")}
 
 /* ---- бюджеты ---- */
