@@ -190,6 +190,7 @@
 <script src="js/domain/state.js"></script>
 <script src="js/domain/migrate.js"></script>
 <script>Schema.run();</script>
+<script src="js/domain/selectors.js"></script>
 <script src="js/domain/finance-api.js"></script>
 <script>
   Theme.init();
@@ -329,18 +330,7 @@
 
   // ---------- Пройденные км по датам и расход топлива ----------
   // Прежние записи: км за день (меньше стартового показания) или показание одометра; новые: trip.
-  function kmDeltas() {
-    const sc = scooterData(), out = [];
-    const log = State.getMileageLog().map(e => ({ date: String(e.date || ""), km: +e.km || 0, trip: e.trip != null ? +e.trip : null })).filter(e => e.date);
-    let odoL = sc.startKm;
-    log.filter(e => e.trip == null && e.km > 0).sort((a, b) => a.date.localeCompare(b.date)).forEach(e => {
-      let d;
-      if (e.km >= sc.startKm) { d = Math.max(0, e.km - odoL); odoL = Math.max(odoL, e.km); } else { d = e.km; odoL += e.km; }
-      out.push({ date: e.date, km: d });
-    });
-    log.filter(e => e.trip != null).forEach(e => out.push({ date: e.date, km: e.trip }));
-    return out;
-  }
+  const kmDeltas = () => Calc.kmDeltas();
   const kmInRange = (a, b) => kmDeltas().filter(d => d.date >= a && d.date <= b).reduce((s, d) => s + d.km, 0);
   const MONTHS_RU = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
   const monthLabel = ym => MONTHS_RU[+ym.slice(5, 7) - 1] + " " + ym.slice(0, 4);
