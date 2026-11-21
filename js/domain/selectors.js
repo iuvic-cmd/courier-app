@@ -263,19 +263,22 @@
     return out;
   }
 
-    // Итоги плана месяца: план, факт, остаток и невыполненные задачи
+    // Итоги плана месяца. «Осталось внести» — только по незакрытым задачам: закрытая задача
+    // (галочка или факт не меньше плана) больше ничего не должна, даже если факт меньше плана.
     function planSummary(ym) {
         const pl = (AppStorage.get("plans", {}) || {})[ym];
         if (!pl) return null;
         const OPS = planOps();
-        let plan = 0, fact = 0;
+        let plan = 0, fact = 0, covered = 0, count = 0;
         const open = [];
         pl.sections.forEach(sec => sec.tasks.forEach(t => {
             const auto = isAuto(t), p = pnum(t.plan), f = auto ? Math.round(autoFact(t.src, ym, OPS)) : pnum(t.fact);
-            plan += p; fact += f;
-            if (!(t.done || (auto && p > 0 && f >= p))) open.push({ title: t.title, plan: p, fact: f, left: Math.max(0, p - f) });
+            const done = !!(t.done || (auto && p > 0 && f >= p));
+            plan += p; fact += f; count++;
+            covered += done ? p : Math.min(f, p);
+            if (!done) open.push({ title: t.title, plan: p, fact: f, left: Math.max(0, p - f) });
         }));
-        return { plan, fact, left: Math.max(0, plan - fact), open };
+        return { plan, fact, count, covered, diff: fact - plan, left: open.reduce((a, t) => a + t.left, 0), open };
     }
 
     // Платежи из «Финансов», которые пора внести (кредиты, карты, ломбард, регулярные траты)
