@@ -2,7 +2,7 @@
   "name": "Учёт курьера",
   "short_name": "Учёт",
   "description": "Учёт смен, скутера и финансов",
-  "start_url": "./index.html",
+  "start_url": "./today.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f2f2f7",
