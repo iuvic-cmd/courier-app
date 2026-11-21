@@ -50,15 +50,13 @@
     global.Schema = {
         VERSION,
         run() {
-            let v = +AppStorage.get("schema", 0) || 0;
-            // Импорт старой копии мог откатить ключ schema — миграции идемпотентны, просто прогоняем снова
-            const start = v;
-            while (v < VERSION) {
-                v++;
+            // Миграции идемпотентны (сами проверяют, есть ли что менять), поэтому гоняем все:
+            // так подхватывается и импорт старой копии, где ключ schema мог остаться новым.
+            for (let v = 1; v <= VERSION; v++) {
                 try { MIGRATIONS[v](); }
                 catch (e) { console.error("Schema: миграция v" + v + " не удалась", e); return false; }
             }
-            if (v !== start) AppStorage.set("schema", v);
+            if ((+AppStorage.get("schema", 0) || 0) !== VERSION) AppStorage.set("schema", VERSION);
             return true;
         }
     };
