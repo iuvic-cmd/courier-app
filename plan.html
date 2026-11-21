@@ -315,7 +315,6 @@
         if (o.tip === "Долг" && o.napr === "вернул я") return { date, type: "debt", cat: o.kat || "", s };
         return null;
       }
-      if (o.kind === "expense" && !/корректиров/i.test(o.cat || "")) return { date, type: "exp", cat: o.cat || "", s: Math.abs(+o.amount || 0) };
       return null;
     }).filter(Boolean);
   }
@@ -551,7 +550,7 @@
     if (/(мопед|скутер)/.test(l) && /масл/.test(l)) return "cat:масл";
     if (/(мопед|скутер)/.test(l) && /фильтр/.test(l)) return "cat:фильтр";
     const cats = new Set(((State.getCategories() || {}).expense || []));
-    State.getOps().forEach(o => { const c = o.kat || o.cat; if (c && (o.tip === "Трата" || o.kind === "expense")) cats.add(c); });
+    State.getOps().forEach(o => { if (o.tip === "Трата" && o.kat) cats.add(o.kat); });
     const STOP = new Set(["скутер", "машина", "оплата", "оплаты", "прочее", "прочие", "прочих", "прочий", "остаток", "остатки"]);
     for (const c of cats) {
       const w = String(c).toLowerCase().split(/[^a-zа-яё0-9]+/i).filter(x => x.length >= 5 && !STOP.has(x)).find(x => l.includes(x));
