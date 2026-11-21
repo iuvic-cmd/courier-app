@@ -1,10 +1,13 @@
 /**
- * finance-api.js — Единственный способ менять балансы и добавлять операции из других страниц.
- * Пишет операции в том же формате, что и fin.html (tip / summa / kat / koshel / data).
+ * finance-api.js — Единственный способ менять балансы и добавлять операции.
+ * Формат операции: id, data, tip, summa, koshel, kat, kuda, zametka, baz, ref.
+ * ref = { t: "fuel"|"comp"|"off", id, hid? } — ссылка на запись-источник (скутер и т.д.).
  */
 (function (global) {
     const pad = n => String(n).padStart(2, "0");
+    // date: null | "ГГГГ-ММ-ДД" | "ГГГГ-ММ-ДД ЧЧ:ММ"
     const stamp = date => {
+        if (date && String(date).length > 10) return String(date);
         const d = new Date();
         return (date || UI.date.local()) + " " + pad(d.getHours()) + ":" + pad(d.getMinutes());
     };
@@ -16,12 +19,19 @@
         const rate = +(AppStorage.get("kursy", {}) || {})[c] || 0;
         return rate ? UI.r2(amount * rate) : null;
     };
-    // Накопительные итоги по категориям, которые ведёт fin.html (traty / dohody)
+    // Накопительные итоги по категориям (traty / dohody)
     const bump = (key, cat, v) => {
         if (!cat) return;
         const m = AppStorage.get(key, {}) || {};
         m[cat] = Math.max(0, UI.r2((m[cat] || 0) + v));
         AppStorage.set(key, m);
+    };
+    // Добавляет категорию в список, только если список уже хранится (не затираем дефолты «Финансов»)
+    const ensureCat = (kind, cat) => {
+        if (!cat || !AppStorage.has("categories")) return;
+        const c = State.getCategories();
+        const list = c[kind] = Array.isArray(c[kind]) ? c[kind] : [];
+        if (!list.includes(cat)) { list.push(cat); State.setCategories(c); }
     };
 
     const FinanceAPI = {
@@ -34,9 +44,13 @@
             return op.id;
         },
 
+        exists(opId) {
+            return opId != null && State.getOps().some(o => String(o.id) === String(opId));
+        },
+
         // Трата (уменьшает баланс кошелька)
-        spend({ date, wallet, amount, category, note }) {
-            amount = UI.num(amount);
+        spend({ date, wallet, amount, category, note, ref, addCategory }) {
+            amount = UI.r2(UI.num(amount));
             if (amount <= 0) throw new Error("Сумма должна быть больше нуля");
 
             const wallets = State.getWallets();
@@ -46,13 +60,14 @@
             wallets[wallet] = UI.r2(wallets[wallet] - amount);
             State.setWallets(wallets);
             bump("traty", category, amount);
+            if (addCategory) ensureCat("expense", category);
 
-            return this._addOp({ data: stamp(date), tip: "Трата", summa: amount, koshel: wallet, kat: category, zametka: note, baz: toBase(wallet, amount) });
+            return this._addOp({ data: stamp(date), tip: "Трата", summa: amount, koshel: wallet, kat: category, zametka: note, baz: toBase(wallet, amount), ref });
         },
 
         // Доход (увеличивает баланс кошелька)
-        receive({ date, wallet, amount, category, note }) {
-            amount = UI.num(amount);
+        receive({ date, wallet, amount, category, note, ref, addCategory }) {
+            amount = UI.r2(UI.num(amount));
             if (amount <= 0) throw new Error("Сумма должна быть больше нуля");
 
             const wallets = State.getWallets();
@@ -61,13 +76,14 @@
             wallets[wallet] = UI.r2(wallets[wallet] + amount);
             State.setWallets(wallets);
             bump("dohody", category, amount);
+            if (addCategory) ensureCat("income", category);
 
-            return this._addOp({ data: stamp(date), tip: "Доход", summa: amount, koshel: wallet, kat: category, zametka: note, baz: toBase(wallet, amount) });
+            return this._addOp({ data: stamp(date), tip: "Доход", summa: amount, koshel: wallet, kat: category, zametka: note, baz: toBase(wallet, amount), ref });
         },
 
         // Перевод между кошельками одной валюты (конвертация — только в «Финансах»)
         transfer({ date, fromWallet, toWallet, amount, note }) {
-            amount = UI.num(amount);
+            amount = UI.r2(UI.num(amount));
             if (amount <= 0) throw new Error("Сумма должна быть больше нуля");
             if (fromWallet === toWallet) throw new Error("Выберите разные кошельки");
 
@@ -83,26 +99,35 @@
             return this._addOp({ data: stamp(date), tip: "Перевод", summa: amount, koshel: fromWallet, kuda: toWallet, zametka: note });
         },
 
-        // Удаление операции (полный откат)
+        // Полный откат операции. Возвращает true, если откатили; бросает Error, если нельзя.
+        // Типы Кредит / Ломбард / Кредитка / Долг / Цель / Конвертация откатываются только в «Финансах».
         undo(opId) {
             const ops = State.getOps();
             const idx = ops.findIndex(o => String(o.id) === String(opId));
-            if (idx === -1) return;
+            if (idx === -1) return false;
 
-            const op = ops[idx];
-            const wallets = State.getWallets();
-            const tip = op.tip || ({ expense: "Трата", income: "Доход", transfer: "Перевод" })[op.kind];
-            const s = Math.abs(+op.summa || +op.amount || 0);
-            const w = op.koshel || op.wallet, to = op.kuda || op.toWallet, cat = op.kat || op.cat;
+            const op = ops[idx], wallets = State.getWallets();
+            const tip = op.tip, s = Math.abs(+op.summa || 0), w = op.koshel, to = op.kuda, cat = op.kat;
+            if (!["Трата", "Доход", "Перевод", "Корректировка"].includes(tip)) throw new Error("Эту операцию можно отменить только в «Финансах»");
+            if (wallets[w] === undefined || (tip === "Перевод" && wallets[to] === undefined)) throw new Error("Кошелёк из этой операции удалён");
 
             if (tip === "Трата") { wallets[w] = UI.r2(wallets[w] + s); bump("traty", cat, -s); }
-            else if (tip === "Доход") { wallets[w] = UI.r2(wallets[w] - s); bump("dohody", cat, -s); }
-            else if (tip === "Перевод") { wallets[w] = UI.r2(wallets[w] + s); wallets[to] = UI.r2(wallets[to] - s); }
-            else return; // прочие типы отменяются только в «Финансах»
+            else if (tip === "Доход") {
+                if (wallets[w] < s) throw new Error("На кошельке уже меньше этой суммы");
+                wallets[w] = UI.r2(wallets[w] - s); bump("dohody", cat, -s);
+            } else if (tip === "Корректировка") {
+                const v = UI.r2(wallets[w] - (+op.summa || 0));
+                if (v < 0) throw new Error("Баланс станет отрицательным");
+                wallets[w] = v;
+            } else {
+                if (wallets[to] < s) throw new Error("На кошельке назначения уже меньше");
+                wallets[w] = UI.r2(wallets[w] + s); wallets[to] = UI.r2(wallets[to] - s);
+            }
 
             ops.splice(idx, 1);
             State.setOps(ops);
             State.setWallets(wallets);
+            return true;
         }
     };
 
