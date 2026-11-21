@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>🏠 Сегодня</title>
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/components.css">
+<style>
+.container{max-width:480px;margin:0 auto;padding:16px 16px 90px}
+h1{font-size:24px;margin-bottom:2px}.sub{color:var(--text-dim);font-size:13px;margin-bottom:14px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin-bottom:12px}
+.card h2{font-size:13px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;display:flex;justify-content:space-between}
+.card h2 a{color:var(--accent);text-decoration:none;text-transform:none;letter-spacing:0;font-weight:600}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--border);font-size:14px;color:var(--text);text-decoration:none}
+.card h2+.row{border-top:0}
+.row small{display:block;color:var(--text-dim);font-size:12px;margin-top:1px}
+.row b{white-space:nowrap}
+.big{font-size:28px;font-weight:700}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:13px;font-weight:600;background:var(--help-bg);color:var(--accent);margin-bottom:6px}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.btns .btn{margin:0}
+.bad{color:var(--red)}.ok{color:var(--green)}
+.bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin:8px 0}.bar i{display:block;height:100%;background:var(--green)}
+.empty{color:var(--text-dim);font-size:13px;padding:2px 0}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1 id="hdr">Сегодня</h1>
+  <div class="sub" id="sub"></div>
+  <div class="card" id="cDay"></div>
+  <div class="card" id="cSalary"></div>
+  <div class="card" id="cPay"></div>
+  <div class="card" id="cScooter"></div>
+  <div class="card" id="cPlan"></div>
+</div>
+
+<nav class="tabbar"><div class="in">
+  <a href="today.html" class="active"><span>🏠</span>Сегодня</a>
+  <a href="index.html"><span>📦</span>Учёт</a>
+  <a href="fin.html"><span>💼</span>Финансы</a>
+  <a href="cash.html"><span>🛵</span>Скутер</a>
+  <a href="stats.html"><span>📈</span>Отчёты</a>
+  <a href="plan.html"><span>📋</span>План</a>
+  <a href="settings.html"><span>⚙</span>Настройки</a>
+</div></nav>
+
+<script src="js/lib/storage.js"></script>
+<script src="js/lib/ui.js"></script>
+<script src="js/lib/notify.js"></script>
+<script src="js/lib/guard.js"></script>
+<script src="js/lib/theme.js"></script>
+<script src="js/domain/state.js"></script>
+<script src="js/domain/migrate.js"></script>
+<script>Schema.run();</script>
+<script src="js/domain/selectors.js"></script>
+<script src="js/domain/tariff.js"></script>
+<script>
+Theme.init();
+const $ = id => document.getElementById(id), esc = UI.esc, fmt = UI.fmt;
+const DAYT = { work: "🏢 Рабочий", help: "🤝 Подмога", short: "⚡ Короткий", replace: "🔄 Замена", short_replace: "⚡🔄 Короткая замена", weekend: "🏖 Выходной" };
+const MONTHS = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+const DOW = ["воскресенье","понедельник","вторник","среда","четверг","пятница","суббота"];
+const prevYm = ym => { const [y, m] = ym.split("-").map(Number), d = new Date(y, m - 2, 1); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); };
+const ruMonth = ym => MONTHS[+ym.slice(5, 7) - 1];
+const row = (href, left, sub, right) => `<a class="row" href="${href}"><span>${left}${sub ? `<small>${sub}</small>` : ""}</span><b>${right}</b></a>`;
+
+// Заказы за сегодня: пишем в те же данные, что и «Учёт» (день + лог заказов)
+function addOrders(n, a) {
+  if (!guardAction("todayAdd", 300)) return;
+  try {
+    const ds = UI.date.local(), days = State.getDays() || {};
+    const r = days[ds] || { type: "work", night: 0, ap: 0, total: 0 };
+    r.night = (+r.night || 0) + n; r.ap = (+r.ap || 0) + a;
+    r.total = Tariff.calcTotal(ds, r.night, r.ap); r.generated = false;
+    days[ds] = r; State.setDays(days);
+    const log = AppStorage.get("orders_log", null);
+    if (Array.isArray(log)) { // если лога ещё нет, «Учёт» сам соберёт его из дней
+      log.push({ id: Date.now() + "_" + Math.random().toString(36).slice(2, 7), date: ds, time: new Date().toLocaleString(), addedNight: n, addedAp: a });
+      AppStorage.set("orders_log", log);
+    }
+    render(); Notify.show(`✅ +${n}🌙 +${a}📦`);
+  } catch (e) { Notify.error(e.message); }
+}
+function undoLast() {
+  if (!guardAction("todayUndo", 300)) return;
+  const ds = UI.date.local(), log = AppStorage.get("orders_log", null);
+  if (!Array.isArray(log)) return Notify.error("Откройте «Учёт» один раз, чтобы включить отмену");
+  let i = -1; log.forEach((e, k) => { if (e.date === ds) i = k; });
+  if (i < 0) return Notify.error("Сегодня нечего отменять");
+  const e = log[i], days = State.getDays() || {}, r = days[ds];
+  if (r) {
+    r.night = Math.max(0, (+r.night || 0) - (e.addedNight || 0)); r.ap = Math.max(0, (+r.ap || 0) - (e.addedAp || 0));
+    r.total = Tariff.calcTotal(ds, r.night, r.ap); State.setDays(days);
+  }
+  log.splice(i, 1); AppStorage.set("orders_log", log);
+  render(); Notify.show("↩ Отменено");
+}
+
+function render() {
+  const now = new Date(), ds = UI.date.local(), ym = ds.slice(0, 7);
+  $("hdr").textContent = `${now.getDate()} ${ruMonth(ym).toLowerCase().replace(/ь$/, "я").replace(/т$/, "та").replace(/й$/, "я")}`;
+  $("sub").textContent = DOW[now.getDay()] + " · " + ruMonth(ym) + " " + now.getFullYear();
+
+  // 1. День
+  const rec = (State.getDays() || {})[ds], M = Calc.month(ym);
+  $("cDay").innerHTML = `<h2>Смена <a href="index.html">Учёт →</a></h2>
+    <span class="badge">${rec ? (DAYT[rec.type] || esc(rec.type)) : "День не задан"}</span>
+    <div class="big">${fmt(rec ? +rec.total || 0 : 0)} лей</div>
+    <div class="sub" style="margin:0">🌙 ${rec ? +rec.night || 0 : 0} · 📦 ${rec ? +rec.ap || 0 : 0} · за месяц: ${M.totalOrders} зак. / ${fmt(M.salary)} лей</div>
+    <div class="btns"><button class="btn btn-primary" onclick="addOrders(1,0)">＋1 🌙 Ночной</button><button class="btn btn-orange" onclick="addOrders(0,1)">＋1 📦 Единый</button></div>
+    <button class="btn btn-gray" style="margin:8px 0 0;background:var(--border);color:var(--text)" onclick="undoLast()">↩ Отменить последний заказ</button>`;
+
+  // 2. Зарплата
+  const rows = [prevYm(ym), ym].map(m => {
+    const s = Calc.salary(m);
+    return s.accrued > 0 || s.received > 0
+      ? row("index.html", ruMonth(m), `начислено ${fmt(s.accrued)} · получено ${fmt(s.received)}`, s.due > 0 ? `<span class="bad">ещё ${fmt(s.due)}</span>` : `<span class="ok">✅</span>`) : "";
+  }).join("");
+  $("cSalary").innerHTML = `<h2>Зарплата <a href="index.html">Получить →</a></h2>` + (rows || `<div class="empty">Начислений пока нет</div>`);
+
+  // 3. Пора оплатить
+  const pay = Calc.paymentsDue();
+  $("cPay").innerHTML = `<h2>Пора оплатить <a href="fin.html">Финансы →</a></h2>` + (pay.length
+    ? pay.map(p => row("fin.html", `${p.icon} ${esc(p.title)}`, p.den ? (p.late ? "⚠️ срок был " + p.den + "-го" : "до " + p.den + "-го") : "", fmt(p.sum) + " лей")).join("")
+    : `<div class="empty">Ничего срочного ✅</div>`);
+
+  // 4. Скутер
+  const sc = Calc.scWanted(ym);
+  $("cScooter").innerHTML = `<h2>Скутер <a href="cash.html">Скутер →</a></h2>` + (sc.length
+    ? sc.map(w => row("cash.html", "🛵 " + esc(w.title), esc(w.note), w.plan ? "~" + fmt(w.plan) + " лей" : "")).join("")
+    : `<div class="empty">Менять и оплачивать пока нечего ✅</div>`);
+
+  // 5. План месяца
+  const P = Calc.planSummary(ym);
+  if (!P) { $("cPlan").innerHTML = `<h2>План месяца <a href="plan.html">План →</a></h2><div class="empty">План на месяц ещё не создан</div>`; return; }
+  const pct = P.plan > 0 ? Math.min(100, Math.round(P.fact / P.plan * 100)) : 0;
+  const open = P.open.slice().sort((a, b) => b.left - a.left).slice(0, 5);
+  $("cPlan").innerHTML = `<h2>План месяца <a href="plan.html">План →</a></h2>
+    <div class="row" style="border:0;padding-top:0"><span>Осталось внести</span><b class="big" style="font-size:20px">${fmt(P.left)} лей</b></div>
+    <div class="bar"><i style="width:${pct}%"></i></div>
+    <div class="sub" style="margin:0 0 6px">${pct}% · факт ${fmt(P.fact)} из ${fmt(P.plan)} лей · не закрыто задач: ${P.open.length}</div>` +
+    open.map(t => row("plan.html", esc(t.title), "", t.left > 0 ? fmt(t.left) + " лей" : "—")).join("");
+}
+
+render();
+document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
+window.addEventListener("pageshow", e => { if (e.persisted) render(); });
+window.addEventListener("storage", render);
+</script>
+</body>
+</html>
