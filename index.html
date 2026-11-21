@@ -289,6 +289,7 @@ details.tree.d>summary{background:var(--subtle-bg);color:var(--accent);font-weig
 <script src="js/domain/state.js"></script>
 <script src="js/domain/migrate.js"></script>
 <script>Schema.run();</script>
+<script src="js/domain/selectors.js"></script>
 <script src="js/domain/tariff.js"></script>
 <script src="js/domain/schedule.js"></script>
 <script src="js/domain/finance-api.js"></script>
@@ -633,11 +634,8 @@ function addOrders(){
 //  ЗАРПЛАТА: начислено (по дням) и получено (операции «Доход» в Финансах)
 // ==========================================
 const salaryYm=()=>currentDate.getFullYear()+"-"+pad(currentDate.getMonth()+1);
-const salaryReceipts=ym=>State.getOps().filter(o=>o.tip==="Доход"&&o.ref&&o.ref.t==="salary"&&o.ref.ym===ym).sort((a,b)=>String(b.data).localeCompare(String(a.data)));
-function salaryStats(ym){
-  const acc=sum(getHistory().filter(d=>d.date.startsWith(ym)),d=>d.total||0),rec=sum(salaryReceipts(ym),o=>+o.summa||0);
-  return{acc,rec,due:Math.max(0,UI.r2(acc-rec))};
-}
+const salaryReceipts=ym=>Calc.salaryReceipts(ym);
+function salaryStats(ym){const r=Calc.salary(ym);return{acc:r.accrued,rec:r.received,due:r.due}}
 function renderSalary(){
   if(!$("salSummary"))return;
   const ym=salaryYm(),s=salaryStats(ym),rows=salaryReceipts(ym);
