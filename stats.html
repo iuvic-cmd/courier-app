@@ -232,6 +232,7 @@
 <script src="js/domain/state.js"></script>
 <script src="js/domain/migrate.js"></script>
 <script>Schema.run();</script>
+<script src="js/domain/selectors.js"></script>
 <script src="js/domain/schedule.js"></script>
 <script src="js/domain/ledger.js"></script>
 <script>
@@ -251,36 +252,12 @@
   const setText = (id, v) => { const el = $(id); if (el) el.textContent = v; };
   const pad = n => String(n).padStart(2, "0");
   const fmtDate = ds => ds.split("-").reverse().join(".");
-  const isExpense = o => o && o.kind === "expense";
+  const isExpense = Calc.isExpense;
   // Прочие доходы (чаевые и т.д.). «Зарплата» исключена — она уже учтена по дням.
-  const isIncome = o => o && o.kind === "income" && !String(o.cat || "").includes("Зарплата");
+  const isIncome = Calc.isIncome;
   const catHas = (o, word) => String(o.cat || "").includes(word);
 
-  // Приводим операции к единому виду {date, kind, cat, amount}.
-  // Поддерживаются оба формата: старый (kind/cat/amount/date) и новый из fin.html (tip/kat/summa/data).
-  function normOp(o) {
-    if (!o || typeof o !== "object") return null;
-    const date = String(o.date || o.data || "").slice(0, 10);
-    const base = num(o.baz != null ? o.baz : o.summa);
-    switch (o.tip) {
-      case "Трата":
-        return { date, kind: "expense", cat: o.kat, amount: base };
-      case "Доход":
-        return { date, kind: "income", cat: o.kat, amount: base };
-      case "Кредитка":
-        if (o.napr === "покупка") return { date, kind: "expense", cat: o.kat, amount: num(o.summa) };
-        if (o.napr === "проценты") return { date, kind: "expense", cat: "💳 Проценты по кредиткам", amount: num(o.summa) };
-        return null;
-      case "Кредит":
-      case "Ломбард":
-        return o.napr === "платёж" && num(o.proc) > 0
-          ? { date, kind: "expense", cat: o.tip === "Кредит" ? "🏛 Проценты по кредитам" : "🥇 Проценты по ломбарду", amount: num(o.proc) }
-          : null;
-      default: // Корректировка, переводы, долги, цели — не расход и не доход
-        return null;
-    }
-  }
-  const getOps = () => State.getOps().map(normOp).filter(Boolean);
+  const getOps = () => Calc.ops();
 
   function changeMonth(dir) {
     currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + dir, 1);
@@ -414,44 +391,17 @@
       el.addEventListener("click", () => selectDay(el.dataset.date));
     });
 
-    // === 2. Итоги месяца ===
-    // Сортируем ключи один раз — все графики используют один и тот же порядок
-    const monthKeys = Object.keys(days).filter(k => k.startsWith(prefix)).sort();
-    let salary = 0, totalOrders = 0, workDays = 0, nightSum = 0, apSum = 0;
-    monthKeys.forEach(k => {
-      const r = days[k];
-      const night = num(r.night), ap = num(r.ap), total = num(r.total);
-      salary += total;
-      nightSum += night;
-      apSum += ap;
-      totalOrders += night + ap;
-      if (night + ap > 0 || total > 0) workDays++;
-    });
-
-    const monthOps = allOps.filter(o => String(o.date || "").startsWith(prefix));
-    const monthExp = monthOps.filter(isExpense);
-    const sumAbs = list => list.reduce((s, o) => s + Math.abs(num(o.amount)), 0);
-    const expenses = sumAbs(monthExp);
-    // Заправки берём из журнала заправок (cash.html), если их нет — из расходов по категории
-    const fuels = State.getFuel().filter(f => String(f.date || "").startsWith(prefix));
-    const fuelFromLog = fuels.reduce((s, f) => s + num(f.total != null ? f.total : f.amount), 0);
-    const fuelCost = fuelFromLog > 0 ? fuelFromLog : sumAbs(monthExp.filter(o => catHas(o, "Топливо")));
-    // «Топливо (Скутер)» тоже содержит слово «Скутер» — исключаем, чтобы не считать дважды
-    const scooterNonFuel = monthExp.filter(o => catHas(o, "Скутер") && !catHas(o, "Топливо"));
-    const maintCost = sumAbs(scooterNonFuel);
-    const washCost = sumAbs(scooterNonFuel.filter(o => /мойк/i.test(String(o.cat || ""))));
-    const serviceCost = maintCost - washCost; // масло, фильтры, ремень, колодки, документы
-    const incomeOps = monthOps.filter(isIncome);
-    const income = sumAbs(incomeOps);
-    const net = salary + income - expenses;
+    // === 2. Итоги месяца (все цифры — из общего слоя Calc) ===
+    const M = Calc.month(prefix);
+    const { salary, totalOrders, workDays, nightSum, apSum, expenses, income, net, fuelCost, maintCost, washCost, serviceCost, fuels } = M;
+    const monthKeys = M.dayKeys, monthExp = M.expenseOps;
 
     setText("statSalary", fmt(salary));
     setText("statIncome", fmt(income));
     setText("statExpenses", fmt(expenses));
     setText("statNet", fmt(net));
-    const salRecv = State.getOps().filter(o => o.tip === "Доход" && o.ref && o.ref.t === "salary" && o.ref.ym === prefix).reduce((s, o) => s + num(o.summa), 0);
-    setText("statSalRecv", fmt(salRecv));
-    setText("statSalDue", fmt(Math.max(salary - salRecv, 0)));
+    setText("statSalRecv", fmt(M.salaryReceived));
+    setText("statSalDue", fmt(M.salaryDue));
     const firstEver = State.getOps().map(o => String(o.data || o.date || "").slice(0, 10)).filter(Boolean).sort()[0] || "";
     let note = "";
     if (firstEver) {
@@ -501,30 +451,10 @@
     setText("ecoTips", tips.join(" • ") || (salary > 0 ? "Держите курс!" : "—"));
 
     // === 5. Скутер ===
-    const totalLiters = fuels.reduce((s, f) => s + num(f.liters), 0);
-    const price = totalLiters > 0 ? fuelCost / totalLiters : 0;
-
-    // Пробег за месяц. Новые записи (cash.html) хранят «пройдено» в поле trip — их просто суммируем.
-    // Прежние записи (без trip): км за день (меньше стартового показания) или показание одометра.
-    const sc = State.getScooter() || {};
-    const startOdo = num(sc.startKm);
-    const allLog = State.getMileageLog().map(e => ({ date: String(e.date || ""), km: num(e.km), trip: e.trip != null ? num(e.trip) : null }))
-      .filter(e => e.date);
-    let monthKm = 0, anyEntry = false, odoL = startOdo;
-    allLog.filter(e => e.trip == null && e.km > 0).sort((a, b) => a.date.localeCompare(b.date)).forEach(e => {
-      let d;
-      if (e.km >= startOdo) { d = Math.max(0, e.km - odoL); odoL = Math.max(odoL, e.km); }
-      else { d = e.km; odoL += e.km; }
-      if (e.date.startsWith(prefix)) { monthKm += d; anyEntry = true; }
-    });
-    allLog.filter(e => e.trip != null && e.date.startsWith(prefix)).forEach(e => { monthKm += e.trip; anyEntry = true; });
-    let totalKm = 0, kmIsMonthly = false;
-    if (anyEntry && monthKm > 0) { totalKm = monthKm; kmIsMonthly = true; }
-    if (!kmIsMonthly) totalKm = Math.max(num(sc.currentKm) - startOdo, 0);
+    const SC = Calc.scooter(prefix, M);
+    const { price, km: totalKm, kmIsMonthly, cons, costKm } = SC;
 
     setText("statKmLabel", kmIsMonthly ? "🛵 Пробег (за месяц)" : "🛵 Пробег (всего)");
-    const cons = totalKm > 0 && kmIsMonthly ? (totalLiters / totalKm * 100) : 0;
-    const costKm = totalKm > 0 && kmIsMonthly ? fuelCost / totalKm : 0;
 
     setText("statPrice", fmt(price));
     setText("statKm", fmt(Math.round(totalKm * 10) / 10));
